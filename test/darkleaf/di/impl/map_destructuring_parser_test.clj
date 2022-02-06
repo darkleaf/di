@@ -43,6 +43,13 @@
     {:foo/syms [a b] :or {a :av, b :bv}}
 
 
+    {"a" nil, "b" nil}
+    {:strs [a b]}
+
+    {"a" :av, "b" :bv}
+    {:strs [a b] :or {a :av, b :bv}}
+
+
     {:a nil, ::b nil}
     {a :a, b ::b}
 
@@ -54,4 +61,7 @@
     {a 'a, b 'foo/b}
 
     {a :av, foo/b :bv}
-    {a 'a, b 'foo/b, :or {a :av, b :bv}}))
+    {a 'a, b 'foo/b, :or {a :av, b :bv}}
+
+    {"a" nil, "b" nil}
+    {a "a", b "b"}))
