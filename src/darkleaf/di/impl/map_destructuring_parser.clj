@@ -1,7 +1,4 @@
-(ns darkleaf.di.impl.deps-parser)
-
-(defmacro ^:private <<- [& body]
- `(->> ~@(reverse body)))
+(ns darkleaf.di.impl.map-destructuring-parser)
 
 (defn- parse-keys [k v defaults]
   (when (and (keyword? k)
@@ -41,8 +38,7 @@
              (symbol? (second v)))
     {(second v) (get defaults k)}))
 
-
-(defn parse-destructuring-map [m]
+(defn parse [m]
   (let [defaults (:or m)
         m        (dissoc m :or :as)]
     (reduce-kv (fn [acc k v]
@@ -53,18 +49,3 @@
                         (parse-named-syms k v defaults)))
                {}
                m)))
-
-(defn parse [v]
-  (<<-
-   (let [arglists (-> v meta :arglists)])
-   (if (nil? arglists)
-     (throw (ex-info "a" {})))
-   (if (not= 1 (count arglists))
-     (throw (ex-info "b" {})))
-   (let [arglist (first arglists)])
-   (if (empty? arglist)
-     (throw (ex-info "c" {})))
-   (let [deps (first arglist)])
-   (if-not (map? deps)
-     (throw (ex-info "d" {})))
-   (parse-destructuring-map deps)))

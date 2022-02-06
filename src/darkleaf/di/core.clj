@@ -1,14 +1,12 @@
 (ns darkleaf.di.core
   (:require
-   [darkleaf.di.impl.deps-parser :as deps-parser])
+   [darkleaf.di.impl.map-destructuring-parser :as md-parser])
   (:import
-   [java.lang AutoCloseable]
+   [java.lang AutoCloseable Exception]
    [java.io FileNotFoundException]
-   [clojure.lang IDeref]
-   [clojure.lang IFn]))
+   [clojure.lang IDeref IFn]))
 
-#_(set! *warn-on-reflection* true)
-(set! *warn-on-reflection* false)
+(set! *warn-on-reflection* true)
 
 (defmulti decorate (fn [key obj] key))
 
@@ -16,61 +14,69 @@
   :extend-via-metadata true
   (stop [this]))
 
-;; name?
-(deftype Component [instance breadcrumbs]
+(deftype ObjectWrapper [obj stop-fn]
   AutoCloseable
   (close [_]
-    (doseq [dep breadcrumbs]
-      (stop dep)))
+    (stop-fn))
   IDeref
   (deref [_]
-    instance)
+    obj)
   IFn
   (invoke [_]
-    (instance))
-  (invoke [_  a1]
-    (instance a1))
-  (invoke [_  a1 a2]
-    (instance a1 a2))
-  (invoke [_  a1 a2 a3]
-    (instance a1 a2 a3))
-  (invoke [_  a1 a2 a3 a4]
-    (instance a1 a2 a3 a4))
-  (invoke [_  a1 a2 a3 a4 a5]
-    (instance a1 a2 a3 a4 a5))
-  (invoke [_  a1 a2 a3 a4 a5 a6]
-    (instance a1 a2 a3 a4 a5 a6))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7]
-    (instance a1 a2 a3 a4 a5 a6 a7))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20))
-  (invoke [_  a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
-    (instance a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
-  (applyTo [_ args] (apply instance args)))
+    (obj))
+  (invoke [_ a1]
+    (obj     a1))
+  (invoke [_ a1 a2]
+    (obj     a1 a2))
+  (invoke [_ a1 a2 a3]
+    (obj     a1 a2 a3))
+  (invoke [_ a1 a2 a3 a4]
+    (obj     a1 a2 a3 a4))
+  (invoke [_ a1 a2 a3 a4 a5]
+    (obj     a1 a2 a3 a4 a5))
+  (invoke [_ a1 a2 a3 a4 a5 a6]
+    (obj     a1 a2 a3 a4 a5 a6))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7]
+    (obj     a1 a2 a3 a4 a5 a6 a7))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20))
+  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
+    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
+  (applyTo [_ args] (apply obj args)))
+
+(alter-meta! #'->ObjectWrapper assoc :private true)
+
+(defn- safe-requiring-resolve [ident]
+  (if (simple-ident? ident)
+    ;; only in registry
+    (throw (ex-info "" {})))
+  (try
+    (requiring-resolve (symbol ident))
+    (catch FileNotFoundException _ nil)))
 
 (defmacro ^:private ??
   ([] nil)
@@ -80,105 +86,90 @@
       x#
       (?? ~@next))))
 
-(defn- safe-requiring-resolve [ident]
-  (if (simple-ident? ident)
-    ;; only in registry
-    (throw (ex-info "" {})))
+(defn- resolve-ident [{:keys [replacements *system]}
+                      ident default]
+  (?? (replacements ident)
+      (@*system ident)
+      (safe-requiring-resolve ident)
+      default
+      (throw (ex-info "not-found" {}))))
+
+(defn- deps-definition [variable]
+  (let [definition (-> variable meta :arglists last first)]
+    (cond
+      (map? definition) definition
+      (= '_ definition) {}
+      :else (throw (ex-info "invalid var" {})))))
+
+(declare instanciate)
+
+(defn- var-deps [ctx variable]
+  (let [definition     (deps-definition variable)
+        ident->default (md-parser/parse definition)]
+   (reduce-kv (fn [acc ident default]
+                (assoc acc ident (instanciate ctx ident default)))
+              {}
+              ident->default)))
+
+(defn- construct [{:as ctx, :keys [*system *breadcrumbs instrument]}
+                  ident variable]
+  (let [deps (var-deps ctx variable)
+        obj (cond
+              (keyword? ident) (variable deps)
+              (symbol? ident)  (partial variable deps)
+              :else            (throw (ex-info "b" {})))
+        obj (decorate ident obj)
+        obj (instrument ident obj)]
+    (vswap! *system assoc ident obj)
+    (vswap! *breadcrumbs conj obj)
+    obj))
+
+(defn- instanciate [ctx ident default]
+  (let [x (resolve-ident ctx ident default)]
+    (if (var? x)
+      (construct ctx ident x)
+      x)))
+
+(defn- instanciate* [{:as ctx, :keys [*breadcrumbs]}
+                     ident]
   (try
-    (requiring-resolve (symbol ident))
-    (catch FileNotFoundException _)))
+    (instanciate ctx ident nil)
+    (catch Exception ex
+      (throw (ex-info "can't start"
+                      {:type                     ::can't-start
+                       :ident                    ident
+                       :stack-of-started-objects @*breadcrumbs}
+                      ex)))))
 
-;;{ident -> default}
-(defn- resolve-deps [v]
-  {})
+(defn- stop-system [{:keys [*breadcrumbs]}]
+  (doseq [dep @*breadcrumbs]
+    (stop dep)))
 
-(defn- instanciate [ident default
-                    registry instrument
-                    *system *breadcrumbs]
-  (let [x (?? (registry ident)
-              (@*system ident)
-              (safe-requiring-resolve ident)
-              default
-              (throw (ex-info "not-found" {})))]
-    (if-not (var? x)
-      x
-      (let [deps (reduce-kv
-                  (fn [acc ident default]
-                    (assoc acc ident (instanciate ident default
-                                                  registry instrument
-                                                  *system *breadcrumbs)))
-                  {}
-                  (deps-parser/parse x))
-            ;; вот этот кусок бы вынести или в функцию или в мультиметод
-            obj  (cond
-                   (keyword? ident) (x deps)
-                   (symbol? ident)  (partial x deps)
-                   :else            (throw (ex-info "b" {})))
-            obj  (decorate ident obj)
-            obj  (instrument ident obj)]
-        (vswap! *system assoc ident obj)
-        (vswap! *breadcrumbs conj obj)
-        obj))))
+(defn- instrument [ident value]
+  value)
 
-;;(defn ^Component start
-(defn start
+(defn ^ObjectWrapper start
   ([ident]
    (start ident {}))
-  ([ident registry]
-   (start ident registry (fn [ident value] value)))
-  ([ident registry instrument]
-   (let [*system      (volatile! {})
-         *breadcrumbs (volatile! [])
-         instance     (try
-                        (instanciate ident nil
-                                     registry instrument
-                                     *system *breadcrumbs)
-                        (finally
-                          ;; протестить бы
-                          ;; и надо ли?
-                          (doseq [dep @*breadcrumbs]
-                            (stop dep))))]
-     (->Component instance @*breadcrumbs))))
+  ([ident replacements]
+   (start ident replacements instrument))
+  ([ident replacements instrument]
+   (let [ctx     {:*system      (volatile! {})
+                  :*breadcrumbs (volatile! '())
+                  :replacements replacements
+                  :instrument   instrument}
+         obj     (instanciate* ctx ident)
+         stop-fn (partial stop-system ctx)]
+     (->ObjectWrapper obj stop-fn))))
 
-
-(defmethod decorate :default [_ obj] obj)
+(defmethod decorate :default [_ obj]
+  obj)
 
 (extend-protocol Stoppable
+  nil
+  (stop [_])
   Object
   (stop [_])
   AutoCloseable
   (stop [this]
     (.close this)))
-
-;; оставить одну арность
-
-;; проверять наличие ключей конфигов такая себе идея
-;; ключи же могут быть зависимо-опциональными
-
-;; (start ::foo {::bar override, ::buzz #'override})
-;; @component, (.close component)
-;; конфиги - это состояние
-
-
-;; декораторы через мультиметод decorate
-;; (defn start [name overrides-map instrument-fn])
-;; с помощью instrument можно делать абстракции
-;; а он тоже мультиметод
-
-;; внешние ресурсы в registry закрываются самостоятельно
-
-;; компонент не может сам на себя ссылаться
-
-"
-# концепция
-есть var, у нее первый аргумент - зависимости
-
-символы мапятся на функции - (partial var ctx)
-кейворды мапятся на конструкторы - (var ctx)
-
-есть протокол - stop/halt
-расширяемый через метаданные
-
-зависимости - кейворды/символы с неймспейсом
-кейворды - конфиги
-"

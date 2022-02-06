@@ -41,3 +41,36 @@
 (t/deftest deps-test
   (with-open [service (di/start `deps-root)]
     (t/is (= [::root [::a [::b]]] (service)))))
+
+
+(defn logging-stub [log obj-name]
+  (swap! log conj [:start obj-name])
+  (reify di/Stoppable
+    (stop [_]
+      (swap! log conj [:stop obj-name]))))
+
+(defn order-a [{::keys [log order-c]}]
+  (logging-stub log :a))
+
+(defn order-b [{::keys [log order-c]}]
+  (logging-stub log :b))
+
+(defn order-c [{::keys [log]}]
+  (logging-stub log :c))
+
+(defn order-root [{::keys [log order-a order-b]}]
+  (logging-stub log :root))
+
+(t/deftest order-test
+  (let [log (atom [])]
+    (with-open [obj (di/start ::order-root {::log log})])
+    (t/is (= [[:start :c]
+              [:start :a]
+              [:start :b]
+              [:start :root]
+
+              [:stop :root]
+              [:stop :b]
+              [:stop :a]
+              [:stop :c]]
+             @log))))
