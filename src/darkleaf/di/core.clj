@@ -70,13 +70,11 @@
 
 (alter-meta! #'->ObjectWrapper assoc :private true)
 
-(defn- safe-requiring-resolve [ident]
-  (if (simple-ident? ident)
-    ;; only in registry
-    (throw (ex-info "" {})))
-  (try
-    (requiring-resolve (symbol ident))
-    (catch FileNotFoundException _ nil)))
+(defn- try-requiring-resolve [ident]
+  (when (qualified-ident? ident)
+    (try
+      (requiring-resolve (symbol ident))
+      (catch FileNotFoundException _ nil))))
 
 (defmacro ^:private ??
   ([] nil)
@@ -90,9 +88,8 @@
                       ident default]
   (?? (replacements ident)
       (@*system ident)
-      (safe-requiring-resolve ident)
-      default
-      (throw (ex-info "not-found" {}))))
+      (try-requiring-resolve ident)
+      default))
 
 (defn- deps-definition [variable]
   (let [definition (-> variable meta :arglists last first)]
@@ -126,9 +123,10 @@
 
 (defn- instanciate [ctx ident default]
   (let [x (resolve-ident ctx ident default)]
-    (if (var? x)
-      (construct ctx ident x)
-      x)))
+    (cond
+      (var? x) (construct ctx ident x)
+      (nil? x) (throw (ex-info "not-found" {}))
+      :else x)))
 
 (defn- instanciate* [{:as ctx, :keys [*breadcrumbs]}
                      ident]
