@@ -108,7 +108,7 @@
               {}
               ident->default)))
 
-(defn- construct [{:as ctx, :keys [*system *breadcrumbs instrument]}
+(defn- build-obj [{:as ctx, :keys [*system *breadcrumbs instrument]}
                   ident variable]
   (let [deps (var-deps ctx variable)
         obj (cond
@@ -124,7 +124,7 @@
 (defn- instanciate [ctx ident default]
   (let [x (resolve-ident ctx ident default)]
     (cond
-      (var? x) (construct ctx ident x)
+      (var? x) (build-obj ctx ident x)
       (nil? x) (throw (ex-info "not-found" {}))
       :else x)))
 
