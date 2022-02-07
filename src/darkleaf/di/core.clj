@@ -8,8 +8,6 @@
 
 (set! *warn-on-reflection* true)
 
-(defmulti decorate (fn [key obj] key))
-
 (defprotocol Stoppable
   :extend-via-metadata true
   (stop [this]))
@@ -115,7 +113,6 @@
                (keyword? ident) (variable deps)
                (symbol? ident)  (partial variable deps)
                :else            (throw (ex-info "b" {})))
-        obj  (decorate ident obj)
         obj  (instrument ident obj)]
     (vswap! *system assoc ident obj)
     (vswap! *breadcrumbs conj obj)
@@ -159,9 +156,6 @@
          obj     (instanciate* ctx ident)
          stop-fn (partial stop-system ctx)]
      (->ObjectWrapper obj stop-fn))))
-
-(defmethod decorate :default [_ obj]
-  obj)
 
 (extend-protocol Stoppable
   nil
