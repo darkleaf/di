@@ -111,12 +111,12 @@
 (defn- build-obj [{:as ctx, :keys [*system *breadcrumbs instrument]}
                   ident variable]
   (let [deps (var-deps ctx variable)
-        obj (cond
-              (keyword? ident) (variable deps)
-              (symbol? ident)  (partial variable deps)
-              :else            (throw (ex-info "b" {})))
-        obj (decorate ident obj)
-        obj (instrument ident obj)]
+        obj  (cond
+               (keyword? ident) (variable deps)
+               (symbol? ident)  (partial variable deps)
+               :else            (throw (ex-info "b" {})))
+        obj  (decorate ident obj)
+        obj  (instrument ident obj)]
     (vswap! *system assoc ident obj)
     (vswap! *breadcrumbs conj obj)
     obj))
