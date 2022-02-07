@@ -108,12 +108,12 @@
 
 (defn- build-obj [{:as ctx, :keys [*system *breadcrumbs instrument]}
                   ident variable]
-  (let [deps (var-deps ctx variable)
-        obj  (cond
-               (keyword? ident) (variable deps)
-               (symbol? ident)  (partial variable deps)
-               :else            (throw (ex-info "b" {})))
-        obj  (instrument ident obj)]
+  (let [builder (instrument variable)
+        deps    (var-deps ctx variable)
+        obj     (cond
+                  (keyword? ident) (builder deps)
+                  (symbol? ident)  (partial builder deps)
+                  :else            (throw (ex-info "b" {})))]
     (vswap! *system assoc ident obj)
     (vswap! *breadcrumbs conj obj)
     obj))
@@ -140,14 +140,11 @@
   (doseq [dep @*breadcrumbs]
     (stop dep)))
 
-(defn- instrument [ident value]
-  value)
-
 (defn ^ObjectWrapper start
   ([ident]
    (start ident {}))
   ([ident replacements]
-   (start ident replacements instrument))
+   (start ident replacements identity))
   ([ident replacements instrument]
    (let [ctx     {:*system      (volatile! {})
                   :*breadcrumbs (volatile! '())
