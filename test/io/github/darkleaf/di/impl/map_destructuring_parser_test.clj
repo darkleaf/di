@@ -1,6 +1,6 @@
-(ns darkleaf.di.impl.map-desctructuring-parser-test
+(ns io.github.darkleaf.di.impl.map-desctructuring-parser-test
   (:require
-   [darkleaf.di.impl.map-destructuring-parser :as sut]
+   [io.github.darkleaf.di.impl.map-destructuring-parser :as sut]
    [clojure.test :as t]))
 
 (t/deftest parse-test

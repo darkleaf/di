@@ -1,4 +1,4 @@
-(ns darkleaf.di.impl.map-destructuring-parser)
+(ns io.github.darkleaf.di.impl.map-destructuring-parser)
 
 (defn- parse-keys [k v defaults]
   (when (and (keyword? k)

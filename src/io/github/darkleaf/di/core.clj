@@ -1,6 +1,6 @@
-(ns darkleaf.di.core
+(ns io.github.darkleaf.di.core
   (:require
-   [darkleaf.di.impl.map-destructuring-parser :as md-parser])
+   [io.github.darkleaf.di.impl.map-destructuring-parser :as md-parser])
   (:import
    [java.lang AutoCloseable Exception]
    [java.io FileNotFoundException]

@@ -1,6 +1,6 @@
-(ns darkleaf.di.core-test
+(ns io.github.darkleaf.di.core-test
   (:require
-   [darkleaf.di.core :as di]
+   [io.github.darkleaf.di.core :as di]
    [clojure.test :as t]))
 
 (defn obj-no-deps [{}]
