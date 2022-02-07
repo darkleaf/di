@@ -94,7 +94,7 @@
     (cond
       (map? definition) definition
       (= '_ definition) {}
-      :else (throw (ex-info "invalid var" {})))))
+      :else (throw (ex-info "invalid var" {:var variable})))))
 
 (declare instanciate)
 
@@ -113,7 +113,8 @@
         obj     (cond
                   (keyword? ident) (builder deps)
                   (symbol? ident)  (partial builder deps)
-                  :else            (throw (ex-info "b" {})))]
+                  :else            (throw (ex-info "" {:ident ident
+                                                       :var   variable})))]
     (vswap! *system assoc ident obj)
     (vswap! *breadcrumbs conj obj)
     obj))
@@ -122,7 +123,7 @@
   (let [x (resolve-ident ctx ident default)]
     (cond
       (var? x) (build-obj ctx ident x)
-      (nil? x) (throw (ex-info "not-found" {}))
+      (nil? x) (throw (ex-info "not-found" {:ident ident}))
       :else x)))
 
 (defn- instanciate* [{:as ctx, :keys [*breadcrumbs]}
