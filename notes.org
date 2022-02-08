@@ -22,6 +22,6 @@
 * запуск нескольних веб-серверов
   #+begin_src clojure
     (with-open [shared (di/start ::shared)
-                web-1  (di/start ::web {::shared shared})
-                web-2  (di/start ::web {::shared shared})])
+                web-1  (di/start ::web {::shared @shared})
+                web-2  (di/start ::web {::shared @shared})])
   #+end_src
