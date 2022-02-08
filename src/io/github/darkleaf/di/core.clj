@@ -84,8 +84,8 @@
 
 (defn- resolve-ident [{:keys [replacements *system]}
                       ident default]
-  (?? (replacements ident)
-      (@*system ident)
+  (?? (@*system ident)
+      (replacements ident)
       (try-requiring-resolve ident)
       default))
 
@@ -106,25 +106,27 @@
               {}
               ident->default)))
 
-(defn- build-obj [{:as ctx, :keys [*system *breadcrumbs instrument]}
+(defn- build-obj [{:as ctx, :keys [*breadcrumbs instrument]}
                   ident variable]
-  (let [builder (instrument variable)
-        deps    (var-deps ctx variable)
+  (let [deps    (var-deps ctx variable)
         obj     (cond
-                  (keyword? ident) (builder deps)
-                  (symbol? ident)  (partial builder deps)
+                  (keyword? ident) (variable deps)
+                  (symbol? ident)  (partial variable deps)
                   :else            (throw (ex-info "" {:ident ident
                                                        :var   variable})))]
-    (vswap! *system assoc ident obj)
     (vswap! *breadcrumbs conj obj)
     obj))
 
-(defn- instanciate [ctx ident default]
-  (let [x (resolve-ident ctx ident default)]
-    (cond
-      (var? x) (build-obj ctx ident x)
-      (nil? x) (throw (ex-info "not-found" {:ident ident}))
-      :else x)))
+(defn- instanciate [{:as ctx, :keys [hook *system]}
+                    ident default]
+  (let [x   (resolve-ident ctx ident default)
+        obj (cond
+              (var? x) (build-obj ctx ident x)
+              (nil? x) (throw (ex-info "not-found" {:ident ident}))
+              :else    x)
+        obj (hook ident obj)]
+    (vswap! *system assoc ident obj)
+    obj))
 
 (defn- instanciate* [{:as ctx, :keys [*breadcrumbs]}
                      ident]
@@ -141,16 +143,19 @@
   (doseq [dep @*breadcrumbs]
     (stop dep)))
 
+(defn- null-hook [ident obj]
+  obj)
+
 (defn ^ObjectWrapper start
   ([ident]
    (start ident {}))
   ([ident replacements]
-   (start ident replacements identity))
-  ([ident replacements instrument]
+   (start ident replacements null-hook))
+  ([ident replacements hook]
    (let [ctx     {:*system      (volatile! {})
                   :*breadcrumbs (volatile! '())
                   :replacements replacements
-                  :instrument   instrument}
+                  :hook         hook}
          obj     (instanciate* ctx ident)
          stop-fn (partial stop-system ctx)]
      (->ObjectWrapper obj stop-fn))))
