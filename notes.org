@@ -16,3 +16,12 @@
   зависимости берутся из последней арности
 * ident -> key (?)
   ~ident?~  проверяет что это символ или кейворд, а у меня еще и строки
+* alias
+  в replacements значениями могут быть keyword/symbol
+  в этом случае это ссылка
+* запуск нескольних веб-серверов
+  #+begin_src clojure
+    (with-open [shared (di/start ::shared)
+                web-1  (di/start ::web {::shared shared})
+                web-2  (di/start ::web {::shared shared})])
+  #+end_src
