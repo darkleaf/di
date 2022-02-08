@@ -121,9 +121,10 @@
                     ident default]
   (let [x   (resolve-ident ctx ident default)
         obj (cond
-              (var? x) (build-obj ctx ident x)
-              (nil? x) (throw (ex-info "not-found" {:ident ident}))
-              :else    x)
+              (ident? x) (instanciate ctx x default)
+              (var? x)   (build-obj ctx ident x)
+              (nil? x)   (throw (ex-info "not-found" {:ident ident}))
+              :else      x)
         obj (hook ident obj)]
     (vswap! *system assoc ident obj)
     obj))

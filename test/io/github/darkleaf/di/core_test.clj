@@ -12,8 +12,8 @@
 
 
 (t/deftest no-obj-no-deps-test
-  (with-open [obj (di/start ::missing {::missing ::obj})]
-    (t/is (= ::obj @obj))))
+  (with-open [obj (di/start ::missing {::missing 42})]
+    (t/is (= 42 @obj))))
 
 
 (defn service-no-deps [{} arg]
