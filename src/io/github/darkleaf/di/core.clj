@@ -140,8 +140,8 @@
   (doseq [dep @*breadcrumbs]
     (stop dep)))
 
-(defn- null-hook [ident obj]
-  obj)
+(defn- null-hook [ident object]
+  object)
 
 (defn ^ObjectWrapper start
   ([ident]
@@ -214,3 +214,9 @@
       (partial this deps)
       (doto (this deps)
         register-to-stop))))
+
+(defn join-hooks [& hooks]
+  (fn [ident object]
+    (reduce (fn [object hook] (hook ident object))
+            object
+            hooks)))
