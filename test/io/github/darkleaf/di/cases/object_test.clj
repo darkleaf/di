@@ -25,3 +25,18 @@
         obj (di/start ::stoppable-object {`log #(deliver p ::logged)})]
     (di/stop obj)
     (t/is (= ::logged @p))))
+
+
+(defn auto-closeable-object [{log `log}]
+  (reify java.lang.AutoCloseable
+    (close [_]
+      (log))))
+
+(t/deftest auto-closeable-object-test
+  (let [p (promise)]
+    (with-open [obj (di/start ::auto-closeable-object {`log #(deliver p ::logged)})])
+    (t/is (= ::logged @p)))
+  (let [p   (promise)
+        obj (di/start ::auto-closeable-object {`log #(deliver p ::logged)})]
+    (di/stop obj)
+    (t/is (= ::logged @p))))
