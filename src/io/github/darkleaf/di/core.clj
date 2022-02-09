@@ -93,10 +93,10 @@
       x#
       (?? ~@next))))
 
-(defn- resolve-ident [{:keys [replacements *system]}
+(defn- resolve-ident [{:keys [registry *system]}
                       ident default]
   (?? (@*system ident)
-      (replacements ident)
+      (registry ident)
       (try-requiring-resolve ident)
       default
       (throw (ex-info "not-found" {:ident ident}))))
@@ -146,12 +146,12 @@
 (defn ^ObjectWrapper start
   ([ident]
    (start ident {}))
-  ([ident replacements]
-   (start ident replacements null-hook))
-  ([ident replacements hook]
+  ([ident registry]
+   (start ident registry null-hook))
+  ([ident registry hook]
    (let [ctx     {:*system      (volatile! {})
                   :*breadcrumbs (volatile! '())
-                  :replacements replacements
+                  :registry     registry
                   :hook         hook}
          obj     (instanciate* ctx ident)
          stop-fn (partial stop-system ctx)]

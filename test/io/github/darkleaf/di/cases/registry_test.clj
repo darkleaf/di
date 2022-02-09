@@ -1,9 +1,9 @@
-(ns io.github.darkleaf.di.cases.replacements-test
+(ns io.github.darkleaf.di.cases.registry-test
   (:require
    [clojure.test :as t]
    [io.github.darkleaf.di.core :as di]))
 
-(t/deftest replacements-fn-test
+(t/deftest registry-fn-test
   (with-open [obj (di/start ::object
                             (fn [ident]
                               (case ident
