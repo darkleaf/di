@@ -1,10 +1,11 @@
 (ns io.github.darkleaf.di.core
+  (:refer-clojure :exclude [ref])
   (:require
    [io.github.darkleaf.di.impl.map-destructuring-parser :as md-parser])
   (:import
    [java.lang AutoCloseable Exception]
    [java.io FileNotFoundException]
-   [clojure.lang IDeref IFn]))
+   [clojure.lang IDeref IFn Var]))
 
 (set! *warn-on-reflection* true)
 
@@ -12,7 +13,14 @@
   :extend-via-metadata true
   (stop [this]))
 
+(defprotocol Factory
+  :extend-via-metadata true
+  (dependencies [this])
+  (build [this ident deps register-to-stop]))
+
 (deftype ObjectWrapper [obj stop-fn]
+  ;; factory
+
   AutoCloseable
   (close [_]
     (stop-fn))
@@ -87,46 +95,31 @@
   (?? (@*system ident)
       (replacements ident)
       (try-requiring-resolve ident)
-      default))
-
-(defn- deps-definition [variable]
-  (let [definition (-> variable meta :arglists last first)]
-    (cond
-      (map? definition) definition
-      (= '_ definition) {}
-      :else (throw (ex-info "invalid var" {:var variable})))))
+      default
+      (throw (ex-info "not-found" {:ident ident}))))
 
 (declare instanciate)
 
-(defn- var-deps [ctx variable]
-  (let [definition     (deps-definition variable)
-        ident->default (md-parser/parse definition)]
-   (reduce-kv (fn [acc ident default]
-                (assoc acc ident (instanciate ctx ident default)))
-              {}
-              ident->default)))
+(defn- resolve-deps [ctx deps]
+  (reduce-kv (fn [acc ident default]
+               (assoc acc ident (instanciate ctx ident default)))
+             {}
+             deps))
 
-(defn- build-obj [{:as ctx, :keys [*breadcrumbs instrument]}
-                  ident variable]
-  (let [deps    (var-deps ctx variable)
-        obj     (cond
-                  (keyword? ident) (variable deps)
-                  (symbol? ident)  (partial variable deps)
-                  :else            (throw (ex-info "" {:ident ident
-                                                       :var   variable})))]
-    (vswap! *breadcrumbs conj obj)
-    obj))
+(defn- register-to-stop [{:keys [*breadcrumbs]} obj]
+  (vswap! *breadcrumbs conj obj))
 
-(defn- instanciate [{:as ctx, :keys [hook *system]}
+(defn- register-in-system [{:keys [*system]} ident obj]
+  (vswap! *system assoc ident obj))
+
+(defn- instanciate [{:as ctx, :keys [hook]}
                     ident default]
-  (let [x   (resolve-ident ctx ident default)
-        obj (cond
-              (qualified-ident? x) (instanciate ctx x default)
-              (var? x)             (build-obj ctx ident x)
-              (nil? x)             (throw (ex-info "not-found" {:ident ident}))
-              :else                x)
-        obj (hook ident obj)]
-    (vswap! *system assoc ident obj)
+  (let [factory (resolve-ident ctx ident default)
+        deps    (dependencies factory)
+        deps    (resolve-deps ctx deps)
+        obj     (build factory ident deps #(register-to-stop ctx %))
+        obj     (hook ident obj)]
+    (register-in-system ctx ident obj)
     obj))
 
 (defn- instanciate* [{:as ctx, :keys [*breadcrumbs]}
@@ -161,6 +154,36 @@
          stop-fn (partial stop-system ctx)]
      (->ObjectWrapper obj stop-fn))))
 
+(defn ref
+  ([ident]
+   (ref ident identity))
+  ([ident f & args]
+   (reify Factory
+     (dependencies [_]
+       {ident nil})
+     (build [_ _ deps _]
+       (apply f (deps ident) args)))))
+
+(defn ref-vec
+  ([idents]
+   (ref-vec idents identity))
+  ([idents f & args]
+   (reify Factory
+     (dependencies [_]
+       (zipmap idents (repeat nil)))
+     (build [_ _ deps _]
+       (apply f (mapv deps idents) args)))))
+
+(defn ref-map
+  ([idents]
+   (ref-map idents identity))
+  ([idents f & args]
+   (reify Factory
+     (dependencies [_]
+       (zipmap idents (repeat nil)))
+     (build [_ _ deps _]
+       (apply f deps args)))))
+
 (extend-protocol Stoppable
   nil
   (stop [_])
@@ -169,3 +192,20 @@
   AutoCloseable
   (stop [this]
     (.close this)))
+
+(extend-protocol Factory
+  Object
+  (dependencies [_] {})
+  (build [this _ _ _] this)
+
+  Var
+  (dependencies [this]
+    (let [definition (-> this meta :arglists last first)]
+      (if (map? definition)
+        (md-parser/parse definition)
+        (throw (ex-info "invalid var" {:var this})))))
+  (build [this ident deps register-to-stop]
+    (if (symbol? ident)
+      (partial this deps)
+      (doto (this deps)
+        register-to-stop))))
