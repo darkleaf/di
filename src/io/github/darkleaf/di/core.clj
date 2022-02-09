@@ -19,13 +19,16 @@
   (build [this ident deps register-to-stop]))
 
 (deftype ObjectWrapper [obj stop-fn]
-  ;; factory
-
   AutoCloseable
   (close [_]
     (stop-fn))
   IDeref
   (deref [_]
+    obj)
+  Factory
+  (dependencies [_]
+    {})
+  (build [_ _ _ _]
     obj)
   IFn
   (invoke [_]
