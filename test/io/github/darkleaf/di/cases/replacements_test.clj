@@ -3,6 +3,14 @@
    [clojure.test :as t]
    [io.github.darkleaf.di.core :as di]))
 
+(t/deftest replacements-fn-test
+  (with-open [obj (di/start ::object
+                            (fn [ident]
+                              (case ident
+                                ::object ::stub)))]
+    (t/is (= ::stub @obj))))
+
+
 (defn use-global-config [{jdbc-url "JDBC_URL"
                           env      :env}]
   [::result jdbc-url env])
