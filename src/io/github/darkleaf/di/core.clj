@@ -15,8 +15,8 @@
 
 (defprotocol Factory
   :extend-via-metadata true
-  (dependencies [this])
-  (build [this ident deps register-to-stop]))
+  (-dependencies [this])
+  (-build [this ident deps register-to-stop]))
 
 (deftype ObjectWrapper [obj stop-fn]
   AutoCloseable
@@ -26,9 +26,9 @@
   (deref [_]
     obj)
   Factory
-  (dependencies [_]
+  (-dependencies [_]
     {})
-  (build [_ _ _ _]
+  (-build [_ _ _ _]
     obj)
   IFn
   (invoke [_]
@@ -118,9 +118,9 @@
 (defn- instanciate [{:as ctx, :keys [hook]}
                     ident default]
   (let [factory (resolve-ident ctx ident default)
-        deps    (dependencies factory)
+        deps    (-dependencies factory)
         deps    (resolve-deps ctx deps)
-        obj     (build factory ident deps #(register-to-stop ctx %))
+        obj     (-build factory ident deps #(register-to-stop ctx %))
         obj     (hook ident obj)]
     (register-in-system ctx ident obj)
     obj))
@@ -162,9 +162,9 @@
    (ref ident identity))
   ([ident f & args]
    (reify Factory
-     (dependencies [_]
+     (-dependencies [_]
        {ident nil})
-     (build [_ _ deps _]
+     (-build [_ _ deps _]
        (apply f (deps ident) args)))))
 
 (defn ref-vec
@@ -172,9 +172,9 @@
    (ref-vec idents identity))
   ([idents f & args]
    (reify Factory
-     (dependencies [_]
+     (-dependencies [_]
        (zipmap idents (repeat nil)))
-     (build [_ _ deps _]
+     (-build [_ _ deps _]
        (apply f (mapv deps idents) args)))))
 
 (defn ref-map
@@ -182,9 +182,9 @@
    (ref-map idents identity))
   ([idents f & args]
    (reify Factory
-     (dependencies [_]
+     (-dependencies [_]
        (zipmap idents (repeat nil)))
-     (build [_ _ deps _]
+     (-build [_ _ deps _]
        (apply f deps args)))))
 
 (extend-protocol Stoppable
@@ -198,16 +198,18 @@
 
 (extend-protocol Factory
   Object
-  (dependencies [_] {})
-  (build [this _ _ _] this)
+  (-dependencies [_]
+    {})
+  (-build [this _ _ _]
+    this)
 
   Var
-  (dependencies [this]
+  (-dependencies [this]
     (let [definition (-> this meta :arglists last first)]
       (if (map? definition)
         (md-parser/parse definition)
         (throw (ex-info "invalid var" {:var this})))))
-  (build [this ident deps register-to-stop]
+  (-build [this ident deps register-to-stop]
     (if (symbol? ident)
       (partial this deps)
       (doto (this deps)
