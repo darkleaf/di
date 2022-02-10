@@ -10,6 +10,21 @@
                                 ::object ::stub)))]
     (t/is (= ::stub @obj))))
 
+(t/deftest registry-logger-test
+  (let [log    (atom [])
+        logger (fn [registry]
+                 (fn [ident]
+                   (swap! log conj ident)
+                   (registry ident)))]
+    (with-open [obj (di/start ::object
+                              (logger {::object (di/ref-vec [::a ::b ::c])
+                                       ::a      1
+                                       ::b      2
+                                       ::c      3}))]
+      (t/is (= [1 2 3] @obj)))
+    (t/is (= [::object ::a ::b ::c]
+             @log))))
+
 
 (defn use-global-config [{jdbc-url "JDBC_URL"
                           env      :env}]
