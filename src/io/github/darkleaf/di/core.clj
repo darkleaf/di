@@ -31,6 +31,10 @@
   (-build [_ _ _ _]
     obj)
   IFn
+  (call [_]
+    (.call ^IFn obj))
+  (run [_]
+    (.run ^IFn obj))
   (invoke [_]
     (obj))
   (invoke [_ a1]
@@ -73,8 +77,8 @@
     (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19))
   (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20]
     (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20))
-  (invoke [_ a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
-    (obj     a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
+  (invoke [_   a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
+    (apply obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
   (applyTo [_ args] (apply obj args)))
 
 (alter-meta! #'->ObjectWrapper assoc :private true)
