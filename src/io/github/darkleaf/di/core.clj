@@ -103,11 +103,11 @@
       (registry ident)
       (try-requiring-resolve ident)))
 
-(declare instanciate)
+(declare instantiate)
 
 (defn- resolve-deps [ctx deps]
   (reduce (fn [acc ident]
-            (assoc acc ident (instanciate ctx ident)))
+            (assoc acc ident (instantiate ctx ident)))
           {}
           deps))
 
@@ -117,7 +117,7 @@
 (defn- register-in-system [{:keys [*system]} ident obj]
   (vswap! *system assoc ident obj))
 
-(defn- -instanciate [{:as ctx, :keys [hook]} ident]
+(defn- -instantiate [{:as ctx, :keys [hook]} ident]
   (let [factory (resolve-ident ctx ident)
         deps    (-dependencies factory)
         deps    (resolve-deps ctx deps)
@@ -126,9 +126,9 @@
     (register-in-system ctx ident obj)
     obj))
 
-(defn- instanciate [{:as ctx, :keys [*breadcrumbs]} ident]
+(defn- instantiate [{:as ctx, :keys [*breadcrumbs]} ident]
   (try
-    (-instanciate ctx ident)
+    (-instantiate ctx ident)
     (catch Exception ex
       (throw (ex-info "can't start"
                       {:type                     ::can't-start
@@ -153,7 +153,7 @@
                   :*breadcrumbs (volatile! '())
                   :registry     registry
                   :hook         hook}
-         obj     (instanciate ctx ident)
+         obj     (instantiate ctx ident)
          stop-fn (partial stop-system ctx)]
      (->ObjectWrapper obj stop-fn))))
 
