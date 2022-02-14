@@ -212,7 +212,8 @@
   (let [arity (->> variable meta :arglists (map count) (reduce max 0) long)
         deps  (allow-defaults deps)]
     (case arity
-      0 (throw (ex-info "a" {}))
+      0 (doto (variable)
+          register-to-stop)
       1 (doto (variable deps)
           register-to-stop)
       (partial variable deps))))

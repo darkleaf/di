@@ -32,20 +32,13 @@
     (t/is (= 8080 @p))))
 
 
-;; A defn without arguments is not allowed.
+;; A defn without arguments is an object constructor without deps.
 (defn no-arg-fn []
   42)
 
 (t/deftest no-arg-fn-test
-  (t/is (thrown? ExceptionInfo (di/start `no-arg-fn))))
-
-
-;; But you can explicitly define the function.
-(def no-arg-fn* (fn [] 42))
-
-(t/deftest no-arg-fn*-test
-  (with-open [f (di/start `no-arg-fn*)]
-    (t/is (= 42 (f)))))
+  (with-open [obj (di/start `no-arg-fn)]
+    (t/is (= 42 @obj))))
 
 
 ;; A defn with one argument is an object constructor.
