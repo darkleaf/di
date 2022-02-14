@@ -5,14 +5,14 @@
 (defn shared [{}]
   (Math/random))
 
-(defn server [{shared ::shared}]
+(defn server [{shared `shared}]
   shared)
 
 ;; We don't have to deref `shared`
 (t/deftest multi-system-test
-  (with-open [shared (di/start ::shared)
-              a      (di/start ::server {::shared shared})
-              b      (di/start ::server {::shared shared})]
+  (with-open [shared (di/start `shared)
+              a      (di/start `server {`shared shared})
+              b      (di/start `server {`shared shared})]
     (t/is (double? @a))
     (t/is (double? @b))
     (t/is (identical? @a @b))))

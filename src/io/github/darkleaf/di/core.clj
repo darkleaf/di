@@ -17,7 +17,7 @@
 (defprotocol Factory
   :extend-via-metadata true
   (-dependencies [this])
-  (-build [this ident deps register-to-stop]))
+  (-build [this deps register-to-stop]))
 
 (deftype ObjectWrapper [obj stop-fn]
   AutoCloseable
@@ -29,7 +29,7 @@
   Factory
   (-dependencies [_]
     {})
-  (-build [_ _ _ _]
+  (-build [_ _ _]
     obj)
   IFn
   (call [_]
@@ -85,9 +85,9 @@
 (alter-meta! #'->ObjectWrapper assoc :private true)
 
 (defn- try-requiring-resolve [ident]
-  (when (qualified-ident? ident)
+  (when (qualified-symbol? ident)
     (try
-      (requiring-resolve (symbol ident))
+      (requiring-resolve ident)
       (catch FileNotFoundException _ nil))))
 
 (defmacro ^:private ??
@@ -121,7 +121,7 @@
   (let [factory (resolve-ident ctx ident)
         deps    (-dependencies factory)
         deps    (resolve-deps ctx deps)
-        obj     (-build factory ident deps #(register-to-stop ctx %))
+        obj     (-build factory deps #(register-to-stop ctx %))
         obj     (hook ident obj)]
     (register-in-system ctx ident obj)
     obj))
@@ -164,7 +164,7 @@
    (reify Factory
      (-dependencies [_]
        #{ident})
-     (-build [_ _ deps _]
+     (-build [_ deps _]
        (apply f (deps ident) args)))))
 
 (defn ref-vec
@@ -174,7 +174,7 @@
    (reify Factory
      (-dependencies [_]
        (set idents))
-     (-build [_ _ deps _]
+     (-build [_ deps _]
        (apply f (mapv deps idents) args)))))
 
 (defn ref-map
@@ -184,7 +184,7 @@
    (reify Factory
      (-dependencies [_]
        (set idents))
-     (-build [_ _ deps _]
+     (-build [_ deps _]
        (apply f deps args)))))
 
 (defn ref-form [form]
@@ -194,9 +194,9 @@
            (tree-seq coll? seq)
            (mapcat -dependencies)
            (set)))
-    (-build [_ _ deps register-to-stop]
+    (-build [_ deps register-to-stop]
       (w/postwalk (fn [x]
-                    (-build x ::not-used deps register-to-stop))
+                    (-build x deps register-to-stop))
                   form))))
 
 (extend-protocol Stoppable
@@ -209,10 +209,13 @@
     (.close this)))
 
 (defn- -dependencies-fn [variable]
-  (let [definition (-> variable meta :arglists last first)]
-    (if (map? definition)
-      (md-parser/parse definition)
-      (throw (ex-info "invalid var" {:var variable})))))
+  (->> variable
+       meta
+       :arglists
+       (map first)
+       (filter map?)
+       (mapcat md-parser/parse)
+       (set)))
 
 (defn- allow-defaults [m]
   (reduce-kv (fn [acc k v]
@@ -221,35 +224,37 @@
                  acc))
              {} m))
 
-(defn- -build-fn [variable ident deps register-to-stop]
-  (let [deps (allow-defaults deps)]
-    (if (symbol? ident)
-      (partial variable deps)
-      (doto (variable deps)
-        register-to-stop))))
+(defn- -build-fn [variable deps register-to-stop]
+  (let [arity (->> variable meta :arglists (map count) (reduce max 0) long)
+        deps  (allow-defaults deps)]
+    (case arity
+      0 (throw (ex-info "a" {}))
+      1 (doto (variable deps)
+          register-to-stop)
+      (partial variable deps))))
 
 (extend-protocol Factory
-  nil
-  (-dependencies [_]
-    #{})
-  (-build [_ _ _ _]
-    nil)
-
-  Object
-  (-dependencies [_]
-    #{})
-  (-build [this _ _ _]
-    this)
-
   Var
   (-dependencies [this]
     (if (fn? @this)
       (-dependencies-fn this)
       (-dependencies @this)))
-  (-build [this ident deps register-to-stop]
+  (-build [this deps register-to-stop]
     (if (fn? @this)
-      (-build-fn this ident deps register-to-stop)
-      (-build @this ident deps register-to-stop))))
+      (-build-fn this deps register-to-stop)
+      (-build @this deps register-to-stop)))
+
+  nil
+  (-dependencies [_]
+    #{})
+  (-build [this _ _]
+    this)
+
+  Object
+  (-dependencies [_]
+    #{})
+  (-build [this _ _]
+    this))
 
 (defn join-hooks [& hooks]
   (fn [ident object]

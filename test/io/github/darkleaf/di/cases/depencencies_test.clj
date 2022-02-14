@@ -9,22 +9,22 @@
 ;;   c
 
 (defn root [{log `log
-             a   ::a
-             b   ::b}]
+             a   `a
+             b   `b}]
   (log :start :root)
   (reify di/Stoppable
     (stop [_]
       (log :stop :root))))
 
 (defn a [{log `log
-          c   ::c}]
+          c   `c}]
   (log :start :a)
   (reify di/Stoppable
     (stop [_]
       (log :stop :a))))
 
 (defn b [{log `log
-          c   ::c}]
+          c   `c}]
   (log :start :b)
   (reify di/Stoppable
     (stop [_]
@@ -40,15 +40,15 @@
   (let [log    (atom [])
         to-log (fn [action object]
                  (swap! log conj [action object]))
-        obj    (di/start ::root {`log to-log})]
+        obj    (di/start `root {`log to-log})]
     (di/stop obj)
     (t/is (= [[:start :c]
-              [:start :b]
               [:start :a]
+              [:start :b]
               [:start :root]
 
               [:stop :root]
-              [:stop :a]
               [:stop :b]
+              [:stop :a]
               [:stop :c]]
              @log))))

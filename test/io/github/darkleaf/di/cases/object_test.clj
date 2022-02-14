@@ -3,12 +3,13 @@
    [clojure.test :as t]
    [io.github.darkleaf.di.core :as di]))
 
-;; `{}` means an object has no deps.
+;; Functions with one argument are object constructors.
+;; `{}` means the object has no deps.
 (defn object [{}]
   ::new-object)
 
 (t/deftest start-object-test
-  (with-open [obj (di/start ::object)]
+  (with-open [obj (di/start `object)]
     (t/is (= ::new-object @obj))))
 
 
@@ -19,10 +20,10 @@
 
 (t/deftest stoppable-object-test
   (let [p (promise)]
-    (with-open [obj (di/start ::stoppable-object {`log #(deliver p ::logged)})])
+    (with-open [obj (di/start `stoppable-object {`log #(deliver p ::logged)})])
     (t/is (= ::logged @p)))
   (let [p   (promise)
-        obj (di/start ::stoppable-object {`log #(deliver p ::logged)})]
+        obj (di/start `stoppable-object {`log #(deliver p ::logged)})]
     (di/stop obj)
     (t/is (= ::logged @p))))
 
@@ -34,9 +35,9 @@
 
 (t/deftest auto-closeable-object-test
   (let [p (promise)]
-    (with-open [obj (di/start ::auto-closeable-object {`log #(deliver p ::logged)})])
+    (with-open [obj (di/start `auto-closeable-object {`log #(deliver p ::logged)})])
     (t/is (= ::logged @p)))
   (let [p   (promise)
-        obj (di/start ::auto-closeable-object {`log #(deliver p ::logged)})]
+        obj (di/start `auto-closeable-object {`log #(deliver p ::logged)})]
     (di/stop obj)
     (t/is (= ::logged @p))))

@@ -30,53 +30,32 @@
       (t/is (= [::other-result 1] (s 1))))))
 
 
-;; We can use an object like a service but we can't redefine it.
+;; If we need a service without arguments
+;; we have to explicitly return no-arg fn.
 
-(defn object-fn [{}]
-  (fn service [arg1]
-    [::result arg1]))
+(defn no-arg-service [{}]
+  (fn []
+    ::result))
 
-(t/deftest object-fn-test
-  (with-open [s (di/start ::object-fn)]
-    (t/is (= [::result 1] (@s 1)))
-    (t/is (= [::result 1] (s 1)))))
+(t/deftest no-arg-service-test
+  (with-open [s (di/start `no-arg-service)]
+    (t/is (= ::result (@s)))
+    (t/is (= ::result (s)))))
 
-
-;; As the builder receives only dependencies,
-;; we can use it to build both an object and
-;; a no-args service.
-
-(defn object-as-service [{}]
-  (Math/random))
-
-(t/deftest object-as-service-test
-  (with-open [obj (di/start ::object-as-service)
-              s   (di/start `object-as-service)]
-    (t/is (double? @obj))
-    (t/is (double? (s)))
-    (t/is (identical? @obj @obj))
-    (t/is (not= (s) (s)))
-    (t/is (not= @obj (s)))))
-
-
-;; DI uses last arity to detect dependencies.
+;; DI uses all arities to detect dependencies.
 
 (defn multi-arity-service
-  ([deps] (multi-arity-service deps nil))
-  ([{dep ::dep} arg] [::result dep arg]))
+  ([{a `a, :as deps}]
+   (multi-arity-service deps nil))
+  ([{b `b, :as deps} arg]
+   [::result deps arg]))
 
 (t/deftest multi-arity-service-test
-  (with-open [s (di/start `multi-arity-service {::dep 42})]
-    (t/is (= [::result 42 nil] (s)))
-    (t/is (= [::result 42 1] (s 1)))))
-
-
-(defn var-arg-service [{} & args]
-  [::result args])
-
-(t/deftest var-arg-service-test
-  (with-open [s (di/start `var-arg-service)]
-    (t/is (= [::result [1 2 3 4]] (s 1 2 3 4)))))
+  (with-open [s (di/start `multi-arity-service
+                          {`a 1
+                           `b 2})]
+    (t/is (= [::result {`a 1, `b 2} nil] (s)))
+    (t/is (= [::result {`a 1, `b 2} 1]   (s 1)))))
 
 
 (t/deftest ifn-test
