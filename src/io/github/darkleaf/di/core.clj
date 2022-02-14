@@ -200,6 +200,18 @@
   (stop [this]
     (.close this)))
 
+(defn- -dependencies-fn [variable]
+  (let [definition (-> variable meta :arglists last first)]
+       (if (map? definition)
+         (md-parser/parse definition)
+         (throw (ex-info "invalid var" {:var variable})))))
+
+(defn- -build-fn [variable ident deps register-to-stop]
+  (if (symbol? ident)
+    (partial variable deps)
+    (doto (variable deps)
+      register-to-stop)))
+
 (extend-protocol Factory
   Object
   (-dependencies [_]
@@ -209,15 +221,13 @@
 
   Var
   (-dependencies [this]
-    (let [definition (-> this meta :arglists last first)]
-      (if (map? definition)
-        (md-parser/parse definition)
-        (throw (ex-info "invalid var" {:var this})))))
+    (if (fn? @this)
+      (-dependencies-fn this)
+      (-dependencies @this)))
   (-build [this ident deps register-to-stop]
-    (if (symbol? ident)
-      (partial this deps)
-      (doto (this deps)
-        register-to-stop))))
+    (if (fn? @this)
+      (-build-fn this ident deps register-to-stop)
+      (-build @this ident deps register-to-stop))))
 
 (defn join-hooks [& hooks]
   (fn [ident object]
