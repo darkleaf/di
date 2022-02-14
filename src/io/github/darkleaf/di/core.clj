@@ -1,6 +1,7 @@
 (ns io.github.darkleaf.di.core
   (:refer-clojure :exclude [ref])
   (:require
+   [clojure.walk :as w]
    [io.github.darkleaf.di.impl.map-destructuring-parser :as md-parser])
   (:import
    [java.lang AutoCloseable Exception]
@@ -185,6 +186,18 @@
        (set idents))
      (-build [_ _ deps _]
        (apply f deps args)))))
+
+(defn ref-form [form]
+  (reify Factory
+    (-dependencies [_]
+      (->> form
+           (tree-seq coll? seq)
+           (mapcat -dependencies)
+           (set)))
+    (-build [_ _ deps register-to-stop]
+      (w/postwalk (fn [x]
+                    (-build x ::not-used deps register-to-stop))
+                  form))))
 
 (extend-protocol Stoppable
   nil
