@@ -1,9 +1,7 @@
 (ns io.github.darkleaf.di.cases.var-test
   (:require
    [clojure.test :as t]
-   [io.github.darkleaf.di.core :as di])
-  (:import
-   (clojure.lang ExceptionInfo)))
+   [io.github.darkleaf.di.core :as di]))
 
 ;; A var can contain an implementation of `di/Factory` or have been defined with `defn`.
 
