@@ -1,6 +1,7 @@
 (ns io.github.darkleaf.di.cases.var-test
-  (:require [clojure.test :as t]
-            [io.github.darkleaf.di.core :as di]))
+  (:require
+   [clojure.test :as t]
+   [io.github.darkleaf.di.core :as di]))
 
 (defn fn-in-var [{dep ::dep, :or {dep ::default}}]
   dep)
