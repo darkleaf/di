@@ -191,8 +191,7 @@
            (mapcat -dependencies)
            (set)))
     (-build [_ deps register-to-stop]
-      (w/postwalk (fn [x]
-                    (-build x deps register-to-stop))
+      (w/postwalk #(-build % deps register-to-stop)
                   form))))
 
 (defn- -defn? [variable]
