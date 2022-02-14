@@ -43,12 +43,12 @@
         obj    (di/start ::root {`log to-log})]
     (di/stop obj)
     (t/is (= [[:start :c]
-              [:start :a]
               [:start :b]
+              [:start :a]
               [:start :root]
 
               [:stop :root]
-              [:stop :b]
               [:stop :a]
+              [:stop :b]
               [:stop :c]]
              @log))))

@@ -7,61 +7,61 @@
   (t/are [expected input]
       (t/is (= (quote expected)
                (sut/parse (quote input))))
-    {}
+    #{}
     {}
 
-    {}
+    #{}
     {:as x}
 
-    {}
+    #{}
     {:or {a 1, b 2}}
 
 
-    {:a nil, :b nil}
+    #{:a :b}
     {:keys [a b]}
 
-    {:a :av, :b :bv}
+    #{:a :b}
     {:keys [a b] :or {a :av, b :bv}}
 
-    {::a nil, ::b nil}
+    #{::a ::b}
     {::keys [a b]}
 
-    {::a :av, ::b :bv}
+    #{::a ::b}
     {::keys [a b] :or {a :av, b :bv}}
 
 
-    {a nil, b nil}
+    #{a b}
     {:syms [a b]}
 
-    {a :av, b :bv}
+    #{a b}
     {:syms [a b] :or {a :av, b :bv}}
 
-    {foo/a nil, foo/b nil}
+    #{foo/a foo/b}
     {:foo/syms [a b]}
 
-    {foo/a :av, foo/b :bv}
+    #{foo/a foo/b}
     {:foo/syms [a b] :or {a :av, b :bv}}
 
 
-    {"a" nil, "b" nil}
+    #{"a" "b"}
     {:strs [a b]}
 
-    {"a" :av, "b" :bv}
+    #{"a" "b"}
     {:strs [a b] :or {a :av, b :bv}}
 
 
-    {:a nil, ::b nil}
+    #{:a ::b}
     {a :a, b ::b}
 
-    {:a :av, ::b :bv}
+    #{:a ::b}
     {a :a, b ::b, :or {a :av, b :bv}}
 
 
-    {a nil, foo/b nil}
+    #{a foo/b}
     {a 'a, b 'foo/b}
 
-    {a :av, foo/b :bv}
+    #{a foo/b}
     {a 'a, b 'foo/b, :or {a :av, b :bv}}
 
-    {"a" nil, "b" nil}
+    #{"a" "b"}
     {a "a", b "b"}))

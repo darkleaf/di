@@ -97,21 +97,18 @@
       x#
       (?? ~@next))))
 
-(defn- resolve-ident [{:keys [registry *system]}
-                      ident default]
+(defn- resolve-ident [{:keys [registry *system]} ident]
   (?? (@*system ident)
       (registry ident)
-      (try-requiring-resolve ident)
-      default
-      (throw (ex-info "not-found" {:ident ident}))))
+      (try-requiring-resolve ident)))
 
 (declare instanciate)
 
 (defn- resolve-deps [ctx deps]
-  (reduce-kv (fn [acc ident default]
-               (assoc acc ident (instanciate ctx ident default)))
-             {}
-             deps))
+  (reduce (fn [acc ident]
+            (assoc acc ident (instanciate ctx ident)))
+          {}
+          deps))
 
 (defn- register-to-stop [{:keys [*breadcrumbs]} obj]
   (vswap! *breadcrumbs conj obj))
@@ -119,9 +116,8 @@
 (defn- register-in-system [{:keys [*system]} ident obj]
   (vswap! *system assoc ident obj))
 
-(defn- -instanciate [{:as ctx, :keys [hook]}
-                     ident default]
-  (let [factory (resolve-ident ctx ident default)
+(defn- -instanciate [{:as ctx, :keys [hook]} ident]
+  (let [factory (resolve-ident ctx ident)
         deps    (-dependencies factory)
         deps    (resolve-deps ctx deps)
         obj     (-build factory ident deps #(register-to-stop ctx %))
@@ -129,10 +125,9 @@
     (register-in-system ctx ident obj)
     obj))
 
-(defn- instanciate [{:as ctx, :keys [*breadcrumbs]}
-                    ident default]
+(defn- instanciate [{:as ctx, :keys [*breadcrumbs]} ident]
   (try
-    (-instanciate ctx ident default)
+    (-instanciate ctx ident)
     (catch Exception ex
       (throw (ex-info "can't start"
                       {:type                     ::can't-start
@@ -157,7 +152,7 @@
                   :*breadcrumbs (volatile! '())
                   :registry     registry
                   :hook         hook}
-         obj     (instanciate ctx ident nil)
+         obj     (instanciate ctx ident)
          stop-fn (partial stop-system ctx)]
      (->ObjectWrapper obj stop-fn))))
 
@@ -167,7 +162,7 @@
   ([ident f & args]
    (reify Factory
      (-dependencies [_]
-       {ident nil})
+       #{ident})
      (-build [_ _ deps _]
        (apply f (deps ident) args)))))
 
@@ -177,7 +172,7 @@
   ([idents f & args]
    (reify Factory
      (-dependencies [_]
-       (zipmap idents (repeat nil)))
+       (set idents))
      (-build [_ _ deps _]
        (apply f (mapv deps idents) args)))))
 
@@ -187,7 +182,7 @@
   ([idents f & args]
    (reify Factory
      (-dependencies [_]
-       (zipmap idents (repeat nil)))
+       (set idents))
      (-build [_ _ deps _]
        (apply f deps args)))))
 
@@ -202,20 +197,34 @@
 
 (defn- -dependencies-fn [variable]
   (let [definition (-> variable meta :arglists last first)]
-       (if (map? definition)
-         (md-parser/parse definition)
-         (throw (ex-info "invalid var" {:var variable})))))
+    (if (map? definition)
+      (md-parser/parse definition)
+      (throw (ex-info "invalid var" {:var variable})))))
+
+(defn- allow-defaults [m]
+  (reduce-kv (fn [acc k v]
+               (if (some? v)
+                 (assoc acc k v)
+                 acc))
+             {} m))
 
 (defn- -build-fn [variable ident deps register-to-stop]
-  (if (symbol? ident)
-    (partial variable deps)
-    (doto (variable deps)
-      register-to-stop)))
+  (let [deps (allow-defaults deps)]
+    (if (symbol? ident)
+      (partial variable deps)
+      (doto (variable deps)
+        register-to-stop))))
 
 (extend-protocol Factory
+  nil
+  (-dependencies [_]
+    #{})
+  (-build [_ _ _ _]
+    nil)
+
   Object
   (-dependencies [_]
-    {})
+    #{})
   (-build [this _ _ _]
     this)
 

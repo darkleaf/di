@@ -1,69 +1,62 @@
 (ns io.github.darkleaf.di.impl.map-destructuring-parser)
 
-(defn- parse-keys [k v defaults]
+(defn- parse-keys [k v]
   (when (and (keyword? k)
              (= "keys" (name k))
              (vector? v))
     (reduce
-     (fn [acc binding]
-       (let [ident   (keyword (namespace k)
-                              (name binding))
-             default (get defaults binding)]
-         (assoc acc ident default)))
-     {}
+     (fn [deps binding]
+       (conj deps (keyword (namespace k)
+                           (name binding))))
+     #{}
      v)))
 
-(defn- parse-syms [k v defaults]
+(defn- parse-syms [k v]
   (when (and (keyword? k)
              (= "syms" (name k))
              (vector? v))
     (reduce
-     (fn [acc binding]
-       (let [ident   (symbol (namespace k)
-                             (name binding))
-             default (get defaults binding)]
-         (assoc acc ident default)))
-     {}
+     (fn [deps binding]
+       (conj deps (symbol (namespace k)
+                          (name binding))))
+     #{}
      v)))
 
-(defn- parse-strs [k v defaults]
+(defn- parse-strs [k v]
   (when (and (= :strs k)
              (vector? v))
     (reduce
-     (fn [acc binding]
-       (let [ident   (name binding)
-             default (get defaults binding)]
-         (assoc acc ident default)))
-     {}
+     (fn [deps binding]
+       (conj deps (name binding)))
+     #{}
      v)))
 
-(defn- parse-named-key [k v defaults]
+(defn- parse-named-key [k v]
   (when (and (simple-symbol? k)
              (keyword? v))
-    {v (get defaults k)}))
+    #{v}))
 
-(defn- parse-named-sym [k v defaults]
+(defn- parse-named-sym [k v]
   (when (and (simple-symbol? k)
              (seq? v)
              (= 'quote (first v))
              (symbol? (second v)))
-    {(second v) (get defaults k)}))
+    #{(second v)}))
 
-(defn- parse-named-str [k v defaults]
+(defn- parse-named-str [k v]
   (when (and (simple-symbol? k)
              (string? v))
-    {v (get defaults k)}))
+    #{v}))
 
 (defn parse [m]
-  (let [defaults (:or m)
-        m        (dissoc m :or :as)]
-    (reduce-kv (fn [acc k v]
-                 (merge acc
-                        (parse-keys k v defaults)
-                        (parse-syms k v defaults)
-                        (parse-strs k v defaults)
-                        (parse-named-key k v defaults)
-                        (parse-named-sym k v defaults)
-                        (parse-named-str k v defaults)))
-               {}
+  (let [m (dissoc m :or :as)]
+    (reduce-kv (fn [deps k v]
+                 (-> deps
+                     (into (parse-keys k v))
+                     (into (parse-syms k v))
+                     (into (parse-strs k v))
+                     (into (parse-named-key k v))
+                     (into (parse-named-sym k v))
+                     (into (parse-named-str k v))))
+               #{}
                m)))

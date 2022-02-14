@@ -22,7 +22,7 @@
                                        ::b      2
                                        ::c      3}))]
       (t/is (= [1 2 3] @obj)))
-    (t/is (= [::object ::a ::b ::c]
+    (t/is (= [::object ::b ::a ::c]
              @log))))
 
 
