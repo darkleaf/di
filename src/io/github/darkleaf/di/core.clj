@@ -118,23 +118,28 @@
   (vswap! *system assoc ident obj))
 
 (defn- -instantiate [{:as ctx, :keys [hook]} ident]
-  (let [factory (resolve-ident ctx ident)
-        deps    (-dependencies factory)
-        deps    (resolve-deps ctx deps)
-        obj     (-build factory deps #(register-to-stop ctx %))
-        obj     (hook ident obj)]
-    (register-in-system ctx ident obj)
-    obj))
+  (try
+    (let [factory (resolve-ident ctx ident)
+          deps    (-dependencies factory)
+          deps    (resolve-deps ctx deps)
+          obj     (-build factory deps #(register-to-stop ctx %))
+          obj     (hook ident obj)]
+      (register-in-system ctx ident obj)
+      obj)
+    (finally)))
 
-(defn- instantiate [{:as ctx, :keys [*breadcrumbs]} ident]
+(defn- instantiate [{:as ctx, :keys [*breadcrumbs starting-ident]} ident]
   (try
     (-instantiate ctx ident)
-    (catch Exception ex
-      (throw (ex-info "can't start"
-                      {:type                     ::can't-start
-                       :ident                    ident
-                       :stack-of-started-objects @*breadcrumbs}
-                      ex)))))
+    (catch Throwable ex
+      (if (= ::can't-start (-> ex ex-data :type))
+        (throw ex)
+        (throw (ex-info "can't start"
+                        {:type                     ::can't-start
+                         :starting-ident           starting-ident
+                         :failed-ident             ident
+                         :stack-of-started-objects @*breadcrumbs}
+                        ex))))))
 
 (defn- stop-system [{:keys [*breadcrumbs]}]
   (doseq [dep @*breadcrumbs]
@@ -149,10 +154,11 @@
   ([ident registry]
    (start ident registry null-hook))
   ([ident registry hook]
-   (let [ctx     {:*system      (volatile! {})
-                  :*breadcrumbs (volatile! '())
-                  :registry     registry
-                  :hook         hook}
+   (let [ctx     {:starting-ident ident
+                  :*system        (volatile! {})
+                  :*breadcrumbs   (volatile! '())
+                  :registry       registry
+                  :hook           hook}
          obj     (instantiate ctx ident)
          stop-fn (partial stop-system ctx)]
      (->ObjectWrapper obj stop-fn))))
