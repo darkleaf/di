@@ -209,9 +209,9 @@
              {} m))
 
 (defn- -build-fn [variable deps register-to-stop]
-  (let [arity (->> variable meta :arglists (map count) (reduce max 0) long)
-        deps  (allow-defaults deps)]
-    (case arity
+  (let [max-arity (->> variable meta :arglists (map count) (reduce max 0) long)
+        deps      (allow-defaults deps)]
+    (case max-arity
       0 (doto (variable)
           register-to-stop)
       1 (doto (variable deps)
