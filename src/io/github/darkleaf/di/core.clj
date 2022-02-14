@@ -84,9 +84,11 @@
 
 (alter-meta! #'->ObjectWrapper assoc :private true)
 
-(defn- requiring-resolve* [ident]
+(defn- try-requiring-resolve [ident]
   (when (qualified-symbol? ident)
-    (requiring-resolve ident)))
+    (try
+      (requiring-resolve ident)
+      (catch FileNotFoundException _ nil))))
 
 (defmacro ^:private ??
   ([] nil)
@@ -99,7 +101,7 @@
 (defn- resolve-ident [{:keys [registry *system]} ident]
   (?? (@*system ident)
       (registry ident)
-      (requiring-resolve* ident)))
+      (try-requiring-resolve ident)))
 
 (declare instanciate)
 
