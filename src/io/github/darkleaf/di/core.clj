@@ -167,16 +167,6 @@
      (-build [_ deps _]
        (apply f (deps ident) args)))))
 
-(defn ref-vec
-  ([idents]
-   (ref-vec idents identity))
-  ([idents f & args]
-   (reify Factory
-     (-dependencies [_]
-       (set idents))
-     (-build [_ deps _]
-       (apply f (mapv deps idents) args)))))
-
 (defn ref-map
   ([idents]
    (ref-map idents identity))
@@ -199,14 +189,8 @@
                     (-build x deps register-to-stop))
                   form))))
 
-(extend-protocol Stoppable
-  nil
-  (stop [_])
-  Object
-  (stop [_])
-  AutoCloseable
-  (stop [this]
-    (.close this)))
+(defn- -defn? [variable]
+  (-> variable meta :arglists seq boolean))
 
 (defn- -dependencies-fn [variable]
   (->> variable
@@ -236,11 +220,11 @@
 (extend-protocol Factory
   Var
   (-dependencies [this]
-    (if (fn? @this)
+    (if (-defn? this)
       (-dependencies-fn this)
       (-dependencies @this)))
   (-build [this deps register-to-stop]
-    (if (fn? @this)
+    (if (-defn? this)
       (-build-fn this deps register-to-stop)
       (-build @this deps register-to-stop)))
 
@@ -255,6 +239,15 @@
     #{})
   (-build [this _ _]
     this))
+
+(extend-protocol Stoppable
+  nil
+  (stop [_])
+  Object
+  (stop [_])
+  AutoCloseable
+  (stop [this]
+    (.close this)))
 
 (defn join-hooks [& hooks]
   (fn [ident object]

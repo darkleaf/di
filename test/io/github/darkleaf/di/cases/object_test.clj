@@ -3,14 +3,10 @@
    [clojure.test :as t]
    [io.github.darkleaf.di.core :as di]))
 
-;; Functions with one argument are object constructors.
-;; `{}` means the object has no deps.
-(defn object [{}]
-  ::new-object)
-
-(t/deftest start-object-test
-  (with-open [obj (di/start `object)]
-    (t/is (= ::new-object @obj))))
+(defn- logging []
+  (let [p   (promise)
+        log #(deliver p ::logged)]
+    [p log]))
 
 
 (defn stoppable-object [{log `log}]
@@ -19,13 +15,15 @@
       (log))))
 
 (t/deftest stoppable-object-test
-  (let [p (promise)]
-    (with-open [obj (di/start `stoppable-object {`log #(deliver p ::logged)})])
-    (t/is (= ::logged @p)))
-  (let [p   (promise)
-        obj (di/start `stoppable-object {`log #(deliver p ::logged)})]
-    (di/stop obj)
-    (t/is (= ::logged @p))))
+  (t/testing `di/stop
+    (let [[p log] (logging)
+          obj     (di/start `stoppable-object {`log log})]
+      (di/stop obj)
+      (t/is (= ::logged @p))))
+  (t/testing `with-open
+    (let [[p log] (logging)]
+      (with-open [obj (di/start `stoppable-object {`log log})])
+      (t/is (= ::logged @p)))))
 
 
 (defn auto-closeable-object [{log `log}]
@@ -34,10 +32,7 @@
       (log))))
 
 (t/deftest auto-closeable-object-test
-  (let [p (promise)]
-    (with-open [obj (di/start `auto-closeable-object {`log #(deliver p ::logged)})])
-    (t/is (= ::logged @p)))
-  (let [p   (promise)
-        obj (di/start `auto-closeable-object {`log #(deliver p ::logged)})]
+  (let [[p log] (logging)
+        obj     (di/start `auto-closeable-object {`log log})]
     (di/stop obj)
     (t/is (= ::logged @p))))

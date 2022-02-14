@@ -1,4 +1,4 @@
-(ns io.github.darkleaf.di.impl.map-desctructuring-parser-test
+(ns io.github.darkleaf.di.impl.map-destructuring-parser-test
   (:require
    [io.github.darkleaf.di.impl.map-destructuring-parser :as sut]
    [clojure.test :as t]))
