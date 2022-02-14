@@ -36,14 +36,15 @@
 
 
 (t/deftest ref-form-test
-  (with-open [obj (di/start `object
-                            {`object (di/ref-form {:a (di/ref `a)
-                                                   :b [(di/ref `b)]
-                                                   :c #{1 (di/ref `c)}})
-                             `a 1
-                             `b 2
-                             `c 3})]
-    (t/is (= {:a 1
-              :b [2]
-              :c #{1 3}}
-             @obj))))
+  (let [route-data   (di/ref-form
+                      [["/"     {:get {:handler (di/ref `root-handler)}}]
+                       ["/news" {:get {:handler (di/ref `news-handler)}}]])
+        root-handler (fn [req])
+        news-handler (fn [req])]
+    (with-open [obj (di/start `route-data
+                              {`route-data   route-data
+                               `root-handler root-handler
+                               `news-handler news-handler})]
+      (t/is (= [["/"     {:get {:handler root-handler}}]
+                ["/news" {:get {:handler news-handler}}]]
+               @obj)))))
