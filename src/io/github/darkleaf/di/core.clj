@@ -174,6 +174,7 @@
        (apply f (deps ident) args)))))
 
 (defn ref-map
+  "Plays well with `update-keys`"
   ([idents]
    (ref-map idents identity))
   ([idents f & args]
