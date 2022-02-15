@@ -183,7 +183,7 @@
      (-build [_ deps _]
        (apply f deps args)))))
 
-(defn ref-form [form]
+(defn template [form]
   (reify Factory
     (-dependencies [_]
       (->> form
