@@ -28,7 +28,7 @@
     obj)
   Factory
   (-dependencies [_]
-    {})
+    #{})
   (-build [_ _ _]
     obj)
   IFn
