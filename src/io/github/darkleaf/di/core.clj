@@ -123,7 +123,8 @@
 (defn- check-deps! [key declared resolved]
   (if-some [mkeys (seq (missing-deps declared resolved))]
     (throw (ex-info (str "Missing dependencies for " key)
-                    {:missing-keys mkeys}))))
+                    {:type         ::missing-dependencies
+                     :missing-keys mkeys}))))
 
 (defn- register-to-stop [{:keys [*breadcrumbs]} obj]
   (vswap! *breadcrumbs conj obj))
@@ -145,10 +146,10 @@
   (try
     (-instantiate ctx key)
     (catch Throwable ex
-      (if (= ::can't-start (-> ex ex-data :type))
+      (if (= ::start-threw-exception (-> ex ex-data :type))
         (throw ex)
         (throw (ex-info (str "Error on key " key " when starting " starting-key)
-                        {:type                     ::can't-start
+                        {:type                     ::start-threw-exception
                          :starting-key             starting-key
                          :failed-key               key
                          :stack-of-started-objects @*breadcrumbs}
