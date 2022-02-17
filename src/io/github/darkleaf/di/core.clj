@@ -118,15 +118,13 @@
   (vswap! *system assoc ident obj))
 
 (defn- -instantiate [{:as ctx, :keys [hook]} ident]
-  (try
-    (let [factory (resolve-ident ctx ident)
-          deps    (-dependencies factory)
-          deps    (resolve-deps ctx deps)
-          obj     (-build factory deps #(register-to-stop ctx %))
-          obj     (hook ident obj)]
-      (register-in-system ctx ident obj)
-      obj)
-    (finally)))
+  (let [factory (resolve-ident ctx ident)
+        deps    (-dependencies factory)
+        deps    (resolve-deps ctx deps)
+        obj     (-build factory deps #(register-to-stop ctx %))
+        obj     (hook ident obj)]
+    (register-in-system ctx ident obj)
+    obj))
 
 (defn- instantiate [{:as ctx, :keys [*breadcrumbs starting-ident]} ident]
   (try
