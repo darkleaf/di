@@ -98,3 +98,22 @@
     (t/is (= [::result {`a :a, `b :b} :a1   :a2]   (s)))
     (t/is (= [::result {`a :a, `b :b} :arg1 :a2]   (s :arg1)))
     (t/is (= [::result {`a :a, `b :b} :arg1 :arg2] (s :arg1 :arg2)))))
+
+
+(defn optional-deps [{port "PORT", :or {port "8080"}}]
+  [::web-server port])
+
+(t/deftest optional-deps-test
+  (with-open [obj (di/start `optional-deps)]
+    (t/is (= [::web-server "8080"] @obj)))
+  (with-open [obj (di/start `optional-deps {"PORT" "9090"})]
+    (t/is (= [::web-server "9090"] @obj))))
+
+
+(defn required-deps [{port "PORT"}]
+  [::web-server port])
+
+(t/deftest required-deps-test
+  (t/is (thrown? Throwable (di/start `required-deps)))
+  (with-open [obj (di/start `required-deps {"PORT" "8080"})]
+    (t/is (= [::web-server "8080"] @obj))))

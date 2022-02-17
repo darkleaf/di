@@ -16,7 +16,8 @@
 
 (defprotocol Factory
   :extend-via-metadata true
-  (-dependencies [this])
+  (-dependencies [this]
+    "Returns a map of dependency ident and `required?` flag")
   (-build [this deps register-to-stop]))
 
 (deftype ObjectWrapper [obj stop-fn]
@@ -28,7 +29,7 @@
     obj)
   Factory
   (-dependencies [_]
-    #{})
+    nil)
   (-build [_ _ _]
     obj)
   IFn
@@ -106,10 +107,23 @@
 (declare instantiate)
 
 (defn- resolve-deps [ctx deps]
-  (reduce (fn [acc ident]
-            (assoc acc ident (instantiate ctx ident)))
-          {}
-          deps))
+  (reduce-kv (fn [acc ident _]
+               (assoc acc ident (instantiate ctx ident)))
+             {}
+             deps))
+
+(defn- missing-deps [declared resolved]
+  (reduce-kv (fn [acc ident required?]
+               (if (and required? (nil? (resolved ident)))
+                 (conj acc ident)
+                 acc))
+             #{}
+             declared))
+
+(defn- check-deps! [ident declared resolved]
+  (if-some [idents (seq (missing-deps declared resolved))]
+    (throw (ex-info (str "Missing dependencies for " ident)
+                    {:missing-idents idents}))))
 
 (defn- register-to-stop [{:keys [*breadcrumbs]} obj]
   (vswap! *breadcrumbs conj obj))
@@ -118,11 +132,12 @@
   (vswap! *system assoc ident obj))
 
 (defn- -instantiate [{:as ctx, :keys [hook]} ident]
-  (let [factory (resolve-ident ctx ident)
-        deps    (-dependencies factory)
-        deps    (resolve-deps ctx deps)
-        obj     (-build factory deps #(register-to-stop ctx %))
-        obj     (hook ident obj)]
+  (let [factory       (resolve-ident ctx ident)
+        declared-deps (-dependencies factory)
+        resolved-deps (resolve-deps ctx declared-deps)
+        _             (check-deps! ident declared-deps resolved-deps)
+        obj           (-build factory resolved-deps #(register-to-stop ctx %))
+        obj           (hook ident obj)]
     (register-in-system ctx ident obj)
     obj))
 
@@ -167,7 +182,7 @@
   ([ident f & args]
    (reify Factory
      (-dependencies [_]
-       #{ident})
+       {ident true})
      (-build [_ deps _]
        (apply f (deps ident) args)))))
 
@@ -178,7 +193,7 @@
   ([idents f & args]
    (reify Factory
      (-dependencies [_]
-       (set idents))
+       (zipmap idents (repeat true)))
      (-build [_ deps _]
        (apply f deps args)))))
 
@@ -187,8 +202,8 @@
     (-dependencies [_]
       (->> form
            (tree-seq coll? seq)
-           (mapcat -dependencies)
-           (set)))
+           (map -dependencies)
+           (reduce md-parser/merge-deps)))
     (-build [_ deps register-to-stop]
       (w/postwalk #(-build % deps register-to-stop)
                   form))))
@@ -202,8 +217,8 @@
        :arglists
        (map first)
        (filter map?)
-       (mapcat md-parser/parse)
-       (set)))
+       (map md-parser/parse)
+       (reduce md-parser/merge-deps)))
 
 (defn- allow-defaults [m]
   (reduce-kv (fn [acc k v]
@@ -234,16 +249,12 @@
       (-build @this deps register-to-stop)))
 
   nil
-  (-dependencies [_]
-    #{})
-  (-build [this _ _]
-    this)
+  (-dependencies [_] nil)
+  (-build [this _ _] this)
 
   Object
-  (-dependencies [_]
-    #{})
-  (-build [this _ _]
-    this))
+  (-dependencies [_] nil)
+  (-build [this _ _] this))
 
 (extend-protocol Stoppable
   nil
