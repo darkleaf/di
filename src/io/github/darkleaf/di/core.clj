@@ -147,7 +147,7 @@
     (catch Throwable ex
       (if (= ::can't-start (-> ex ex-data :type))
         (throw ex)
-        (throw (ex-info "can't start"
+        (throw (ex-info (str "Error on key " key " when starting " starting-key)
                         {:type                     ::can't-start
                          :starting-key             starting-key
                          :failed-key               key
