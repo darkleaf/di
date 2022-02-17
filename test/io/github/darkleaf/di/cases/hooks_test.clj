@@ -5,19 +5,19 @@
 
 (t/deftest join-hooks-test
   (let [obj  []
-        a    (fn [ident obj] (conj obj ::a))
-        b    (fn [ident obj] (conj obj ::b))
+        a    (fn [key obj] (conj obj ::a))
+        b    (fn [key obj] (conj obj ::b))
         hook (di/join-hooks a b)]
     (t/is (= [::a ::b] (hook ::obj obj)))))
 
 
 (defn logging []
   (let [log  (atom [])
-        hook (fn [ident object]
+        hook (fn [key object]
                (if (fn? object)
                  (fn [& args]
                    (let [result (apply object args)]
-                     (swap! log conj [ident args result])
+                     (swap! log conj [key args result])
                      result))
                  object))]
     [log hook]))

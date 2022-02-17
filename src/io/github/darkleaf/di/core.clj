@@ -1,5 +1,5 @@
 (ns io.github.darkleaf.di.core
-  (:refer-clojure :exclude [ref])
+  (:refer-clojure :exclude [ref key])
   (:require
    [clojure.walk :as w]
    [io.github.darkleaf.di.impl.map-destructuring-parser :as md-parser])
@@ -17,7 +17,7 @@
 (defprotocol Factory
   :extend-via-metadata true
   (-dependencies [this]
-    "Returns a map of dependency ident and `required?` flag")
+    "Returns a map of dependency key and `required?` flag")
   (-build [this deps register-to-stop]))
 
 (deftype ObjectWrapper [obj stop-fn]
@@ -85,10 +85,10 @@
 
 (alter-meta! #'->ObjectWrapper assoc :private true)
 
-(defn- try-requiring-resolve [ident]
-  (when (qualified-symbol? ident)
+(defn- try-requiring-resolve [key]
+  (when (qualified-symbol? key)
     (try
-      (requiring-resolve ident)
+      (requiring-resolve key)
       (catch FileNotFoundException _ nil))))
 
 (defmacro ^:private ??
@@ -99,58 +99,58 @@
       x#
       (?? ~@next))))
 
-(defn- resolve-ident [{:keys [registry *system]} ident]
-  (?? (@*system ident)
-      (registry ident)
-      (try-requiring-resolve ident)))
+(defn- resolve-factory [{:keys [registry *system]} key]
+  (?? (@*system key)
+      (registry key)
+      (try-requiring-resolve key)))
 
 (declare instantiate)
 
 (defn- resolve-deps [ctx deps]
-  (reduce-kv (fn [acc ident _]
-               (assoc acc ident (instantiate ctx ident)))
+  (reduce-kv (fn [acc key required?]
+               (assoc acc key (instantiate ctx key)))
              {}
              deps))
 
 (defn- missing-deps [declared resolved]
-  (reduce-kv (fn [acc ident required?]
-               (if (and required? (nil? (resolved ident)))
-                 (conj acc ident)
+  (reduce-kv (fn [acc key required?]
+               (if (and required? (-> key resolved nil?))
+                 (conj acc key)
                  acc))
              #{}
              declared))
 
-(defn- check-deps! [ident declared resolved]
-  (if-some [idents (seq (missing-deps declared resolved))]
-    (throw (ex-info (str "Missing dependencies for " ident)
-                    {:missing-idents idents}))))
+(defn- check-deps! [key declared resolved]
+  (if-some [mkeys (seq (missing-deps declared resolved))]
+    (throw (ex-info (str "Missing dependencies for " key)
+                    {:missing-keys mkeys}))))
 
 (defn- register-to-stop [{:keys [*breadcrumbs]} obj]
   (vswap! *breadcrumbs conj obj))
 
-(defn- register-in-system [{:keys [*system]} ident obj]
-  (vswap! *system assoc ident obj))
+(defn- register-in-system [{:keys [*system]} key obj]
+  (vswap! *system assoc key obj))
 
-(defn- -instantiate [{:as ctx, :keys [hook]} ident]
-  (let [factory       (resolve-ident ctx ident)
+(defn- -instantiate [{:as ctx, :keys [hook]} key]
+  (let [factory       (resolve-factory ctx key)
         declared-deps (-dependencies factory)
         resolved-deps (resolve-deps ctx declared-deps)
-        _             (check-deps! ident declared-deps resolved-deps)
+        _             (check-deps! key declared-deps resolved-deps)
         obj           (-build factory resolved-deps #(register-to-stop ctx %))
-        obj           (hook ident obj)]
-    (register-in-system ctx ident obj)
+        obj           (hook key obj)]
+    (register-in-system ctx key obj)
     obj))
 
-(defn- instantiate [{:as ctx, :keys [*breadcrumbs starting-ident]} ident]
+(defn- instantiate [{:as ctx, :keys [*breadcrumbs starting-key]} key]
   (try
-    (-instantiate ctx ident)
+    (-instantiate ctx key)
     (catch Throwable ex
       (if (= ::can't-start (-> ex ex-data :type))
         (throw ex)
         (throw (ex-info "can't start"
                         {:type                     ::can't-start
-                         :starting-ident           starting-ident
-                         :failed-ident             ident
+                         :starting-key             starting-key
+                         :failed-key               key
                          :stack-of-started-objects @*breadcrumbs}
                         ex))))))
 
@@ -158,42 +158,42 @@
   (doseq [dep @*breadcrumbs]
     (stop dep)))
 
-(defn- null-hook [ident object]
+(defn- null-hook [key object]
   object)
 
 (defn ^ObjectWrapper start
-  ([ident]
-   (start ident {}))
-  ([ident registry]
-   (start ident registry null-hook))
-  ([ident registry hook]
-   (let [ctx     {:starting-ident ident
-                  :*system        (volatile! {})
-                  :*breadcrumbs   (volatile! '())
-                  :registry       registry
-                  :hook           hook}
-         obj     (instantiate ctx ident)
+  ([key]
+   (start key {}))
+  ([key registry]
+   (start key registry null-hook))
+  ([key registry hook]
+   (let [ctx     {:starting-key key
+                  :*system      (volatile! {})
+                  :*breadcrumbs (volatile! '())
+                  :registry     registry
+                  :hook         hook}
+         obj     (instantiate ctx key)
          stop-fn (partial stop-system ctx)]
      (->ObjectWrapper obj stop-fn))))
 
 (defn ref
-  ([ident]
-   (ref ident identity))
-  ([ident f & args]
+  ([key]
+   (ref key identity))
+  ([key f & args]
    (reify Factory
      (-dependencies [_]
-       {ident true})
+       {key true})
      (-build [_ deps _]
-       (apply f (deps ident) args)))))
+       (apply f (deps key) args)))))
 
 (defn ref-map
   "Plays well with `update-keys`"
-  ([idents]
-   (ref-map idents identity))
-  ([idents f & args]
+  ([keys]
+   (ref-map keys identity))
+  ([keys f & args]
    (reify Factory
      (-dependencies [_]
-       (zipmap idents (repeat true)))
+       (zipmap keys (repeat true)))
      (-build [_ deps _]
        (apply f deps args)))))
 
@@ -266,7 +266,7 @@
     (.close this)))
 
 (defn join-hooks [& hooks]
-  (fn [ident object]
-    (reduce (fn [object hook] (hook ident object))
+  (fn [key object]
+    (reduce (fn [object hook] (hook key object))
             object
             hooks)))

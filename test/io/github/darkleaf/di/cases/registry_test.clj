@@ -4,17 +4,17 @@
    [io.github.darkleaf.di.core :as di]))
 
 ;; Regsitry is the second argument of `di/start` function.
-;; It should be `ifn?` maps an ident to an instance of `di/Factory`.
-;; Ident can be a keyword, a symbol, or a string.
+;; It should be `ifn?` that maps a key to an instance of `di/Factory`.
+;; A key can be a keyword, a symbol, or a string.
 
 ;; In most cases the registry is a map but sometimes it's useful to pass a function.
 (t/deftest registry-logger-test
   (let [registry         {`object (di/ref `a)
                           `a      ::value}
         log              (atom [])
-        logging-registry (fn [ident]
-                           (swap! log conj ident)
-                           (registry ident))]
+        logging-registry (fn [key]
+                           (swap! log conj key)
+                           (registry key))]
     (with-open [obj (di/start `object logging-registry)]
       (t/is (= ::value @obj)))
     (t/is (= [`object `a]
