@@ -200,17 +200,6 @@
      (-build [_ deps _]
        (apply f (deps key) args)))))
 
-(defn ref-map
-  "Plays well with `update-keys`"
-  ([keys]
-   (ref-map keys identity))
-  ([keys f & args]
-   (reify Factory
-     (-dependencies [_]
-       (zipmap keys (repeat true)))
-     (-build [_ deps _]
-       (apply f deps args)))))
-
 (defn template [form]
   (reify Factory
     (-dependencies [_]

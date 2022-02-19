@@ -16,20 +16,3 @@
                              ::cfg   {:a {:b {:c ::value}}}})]
     (t/is (= ::value @obj))))
 
-
-(t/deftest ref-map-test
-  (with-open [obj (di/start `object
-                            {`object (di/ref-map #{`a ::b "c"})
-                             `a      1
-                             ::b     2
-                             "c"     3})]
-    (t/is (= {`a 1, ::b 2, "c" 3} @obj))))
-
-
-(t/deftest ref-map-n-test
-  (with-open [obj (di/start `object
-                            {`object (di/ref-map #{`a ::b "c"} assoc :d 4)
-                             `a     1
-                             ::b    2
-                             "c"    3})]
-    (t/is (= {`a 1, ::b 2, "c" 3, :d 4} @obj))))
