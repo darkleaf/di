@@ -59,7 +59,7 @@
           required? (not (contains? defaults k))]
       {key required?})))
 
-(defn deps
+(defn dependencies
   "Parses destructuring map into map of dependency key and `required?` flag"
   [m]
   (let [defaults (:or m)

@@ -19,7 +19,7 @@
 (defn- or-fn [a b]
   (or a b))
 
-(defn merge-deps [& deps]
+(defn merge-dependencies [& deps]
   (apply merge-with or-fn deps))
 
 (defprotocol Stoppable
@@ -30,7 +30,7 @@
   :extend-via-metadata true
   (-dependencies [this]
     "Returns a map of dependency key and `required?` flag")
-  (-build [this deps register-to-stop]))
+  (-build [this dependencies register-to-stop]))
 
 (deftype ObjectWrapper [obj stop-fn]
   AutoCloseable
@@ -217,7 +217,7 @@
       (->> form
            (tree-seq coll? seq)
            (map -dependencies)
-           (reduce merge-deps)))
+           (reduce merge-dependencies)))
     (-build [_ deps register-to-stop]
       (w/postwalk #(-build % deps register-to-stop)
                   form))))
@@ -231,8 +231,8 @@
        :arglists
        (map first)
        (filter map?)
-       (map map/deps)
-       (reduce merge-deps)))
+       (map map/dependencies)
+       (reduce merge-dependencies)))
 
 (defn- allow-defaults [m]
   (reduce-kv (fn [acc k v]

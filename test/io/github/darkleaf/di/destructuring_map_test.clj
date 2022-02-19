@@ -6,7 +6,7 @@
 (t/deftest deps-test
   (t/are [expected input]
       (t/is (= (quote expected)
-               (sut/deps (quote input))))
+               (sut/dependencies (quote input))))
     {}
     {}
 

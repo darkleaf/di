@@ -3,9 +3,9 @@
    [io.github.darkleaf.di.core :as sut]
    [clojure.test :as t]))
 
-(t/deftest merge-deps-test
+(t/deftest merge-dependencies-test
   (t/are [expected input]
-      (t/is (= expected (apply sut/merge-deps input)))
+      (t/is (= expected (apply sut/merge-dependencies input)))
     nil
     []
 
