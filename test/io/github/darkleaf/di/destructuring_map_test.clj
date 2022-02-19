@@ -1,12 +1,12 @@
-(ns io.github.darkleaf.di.impl.map-destructuring-parser-test
+(ns io.github.darkleaf.di.destructuring-map-test
   (:require
-   [io.github.darkleaf.di.impl.map-destructuring-parser :as sut]
+   [io.github.darkleaf.di.destructuring-map :as sut]
    [clojure.test :as t]))
 
-(t/deftest parse-test
+(t/deftest deps-test
   (t/are [expected input]
       (t/is (= (quote expected)
-               (sut/parse (quote input))))
+               (sut/deps (quote input))))
     {}
     {}
 

@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [ref key])
   (:require
    [clojure.walk :as w]
-   [io.github.darkleaf.di.impl.map-destructuring-parser :as md-parser])
+   [io.github.darkleaf.di.destructuring-map :as map])
   (:import
    [java.lang AutoCloseable Exception]
    [java.io FileNotFoundException]
@@ -231,7 +231,7 @@
        :arglists
        (map first)
        (filter map?)
-       (map md-parser/parse)
+       (map map/deps)
        (reduce merge-deps)))
 
 (defn- allow-defaults [m]
