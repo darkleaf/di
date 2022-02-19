@@ -10,6 +10,18 @@
 
 (set! *warn-on-reflection* true)
 
+(defn join-hooks [& hooks]
+  (fn [key object]
+    (reduce (fn [object hook] (hook key object))
+            object
+            hooks)))
+
+(defn- or-fn [a b]
+  (or a b))
+
+(defn merge-deps [& deps]
+  (apply merge-with or-fn deps))
+
 (defprotocol Stoppable
   :extend-via-metadata true
   (stop [this]))
@@ -205,7 +217,7 @@
       (->> form
            (tree-seq coll? seq)
            (map -dependencies)
-           (reduce md-parser/merge-deps)))
+           (reduce merge-deps)))
     (-build [_ deps register-to-stop]
       (w/postwalk #(-build % deps register-to-stop)
                   form))))
@@ -220,7 +232,7 @@
        (map first)
        (filter map?)
        (map md-parser/parse)
-       (reduce md-parser/merge-deps)))
+       (reduce merge-deps)))
 
 (defn- allow-defaults [m]
   (reduce-kv (fn [acc k v]
@@ -266,9 +278,3 @@
   AutoCloseable
   (stop [this]
     (.close this)))
-
-(defn join-hooks [& hooks]
-  (fn [key object]
-    (reduce (fn [object hook] (hook key object))
-            object
-            hooks)))

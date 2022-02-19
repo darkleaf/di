@@ -1,11 +1,6 @@
 (ns io.github.darkleaf.di.impl.map-destructuring-parser
   (:refer-clojure :exclude [key]))
 
-(defn- or-fn [a b]
-  (or a b))
-
-(def merge-deps (partial merge-with or-fn))
-
 (defn- parse-keys [k v defaults]
   (when (and (keyword? k)
              (= "keys" (name k))
