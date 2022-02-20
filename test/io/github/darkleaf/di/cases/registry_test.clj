@@ -3,22 +3,10 @@
    [clojure.test :as t]
    [io.github.darkleaf.di.core :as di]))
 
-;; Regsitry is the second argument of `di/start` function.
-;; It should be `ifn?` that maps a key to an instance of `di/Factory`.
+;; Registry is the second argument of `di/start` function.
+;; It should be a map of depencdency key and an instance of `di/Factory`.
 ;; A key can be a keyword, a symbol, or a string.
 
-;; In most cases the registry is a map but sometimes it's useful to pass a function.
-(t/deftest registry-logger-test
-  (let [registry         {`object (di/ref `a)
-                          `a      ::value}
-        log              (atom [])
-        logging-registry (fn [key]
-                           (swap! log conj key)
-                           (registry key))]
-    (with-open [obj (di/start `object logging-registry)]
-      (t/is (= ::value @obj)))
-    (t/is (= [`object `a]
-             @log))))
 
 ;; Registry can be used for configuration.
 (defn use-global-config [{jdbc-url "JDBC_URL"
