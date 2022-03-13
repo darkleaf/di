@@ -54,3 +54,7 @@
     (t/is (= 20 (s 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20)))
     (t/is (= 21 (s 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21)))
     (t/is (= 2 (apply s 1 [2])))))
+
+(t/deftest pr-test
+  (t/is (= "#io.github.darkleaf.di.core/started 42"
+           (pr-str (di/start `foo {`foo 42})))))

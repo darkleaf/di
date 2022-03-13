@@ -16,3 +16,9 @@
                              ::cfg   {:a {:b {:c ::value}}}})]
     (t/is (= ::value @obj))))
 
+
+(t/deftest pr-test
+  (t/is (= "#io.github.darkleaf.di.core/ref io.github.darkleaf.di.cases.ref-test/object"
+           (pr-str (di/ref `object))))
+  (t/is (= "#io.github.darkleaf.di.core/ref [io.github.darkleaf.di.cases.ref-test/object :key]"
+           (pr-str (di/ref `object :key)))))

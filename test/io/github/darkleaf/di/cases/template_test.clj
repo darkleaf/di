@@ -16,3 +16,7 @@
       (t/is (= [["/"     {:get {:handler root-handler}}]
                 ["/news" {:get {:handler news-handler}}]]
                @obj)))))
+
+(t/deftest pr-test
+  (t/is (= "#io.github.darkleaf.di.core/template [:a :b :c]"
+           (pr-str (di/template [:a :b :c])))))
