@@ -55,23 +55,14 @@
 
 (defn- resolve-deps [ctx deps]
   (reduce-kv (fn [acc key required?]
-               (assoc acc key (instantiate ctx key)))
+               (if-some [obj (instantiate ctx key)]
+                 (assoc acc key obj)
+                 (when required?
+                   (throw (ex-info (str "Missing dependency " key)
+                                   {:type ::missing-dependency
+                                    :key  key})))))
              {}
              deps))
-
-(defn- missing-deps [declared resolved]
-  (reduce-kv (fn [acc key required?]
-               (if (and required? (-> key resolved nil?))
-                 (conj acc key)
-                 acc))
-             #{}
-             declared))
-
-(defn- check-deps! [key declared resolved]
-  (if-some [mkeys (seq (missing-deps declared resolved))]
-    (throw (ex-info (str "Missing dependencies for " key)
-                    {:type         ::missing-dependencies
-                     :missing-keys mkeys}))))
 
 (defn- register-to-stop [{:keys [*breadcrumbs]} obj]
   (vswap! *breadcrumbs conj obj))
@@ -83,7 +74,6 @@
   (let [factory       (resolve-factory ctx key)
         declared-deps (-dependencies factory)
         resolved-deps (resolve-deps ctx declared-deps)
-        _             (check-deps! key declared-deps resolved-deps)
         obj           (-build factory resolved-deps #(register-to-stop ctx %))
         obj           (hook key obj)]
     (register-in-system ctx key obj)
@@ -223,16 +213,8 @@
        (map map/dependencies)
        (reduce merge-dependencies)))
 
-(defn- allow-defaults [m]
-  (reduce-kv (fn [acc k v]
-               (if (some? v)
-                 (assoc acc k v)
-                 acc))
-             {} m))
-
 (defn- -build-fn [variable deps register-to-stop]
-  (let [max-arity (->> variable meta :arglists (map count) (reduce max 0) long)
-        deps      (allow-defaults deps)]
+  (let [max-arity (->> variable meta :arglists (map count) (reduce max 0) long)]
     (case max-arity
       0 (doto (variable)
           register-to-stop)
