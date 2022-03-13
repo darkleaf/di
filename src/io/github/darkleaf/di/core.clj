@@ -102,10 +102,6 @@
                          :stack-of-started-objects @*breadcrumbs}
                         ex))))))
 
-(defn- stop-system [{:keys [*breadcrumbs]}]
-  (doseq [dep @*breadcrumbs]
-    (stop dep)))
-
 (defn- null-hook [key object]
   object)
 
@@ -115,19 +111,20 @@
   ([key registry]
    (start key registry null-hook))
   ([key registry hook]
-   (let [ctx     {:starting-key key
-                  :*system      (volatile! {})
-                  :*breadcrumbs (volatile! '())
-                  :registry     registry
-                  :hook         hook}
-         obj     (instantiate ctx key)
-         stop-fn (partial stop-system ctx)]
+   (let [ctx         {:starting-key key
+                      :*system      (volatile! {})
+                      :*breadcrumbs (volatile! '())
+                      :registry     registry
+                      :hook         hook}
+         obj         (instantiate ctx key)
+         breadcrumbs (-> ctx :*breadcrumbs deref)]
      ^{:type   ::started
        ::print obj}
      (reify
        AutoCloseable
        (close [_]
-         (stop-fn))
+         (doseq [dep breadcrumbs]
+           (stop dep)))
        IDeref
        (deref [_]
          obj)
