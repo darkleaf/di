@@ -1,4 +1,4 @@
-(ns io.github.darkleaf.di.cases.object-wrapper-test
+(ns io.github.darkleaf.di.cases.started-test
   (:require
    [clojure.test :as t]
    [io.github.darkleaf.di.core :as di]))
