@@ -10,6 +10,16 @@
 
 (set! *warn-on-reflection* true)
 
+(defprotocol Stoppable
+  :extend-via-metadata true
+  (stop [this]))
+
+(defprotocol Factory
+  :extend-via-metadata true
+  (-dependencies [this]
+    "Returns a map of dependency key and `required?` flag")
+  (-build [this dependencies register-to-stop]))
+
 (defn join-hooks [& hooks]
   (fn [key object]
     (reduce (fn [object hook] (hook key object))
@@ -21,17 +31,6 @@
 
 (defn merge-dependencies [& deps]
   (apply merge-with or-fn deps))
-
-(defprotocol Stoppable
-  :extend-via-metadata true
-  (stop [this]))
-
-(defprotocol Factory
-  :extend-via-metadata true
-  (-dependencies [this]
-    "Returns a map of dependency key and `required?` flag")
-  (-build [this dependencies register-to-stop]))
-
 
 (defn- try-requiring-resolve [key]
   (when (qualified-symbol? key)
