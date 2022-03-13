@@ -5,7 +5,7 @@
    [io.github.darkleaf.di.destructuring-map :as map])
   (:import
    [java.lang AutoCloseable Exception]
-   [java.io FileNotFoundException]
+   [java.io FileNotFoundException Writer]
    [clojure.lang IDeref IFn Var]))
 
 (set! *warn-on-reflection* true)
@@ -122,6 +122,8 @@
                   :hook         hook}
          obj     (instantiate ctx key)
          stop-fn (partial stop-system ctx)]
+     ^{:type   ::started
+       ::print obj}
      (reify
        AutoCloseable
        (close [_]
@@ -188,8 +190,11 @@
 
 (defn ref
   ([key]
-   (ref key identity))
+   (vary-meta (ref key identity)
+              assoc ::print key))
   ([key f & args]
+   ^{:type   ::ref
+     ::print (vec (concat [key f] args))}
    (reify Factory
      (-dependencies [_]
        {key true})
@@ -197,6 +202,8 @@
        (apply f (deps key) args)))))
 
 (defn template [form]
+  ^{:type   ::template
+    ::print form}
   (reify Factory
     (-dependencies [_]
       (->> form
@@ -263,3 +270,14 @@
   AutoCloseable
   (stop [this]
     (.close this)))
+
+(derive ::started ::reified)
+(derive ::ref ::reified)
+(derive ::template ::reified)
+
+(defmethod print-method ::reified [o ^Writer w]
+  (.write w "#")
+  (.write w (-> o type symbol str))
+  (.write w " ")
+  (binding [*out* w]
+    (pr (-> o meta ::print))))
