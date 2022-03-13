@@ -190,8 +190,8 @@
 
 (defn ref
   ([key]
-   (vary-meta (ref key identity)
-              assoc ::print key))
+   (-> (ref key identity)
+       (vary-meta assoc ::print key)))
   ([key f & args]
    ^{:type   ::ref
      ::print (vec (concat [key f] args))}
