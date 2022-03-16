@@ -88,6 +88,11 @@
   (?? (find-obj  ctx key)
       (build-obj ctx key)))
 
+(defn- join-throwable
+  ([] nil)
+  ([^Throwable a b]
+   (.addSuppressed a b)
+   a))
 
 (defn- try-run [proc x]
   (try
@@ -96,34 +101,26 @@
     (catch Throwable ex
       ex)))
 
-(defn- join-throwable
-  ([] nil)
-  ([a] a)
-  ([^Throwable a b]
-   (.addSuppressed a b)
-   a))
+(defn- try-run-all [proc coll]
+  (->> coll
+       (map #(try-run proc %))
+       (filter some?)
+       (seq)))
 
-(defn- run-all! [proc coll]
-  (some->> coll
-           (map #(try-run proc %))
-           (filter some?)
-           (reduce join-throwable)
-           (throw)))
-
-(defn- stop-started! [{:keys [*started]}]
+(defn- stop-started [{:keys [*started]}]
   (let [started @*started]
     (vswap! *started empty)
-    (run-all! stop started)))
+    (try-run-all stop started)))
 
 (defn- try-build [ctx key]
   (try
     (build-obj ctx key)
     (catch Throwable ex
-      (let [stop-ex (try-run stop-started! ctx)
-            ex      (->> [ex stop-ex]
-                         (filter some?)
-                         (reduce join-throwable))]
-        (throw ex)))))
+      (let [exs (stop-started ctx)
+            exs (into [ex] exs)]
+        (->> exs
+             (reduce join-throwable)
+             (throw))))))
 
 (defn- started-obj [ctx obj]
  ^{:type   ::started
@@ -131,7 +128,9 @@
  (reify
    AutoCloseable
    (close [_]
-     (stop-started! ctx))
+     (some->> (stop-started ctx)
+              (reduce join-throwable)
+              (throw)))
    IDeref
    (deref [_]
      obj)
