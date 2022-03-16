@@ -104,11 +104,11 @@
    a))
 
 (defn- run-all! [proc coll]
-  (if-some [ex (->> coll
-                    (map (partial try-run proc))
-                    (filter some?)
-                    (reduce join-throwable))]
-    (throw ex)))
+  (some->> coll
+           (map #(try-run proc %))
+           (filter some?)
+           (reduce join-throwable)
+           (throw)))
 
 (defn- stop-started! [{:keys [*started]}]
   (let [started @*started]
