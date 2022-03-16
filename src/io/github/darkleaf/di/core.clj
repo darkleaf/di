@@ -31,6 +31,9 @@
       (?? ~@next))))
 
 
+(defn- null-hook [key object]
+  object)
+
 (defn join-hooks [& hooks]
   (fn [key object]
     (reduce (fn [object hook] (hook key object))
@@ -72,12 +75,11 @@
       (try-requiring-resolve key)))
 
 (defn- build-obj [{:as ctx, :keys [*current-key *started *built hook]} key]
-  (vreset! *current-key key)
   (let [factory       (resolve-factory ctx key)
         declared-deps (dependencies factory)
         resolved-deps (resolve-deps ctx declared-deps)
         obj           (build factory resolved-deps)
-        _             (vswap! *started conj [key obj])
+        _             (vswap! *started conj obj)
         obj           (hook key obj)
         _             (vswap! *built assoc key obj)]
     obj))
@@ -86,102 +88,109 @@
   (?? (find-obj  ctx key)
       (build-obj ctx key)))
 
-(defn- null-hook [key object]
-  object)
+
+(defn- try-run [proc x]
+  (try
+    (proc x)
+    nil
+    (catch Throwable ex
+      ex)))
+
+(defn- join-throwable
+  ([] nil)
+  ([a] a)
+  ([^Throwable a b]
+   (.addSuppressed a b)
+   a))
+
+(defn- run-all! [proc coll]
+  (if-some [ex (->> coll
+                    (map (partial try-run proc))
+                    (filter some?)
+                    (reduce join-throwable))]
+    (throw ex)))
 
 (defn- stop-started! [{:keys [*started]}]
-  (reduce (fn [exceptions [key obj]]
-            (try
-              (stop obj)
-              exceptions
-              (catch Throwable ex
-                (assoc exceptions key ex))))
-          nil
-          @*started))
+  (let [started @*started]
+    (vswap! *started empty)
+    (run-all! stop started)))
 
-(defn- current-key [{:keys [*current-key]}]
-  @*current-key)
-
-(defn- caught-build [{:as ctx, :keys [*started]} key]
+(defn- try-build [ctx key]
   (try
     (build-obj ctx key)
     (catch Throwable ex
-      (let [exceptions  (stop-started! ctx)]
-        (throw (ex-info (str "Failed to build key " (current-key ctx) " when starting " key)
-                        {:type            ::build
-                         :key             key
-                         :stop-exceptions exceptions}
-                        ex))))))
+      (let [stop-ex (try-run stop-started! ctx)
+            ex      (->> [ex stop-ex]
+                         (filter some?)
+                         (reduce join-throwable))]
+        (throw ex)))))
 
 (defn- started-obj [ctx obj]
-  ^{:type   ::started
-    ::print obj}
-  (reify
-    AutoCloseable
-    (close [_]
-      (when-some [exceptions (stop-started! ctx)]
-        (throw (ex-info (str "Failed to stop key " (current-key ctx))
-                        {:type            ::stop
-                         :stop-exceptions exceptions}))))
-    IDeref
-    (deref [_]
-      obj)
-    Factory
-    (dependencies [_]
-      nil)
-    (build [_ _]
-      obj)
-    IFn
-    (call [_]
-      (.call ^IFn obj))
-    (run [_]
-      (.run ^IFn obj))
-    (invoke [this]
-      (.invoke ^IFn obj))
-    (invoke [_          a1]
-      (.invoke ^IFn obj a1))
-    (invoke [_          a1 a2]
-      (.invoke ^IFn obj a1 a2))
-    (invoke [_          a1 a2 a3]
-      (.invoke ^IFn obj a1 a2 a3))
-    (invoke [_          a1 a2 a3 a4]
-      (.invoke ^IFn obj a1 a2 a3 a4))
-    (invoke [_          a1 a2 a3 a4 a5]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5))
-    (invoke [_          a1 a2 a3 a4 a5 a6]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20))
-    (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
-      (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
-    (applyTo [_ args]
-      (.applyTo ^IFn obj args))))
+ ^{:type   ::started
+   ::print obj}
+ (reify
+   AutoCloseable
+   (close [_]
+     (stop-started! ctx))
+   IDeref
+   (deref [_]
+     obj)
+   Factory
+   (dependencies [_]
+     nil)
+   (build [_ _]
+     obj)
+   IFn
+   (call [_]
+     (.call ^IFn obj))
+   (run [_]
+     (.run ^IFn obj))
+   (invoke [this]
+     (.invoke ^IFn obj))
+   (invoke [_          a1]
+     (.invoke ^IFn obj a1))
+   (invoke [_          a1 a2]
+     (.invoke ^IFn obj a1 a2))
+   (invoke [_          a1 a2 a3]
+     (.invoke ^IFn obj a1 a2 a3))
+   (invoke [_          a1 a2 a3 a4]
+     (.invoke ^IFn obj a1 a2 a3 a4))
+   (invoke [_          a1 a2 a3 a4 a5]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5))
+   (invoke [_          a1 a2 a3 a4 a5 a6]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20))
+   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
+     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
+   (applyTo [_ args]
+     (.applyTo ^IFn obj args))))
 
 (defn ^AutoCloseable start
   ([key]
@@ -189,12 +198,11 @@
   ([key registry]
    (start key registry null-hook))
   ([key registry hook]
-   (let [ctx {:*current-key (volatile! key)
-              :*built       (volatile! {})
+   (let [ctx {:*built       (volatile! {})
               :*started     (volatile! '())
               :registry     registry
               :hook         hook}
-         obj (caught-build ctx key)]
+         obj (try-build ctx key)]
      (started-obj ctx obj))))
 
 
