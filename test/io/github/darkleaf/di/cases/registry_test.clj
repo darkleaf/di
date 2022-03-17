@@ -34,15 +34,12 @@
     (t/is (= [::object ::stub] @obj))))
 
 
-;; Overrided deps should be stopped outside.
-(t/deftest stub-is-not-managed-test
-  (let [p    (promise)
-        stub (reify di/Stoppable
-               (stop [_]
-                 (deliver p ::stopped)))
-        obj  (di/start `object
-                       {`dependency stub})]
-    (di/stop obj)
-    (t/is (not (realized? p)))
-    (di/stop stub)
-    (t/is (realized? p))))
+;; (t/deftest stub-is-managed-test
+;;   (let [p    (promise)
+;;         stub (reify di/Stoppable
+;;                (stop [_]
+;;                  (deliver p ::stopped)))
+;;         obj  (di/start `object
+;;                        {`dependency stub})]
+;;     (di/stop obj)
+;;     (t/is (realized? p))))
