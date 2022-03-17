@@ -8,11 +8,12 @@
 (defn server [{shared `shared}]
   shared)
 
-;; We don't have to deref `shared`
+;; We have to use `deref` due to started obj can't implement `di/Factory`.
+;; `build` should return `di/Stoppable`.
 (t/deftest multi-system-test
   (with-open [shared (di/start `shared)
-              a      (di/start `server {`shared shared})
-              b      (di/start `server {`shared shared})]
+              a      (di/start `server {`shared @shared})
+              b      (di/start `server {`shared @shared})]
     (t/is (double? @a))
     (t/is (double? @b))
     (t/is (identical? @a @b))))

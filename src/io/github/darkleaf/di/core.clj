@@ -134,11 +134,6 @@
    IDeref
    (deref [_]
      obj)
-   Factory
-   (dependencies [_]
-     nil)
-   (build [_ _]
-     obj)
    IFn
    (call [_]
      (.call ^IFn obj))
