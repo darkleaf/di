@@ -12,7 +12,8 @@
 
 (defprotocol Stoppable
   :extend-via-metadata true
-  (stop [this]))
+  (stop [this]
+    "Stops an object. Returns nothing."))
 
 (defprotocol Factory
   :extend-via-metadata true
@@ -33,9 +34,8 @@
 (defn combine-hooks
   "Combines hooks. Use it with `reduce`.
 
-  A hook is a function of a key and an object that returns a wrapped object.
-  Use hooks for object instrumentation.
-  "
+  A hook is a function of a key and an associated object with one
+  that returns an instrumented object."
   ([]
    (fn [key obj]
      obj))
@@ -141,7 +141,8 @@
   The registry is a map of key and `Factory`.
 
   Hooks are a seq of functions to instrument built objects.
-  A hook is a function of a key and an object that returns a new one.
+  A hook is a function of a key and an associated object with one
+  that returns an instrumented object.
 
   Returns a container with started root.
   The container implements `Stoppable`, `IDeref` and `IFn`.
