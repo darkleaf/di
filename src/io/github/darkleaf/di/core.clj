@@ -248,20 +248,25 @@
     (build [_ deps]
       (w/postwalk #(build % deps) form))))
 
+(defn- arglists [variable]
+  (-> variable meta :arglists))
+
 (defn- defn? [variable]
-  (-> variable meta :arglists seq boolean))
+  (-> variable arglists seq boolean))
 
 (defn- dependencies-fn [variable]
   (->> variable
-       meta
-       :arglists
+       arglists
        (map first)
        (filter map?)
        (map map/dependencies)
        (reduce combine-dependencies)))
 
 (defn- build-fn [variable deps]
-  (let [max-arity (->> variable meta :arglists (map count) (reduce max 0) long)]
+  (let [max-arity (->> variable
+                       arglists
+                       (map count)
+                       (reduce max 0) long)]
     (case max-arity
       0 (variable)
       1 (variable deps)
