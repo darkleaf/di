@@ -3,14 +3,6 @@
    [clojure.test :as t]
    [io.github.darkleaf.di.core :as di]))
 
-(t/deftest join-hooks-test
-  (let [obj  []
-        a    (fn [key obj] (conj obj ::a))
-        b    (fn [key obj] (conj obj ::b))
-        hook (di/join-hooks a b)]
-    (t/is (= [::a ::b] (hook ::obj obj)))))
-
-
 (defn logging []
   (let [log  (atom [])
         hook (fn [key object]
