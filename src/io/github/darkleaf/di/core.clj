@@ -144,7 +144,7 @@
   A hook is a function of a key and an associated object with one
   that returns an instrumented object.
 
-  Returns a container with started root.
+  Returns a container contains started root of the system.
   The container implements `Stoppable`, `IDeref` and `IFn`.
 
   Use `with-open` in tests to stop the system reliably.
@@ -161,7 +161,7 @@
                :registry registry
                :hook     hook}
          obj  (try-build ctx key)]
-     ^{:type   ::started-root
+     ^{:type   ::root
        ::print obj}
      (reify
        AutoCloseable
@@ -301,9 +301,9 @@
   (stop [this]
     (.close this)))
 
-(derive ::started-root ::reified)
-(derive ::ref          ::reified)
-(derive ::template     ::reified)
+(derive ::root     ::reified)
+(derive ::ref      ::reified)
+(derive ::template ::reified)
 
 (defmethod print-method ::reified [o ^Writer w]
   (.write w "#")

@@ -56,5 +56,5 @@
     (t/is (= 2 (apply s 1 [2])))))
 
 (t/deftest pr-test
-  (t/is (= "#io.github.darkleaf.di.core/started 42"
+  (t/is (= "#io.github.darkleaf.di.core/root 42"
            (pr-str (di/start `foo {`foo 42})))))
