@@ -10,7 +10,6 @@
 
 (set! *warn-on-reflection* true)
 
-
 (defprotocol Stoppable
   :extend-via-metadata true
   (stop [this]))
@@ -21,7 +20,6 @@
     "Returns a map of dependency key and `required?` flag")
   (build [this dependencies]))
 
-
 (defmacro ^:private ??
   ([] nil)
   ([x] x)
@@ -29,7 +27,6 @@
    `(if-some [x# ~x]
       x#
       (?? ~@next))))
-
 
 (defn- null-hook [key object]
   object)
@@ -40,13 +37,11 @@
             object
             hooks)))
 
-
 (defn- or-fn [a b]
   (or a b))
 
 (defn merge-dependencies [& deps]
   (apply merge-with or-fn deps))
-
 
 (declare find-or-build)
 
@@ -199,7 +194,6 @@
          obj (try-build ctx key)]
      (started-obj ctx obj))))
 
-
 (defn ref
   ([key]
    (-> (ref key identity)
@@ -213,7 +207,6 @@
      (build [_ deps]
        (apply f (deps key) args)))))
 
-
 (defn template [form]
   ^{:type   ::template
     ::print form}
@@ -225,7 +218,6 @@
            (reduce merge-dependencies)))
     (build [_ deps]
       (w/postwalk #(build % deps) form))))
-
 
 (defn- defn? [variable]
   (-> variable meta :arglists seq boolean))
@@ -265,7 +257,6 @@
   (dependencies [_] nil)
   (build [this _] this))
 
-
 (extend-protocol Stoppable
   nil
   (stop [_])
@@ -274,7 +265,6 @@
   AutoCloseable
   (stop [this]
     (.close this)))
-
 
 (derive ::started  ::-reified)
 (derive ::ref      ::-reified)
