@@ -19,7 +19,8 @@
   (dependencies [this]
     "Returns a map of a key and a boolean flag.
     Keys with true flag are required.")
-  (build [this dependencies]))
+  (build [this dependencies]
+    "Builds a stoppable object with it dependencies."))
 
 (defmacro ^:private ??
   ([] nil)
@@ -130,6 +131,24 @@
              (throw))))))
 
 (defn ^AutoCloseable start
+  "Starts system of dependent objects.
+
+  The key is a name of the system root.
+  It can be a var name or should be added to the registry.
+  Use keywords for var names, keywords for abstract dependencies,
+  and strings for environments variables.
+
+  The registry is a map of key and `Factory`.
+
+  Hooks are a seq of functions to instrument built objects.
+  A hook is a function of a key and an object that returns a new one.
+
+  Returns a container with started root.
+  The container implements `Stoppable`, `IDeref` and `IFn`.
+
+  Use `with-open` in tests to stop the system reliably.
+
+  See the tests for use cases."
   ([key]
    (start key {}))
   ([key registry]
@@ -141,7 +160,7 @@
                :registry registry
                :hook     hook}
          obj  (try-build ctx key)]
-     ^{:type   ::started
+     ^{:type   ::started-root
        ::print obj}
      (reify
        AutoCloseable
@@ -276,9 +295,9 @@
   (stop [this]
     (.close this)))
 
-(derive ::started  ::reified)
-(derive ::ref      ::reified)
-(derive ::template ::reified)
+(derive ::started-root ::reified)
+(derive ::ref          ::reified)
+(derive ::template     ::reified)
 
 (defmethod print-method ::reified [o ^Writer w]
   (.write w "#")
