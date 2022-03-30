@@ -17,7 +17,8 @@
 (defprotocol Factory
   :extend-via-metadata true
   (dependencies [this]
-    "Returns a map of dependency key and `required?` flag")
+    "Returns a map of a key and a boolean flag.
+    Keys with true flag are required.")
   (build [this dependencies]))
 
 (defmacro ^:private ??
@@ -28,20 +29,37 @@
       x#
       (?? ~@next))))
 
-(defn- null-hook [key object]
-  object)
+(defn combine-hooks
+  "Combines hooks. Use it with `reduce`.
 
-(defn join-hooks [& hooks]
-  (fn [key object]
-    (reduce (fn [object hook] (hook key object))
-            object
-            hooks)))
+  A hook is a function of a key and an object that returns a wrapped object.
+  Use hooks for object instrumentation.
+  "
+  ([]
+   (fn [key obj]
+     obj))
+  ([a b]
+   (fn [key obj]
+     (->> obj
+          (a key)
+          (b key)))))
 
-(defn- or-fn [a b]
-  (or a b))
+(defn combine-dependencies
+  "Combines dependencies. Use it with `reduce`.
 
-(defn merge-dependencies [& deps]
-  (apply merge-with or-fn deps))
+  Dependencies are a hash map of key and boolean flag.
+  Keys with true flag are required."
+  ([]
+   {})
+  ([a b]
+   (merge-with #(or %1 %2) a b)))
+
+(defn- combine-throwable
+  "Combines throwables. Use it with `reduce`."
+  ([] nil)
+  ([^Throwable a b]
+   (.addSuppressed a b)
+   a))
 
 (declare find-or-build)
 
@@ -83,12 +101,6 @@
   (?? (find-obj  ctx key)
       (build-obj ctx key)))
 
-(defn- join-throwable
-  ([] nil)
-  ([^Throwable a b]
-   (.addSuppressed a b)
-   a))
-
 (defn- try-run [proc x]
   (try
     (proc x)
@@ -114,27 +126,28 @@
       (let [exs (stop-started ctx)
             exs (into [ex] exs)]
         (->> exs
-             (reduce join-throwable)
+             (reduce combine-throwable)
              (throw))))))
 
 (defn ^AutoCloseable start
   ([key]
    (start key {}))
   ([key registry]
-   (start key registry null-hook))
-  ([key registry hook]
-   (let [ctx {:*built       (volatile! {})
-              :*started     (volatile! '())
-              :registry     registry
-              :hook         hook}
-         obj (try-build ctx key)]
+   (start key registry []))
+  ([key registry hooks]
+   (let [hook (reduce combine-hooks hooks)
+         ctx  {:*built   (volatile! {})
+               :*started (volatile! '())
+               :registry registry
+               :hook     hook}
+         obj  (try-build ctx key)]
      ^{:type   ::started
-        ::print obj}
+       ::print obj}
      (reify
        AutoCloseable
        (close [_]
          (some->> (stop-started ctx)
-                  (reduce join-throwable)
+                  (reduce combine-throwable)
                   (throw)))
        IDeref
        (deref [_]
@@ -212,7 +225,7 @@
       (->> form
            (tree-seq coll? seq)
            (map dependencies)
-           (reduce merge-dependencies)))
+           (reduce combine-dependencies)))
     (build [_ deps]
       (w/postwalk #(build % deps) form))))
 
@@ -226,7 +239,7 @@
        (map first)
        (filter map?)
        (map map/dependencies)
-       (reduce merge-dependencies)))
+       (reduce combine-dependencies)))
 
 (defn- build-fn [variable deps]
   (let [max-arity (->> variable meta :arglists (map count) (reduce max 0) long)]

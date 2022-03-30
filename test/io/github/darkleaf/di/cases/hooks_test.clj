@@ -22,7 +22,7 @@
 
 (t/deftest logging-hook-test
   (let [[log hook] (logging)]
-    (with-open [b (di/start `service-b {} hook)]
+    (with-open [b (di/start `service-b {} [hook])]
       (t/is (= [::b [::a 1] [::a 2]]
                (b 1 2))))
     (t/is (= [[`service-a [1] [::a 1]]

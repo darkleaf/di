@@ -3,10 +3,10 @@
    [io.github.darkleaf.di.core :as di]
    [clojure.test :as t]))
 
-(t/deftest merge-dependencies-test
+(t/deftest combine-dependencies-test
   (t/are [expected input]
-      (t/is (= expected (apply di/merge-dependencies input)))
-    nil
+      (t/is (= expected (reduce di/combine-dependencies input)))
+    {}
     []
 
     {:a true}
@@ -24,9 +24,11 @@
     {:a true, :b true}
     [{:a true} {:b true}]))
 
-(t/deftest join-hooks-test
+(t/deftest combine-hooks-test
   (let [obj  []
-        a    (fn [key obj] (conj obj ::a))
-        b    (fn [key obj] (conj obj ::b))
-        hook (di/join-hooks a b)]
+        a    (fn [key obj]
+               (conj obj ::a))
+        b    (fn [key obj]
+               (conj obj ::b))
+        hook (reduce di/combine-hooks [a b])]
     (t/is (= [::a ::b] (hook ::obj obj)))))
