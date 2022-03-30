@@ -20,7 +20,7 @@
     "Returns a map of a key and a boolean flag.
     Keys with true flag are required.")
   (build [this dependencies]
-    "Builds a stoppable object with it dependencies."))
+    "Builds a stoppable object from dependencies."))
 
 (defmacro ^:private ??
   ([] nil)
