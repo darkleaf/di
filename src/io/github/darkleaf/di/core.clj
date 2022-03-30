@@ -117,70 +117,6 @@
              (reduce join-throwable)
              (throw))))))
 
-(defn- started-obj [ctx obj]
- ^{:type   ::started
-   ::print obj}
- (reify
-   AutoCloseable
-   (close [_]
-     (some->> (stop-started ctx)
-              (reduce join-throwable)
-              (throw)))
-   IDeref
-   (deref [_]
-     obj)
-   IFn
-   (call [_]
-     (.call ^IFn obj))
-   (run [_]
-     (.run ^IFn obj))
-   (invoke [this]
-     (.invoke ^IFn obj))
-   (invoke [_          a1]
-     (.invoke ^IFn obj a1))
-   (invoke [_          a1 a2]
-     (.invoke ^IFn obj a1 a2))
-   (invoke [_          a1 a2 a3]
-     (.invoke ^IFn obj a1 a2 a3))
-   (invoke [_          a1 a2 a3 a4]
-     (.invoke ^IFn obj a1 a2 a3 a4))
-   (invoke [_          a1 a2 a3 a4 a5]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5))
-   (invoke [_          a1 a2 a3 a4 a5 a6]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20))
-   (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
-     (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
-   (applyTo [_ args]
-     (.applyTo ^IFn obj args))))
-
 (defn ^AutoCloseable start
   ([key]
    (start key {}))
@@ -192,7 +128,68 @@
               :registry     registry
               :hook         hook}
          obj (try-build ctx key)]
-     (started-obj ctx obj))))
+     ^{:type   ::started
+        ::print obj}
+     (reify
+       AutoCloseable
+       (close [_]
+         (some->> (stop-started ctx)
+                  (reduce join-throwable)
+                  (throw)))
+       IDeref
+       (deref [_]
+         obj)
+       IFn
+       (call [_]
+         (.call ^IFn obj))
+       (run [_]
+         (.run ^IFn obj))
+       (invoke [this]
+         (.invoke ^IFn obj))
+       (invoke [_          a1]
+         (.invoke ^IFn obj a1))
+       (invoke [_          a1 a2]
+         (.invoke ^IFn obj a1 a2))
+       (invoke [_          a1 a2 a3]
+         (.invoke ^IFn obj a1 a2 a3))
+       (invoke [_          a1 a2 a3 a4]
+         (.invoke ^IFn obj a1 a2 a3 a4))
+       (invoke [_          a1 a2 a3 a4 a5]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5))
+       (invoke [_          a1 a2 a3 a4 a5 a6]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20))
+       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
+         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
+       (applyTo [_ args]
+         (.applyTo ^IFn obj args))))))
 
 (defn ref
   ([key]
