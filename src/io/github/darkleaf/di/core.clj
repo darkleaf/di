@@ -266,11 +266,11 @@
   (stop [this]
     (.close this)))
 
-(derive ::started  ::-reified)
-(derive ::ref      ::-reified)
-(derive ::template ::-reified)
+(derive ::started  ::reified)
+(derive ::ref      ::reified)
+(derive ::template ::reified)
 
-(defmethod print-method ::-reified [o ^Writer w]
+(defmethod print-method ::reified [o ^Writer w]
   (.write w "#")
   (.write w (-> o type symbol str))
   (.write w " ")
