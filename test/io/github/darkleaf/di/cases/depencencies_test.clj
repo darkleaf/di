@@ -9,47 +9,36 @@
 ;;  \ /
 ;;   c
 
-(defn root [{log `log
-             a   `a
-             b   `b}]
-  (log :start :root)
-  (reify di/Stoppable
-    (stop [_]
-      (log :stop :root))))
+(defn root [{a `a, b `b}]
+  [:root a b])
 
-(defn a [{log `log
-          c   `c}]
-  (log :start :a)
-  (reify di/Stoppable
-    (stop [_]
-      (log :stop :a))))
+(defn a [{c `c}]
+  [:a c])
 
-(defn b [{log `log
-          c   `c}]
-  (log :start :b)
-  (reify di/Stoppable
-    (stop [_]
-      (log :stop :b))))
+(defn b [{c `c}]
+  [:b c])
 
-(defn c [{log `log}]
-  (log :start :c)
-  (reify di/Stoppable
-    (stop [_]
-      (log :stop :c))))
+(defn c []
+  [:c])
+
+(defn with-logging [{log `log} key obj]
+  (swap! log conj [key :built])
+  (with-meta obj {`di/stop (fn [_]
+                             (swap! log conj [key :stopped]))}))
 
 (t/deftest order-test
-  (let [log    (atom [])
-        to-log (fn [action object]
-                 (swap! log conj [action object]))
-        obj    (di/start `root {`log to-log})]
-    (di/stop obj)
-    (t/is (= [[:start :c]
-              [:start :a]
-              [:start :b]
-              [:start :root]
+  (let [log (atom [])]
+    (with-open [obj (di/start `root [{`log log}
+                                     di/ns-registry
+                                     [di/decorating-registry `with-logging]])]
+      (t/is (= [:root [:a [:c]] [:b [:c]]] @obj)))
+    (t/is (= [[`c :built]
+              [`a :built]
+              [`b :built]
+              [`root :built]
 
-              [:stop :root]
-              [:stop :b]
-              [:stop :a]
-              [:stop :c]]
+              [`root :stopped]
+              [`b :stopped]
+              [`a :stopped]
+              [`c :stopped]]
              @log))))

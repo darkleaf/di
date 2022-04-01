@@ -2,7 +2,8 @@
   (:refer-clojure :exclude [ref key])
   (:require
    [clojure.walk :as w]
-   [io.github.darkleaf.di.destructuring-map :as map])
+   [io.github.darkleaf.di.destructuring-map :as map]
+   [io.github.darkleaf.di.core :as di])
   (:import
    [java.lang AutoCloseable Exception]
    [java.io FileNotFoundException Writer]
@@ -31,20 +32,6 @@
       x#
       (?? ~@next))))
 
-(defn combine-hooks
-  "Combines hooks. Use it with `reduce`.
-
-  A hook is a function of a key and an associated object with one
-  that returns an instrumented object."
-  ([]
-   (fn [key obj]
-     obj))
-  ([a b]
-   (fn [key obj]
-     (->> obj
-          (a key)
-          (b key)))))
-
 (defn combine-dependencies
   "Combines dependencies. Use it with `reduce`.
 
@@ -64,38 +51,39 @@
 
 (declare find-or-build)
 
+(defn- missing-dependency! [key]
+  (throw (ex-info (str "Missing dependency " key)
+                  {:type ::missing-dependency
+                   :key  key})))
+
+(defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key required?]
+  (if (contains? under-construction key)
+    (if required?
+      (throw (ex-info "Circular dependency" {:type ::circular-dependency
+                                             :key  key}))
+      acc)
+    (if-some [obj (find-or-build ctx key)]
+      (assoc acc key obj)
+      (if required?
+        (missing-dependency! key)
+        acc))))
+
 (defn- resolve-deps [ctx deps]
-  (reduce-kv (fn [acc key required?]
-               (if-some [obj (find-or-build ctx key)]
-                 (assoc acc key obj)
-                 (when required?
-                   (throw (ex-info (str "Missing dependency " key)
-                                   {:type ::missing-dependency
-                                    :key  key})))))
+  (reduce-kv (partial resolve-dep ctx)
              {}
              deps))
 
-(defn- find-obj [{:keys [*built]} key]
-  (get @*built key))
+(defn- find-obj [{:keys [*built-map]} key]
+  (get @*built-map key))
 
-(defn- try-requiring-resolve [key]
-  (when (qualified-symbol? key)
-    (try
-      (requiring-resolve key)
-      (catch FileNotFoundException _ nil))))
-
-(defn- resolve-factory [{:keys [registry]} key]
-  (?? (registry key)
-      (try-requiring-resolve key)))
-
-(defn- build-obj [{:as ctx, :keys [*current-key *started *built hook]} key]
-  (let [factory       (resolve-factory ctx key)
+(defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *built-list]} key]
+  (let [ctx           (update ctx :under-construction conj key)
+        factory       (registry key)
         declared-deps (dependencies factory)
         resolved-deps (resolve-deps ctx declared-deps)
-        obj           (build factory resolved-deps)
-        _             (vswap! *started conj obj)
-        obj           (hook key obj)
-        _             (vswap! *built assoc key obj)]
+        obj           (build factory resolved-deps)]
+    (vswap! *built-list conj obj)
+    (vswap! *built-map  assoc key obj)
     obj))
 
 (defn- find-or-build [ctx key]
@@ -115,20 +103,51 @@
        (filter some?)
        (seq)))
 
-(defn- stop-started [{:keys [*started]}]
-  (let [started @*started]
-    (vswap! *started empty)
-    (try-run-all stop started)))
+(defn- stop-started [{:keys [*built-list]}]
+  (let [built-list @*built-list]
+    (vswap! *built-list empty)
+    (try-run-all stop built-list)))
 
 (defn- try-build [ctx key]
   (try
-    (build-obj ctx key)
+    (?? (build-obj ctx key)
+        (missing-dependency! key))
     (catch Throwable ex
       (let [exs (stop-started ctx)
             exs (into [ex] exs)]
         (->> exs
              (reduce combine-throwable)
              (throw))))))
+
+(defn nil-registry [key]
+  nil)
+
+(defn- combine-registries [previous registry]
+  (cond
+    (fn? registry)     (registry previous)
+    (vector? registry) (apply (first registry) previous (rest registry))
+    (map? registry)    (fn [key]
+                         (?? (previous key)
+                             (get registry key)))))
+
+(defn build-registry [registries]
+  (reduce combine-registries
+          nil-registry
+          registries))
+
+(defn ns-registry [previous]
+  (fn [key]
+    (?? (previous key)
+        (when (qualified-symbol? key)
+          (try
+            (requiring-resolve key)
+            (catch FileNotFoundException _ nil))))))
+
+(defn env-registry [previous]
+  (fn [key]
+    (?? (previous key)
+        (when (string? key)
+          (System/getenv key)))))
 
 (defn ^AutoCloseable start
   "Starts system of dependent objects.
@@ -151,16 +170,14 @@
 
   See the tests for use cases."
   ([key]
-   (start key {}))
-  ([key registry]
-   (start key registry []))
-  ([key registry hooks]
-   (let [hook (reduce combine-hooks hooks)
-         ctx  {:*built   (volatile! {})
-               :*started (volatile! '())
-               :registry registry
-               :hook     hook}
-         obj  (try-build ctx key)]
+   (start key [ns-registry env-registry]))
+  ([key registries]
+   (let [registry (build-registry registries)
+         ctx      {:*built-map         (volatile! {})
+                   :*built-list        (volatile! '())
+                   :under-construction #{}
+                   :registry           registry}
+         obj      (try-build ctx key)]
      ^{:type   ::root
        ::print obj}
      (reify
@@ -251,6 +268,21 @@
            (reduce combine-dependencies)))
     (build [_ deps]
       (w/postwalk #(build % deps) form))))
+
+(defn decorating-registry [previous decorator-key]
+  (fn [key]
+    (let [factory (previous key)]
+      (reify Factory
+        (dependencies [_]
+          (combine-dependencies (dependencies factory)
+                                {decorator-key false}))
+        ;; false тут многозначный, это и необязательность и пропуск циклов
+        (build [_ deps]
+          (let [decorator (deps decorator-key)
+                obj       (build factory deps)]
+            (if decorator
+              (decorator key obj)
+              obj)))))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))

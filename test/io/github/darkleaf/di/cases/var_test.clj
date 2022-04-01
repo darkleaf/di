@@ -25,8 +25,7 @@
 (def port (di/ref "PORT" #(Long/parseLong %)))
 
 (t/deftest port-test
-  (with-open [p (di/start `port
-                          {"PORT" "8080"})]
+  (with-open [p (di/start `port [{"PORT" "8080"} di/ns-registry])]
     (t/is (= 8080 @p))))
 
 
@@ -44,8 +43,7 @@
   (atom init))
 
 (t/deftest object-constructor-test
-  (with-open [obj (di/start `object-constructor
-                            {::init 42})]
+  (with-open [obj (di/start `object-constructor [{::init 42} di/ns-registry])]
     (t/is (= 42 @@obj))))
 
 
@@ -92,9 +90,7 @@
 (t/deftest multi-arity-service-test
   (t/is (= [::result {`a :default-a, `b :default-b} :a1 :a2]
            (multi-arity-service)))
-  (with-open [s (di/start `multi-arity-service
-                          {`a :a
-                           `b :b})]
+  (with-open [s (di/start `multi-arity-service [{`a :a, `b :b} di/ns-registry])]
     (t/is (= [::result {`a :a, `b :b} :a1   :a2]   (s)))
     (t/is (= [::result {`a :a, `b :b} :arg1 :a2]   (s :arg1)))
     (t/is (= [::result {`a :a, `b :b} :arg1 :arg2] (s :arg1 :arg2)))))
@@ -106,7 +102,7 @@
 (t/deftest optional-deps-test
   (with-open [obj (di/start `optional-deps)]
     (t/is (= [::web-server "8080"] @obj)))
-  (with-open [obj (di/start `optional-deps {"PORT" "9090"})]
+  (with-open [obj (di/start `optional-deps [{"PORT" "9090"} di/ns-registry])]
     (t/is (= [::web-server "9090"] @obj))))
 
 
@@ -115,5 +111,5 @@
 
 (t/deftest required-deps-test
   (t/is (thrown? Throwable (di/start `required-deps)))
-  (with-open [obj (di/start `required-deps {"PORT" "8080"})]
+  (with-open [obj (di/start `required-deps [{"PORT" "8080"} di/ns-registry])]
     (t/is (= [::web-server "8080"] @obj))))
