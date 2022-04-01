@@ -164,11 +164,14 @@
      ^{:type   ::root
        ::print obj}
      (reify
-       AutoCloseable
-       (close [_]
+       Stoppable
+       (stop [_]
          (some->> (stop-started ctx)
                   (reduce combine-throwable)
                   (throw)))
+       AutoCloseable
+       (close [this]
+         (stop this))
        IDeref
        (deref [_]
          obj)
@@ -296,10 +299,7 @@
   nil
   (stop [_])
   Object
-  (stop [_])
-  AutoCloseable
-  (stop [this]
-    (.close this)))
+  (stop [_]))
 
 (derive ::root     ::reified)
 (derive ::ref      ::reified)
