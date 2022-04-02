@@ -17,22 +17,10 @@
 (t/deftest stoppable-object-test
   (t/testing `di/stop
     (let [[p log] (logging)
-          obj     (di/start `stoppable-object {`log log})]
+          obj     (di/start `stoppable-object [{`log log} di/ns-registry])]
       (di/stop obj)
       (t/is (= ::logged @p))))
   (t/testing `with-open
     (let [[p log] (logging)]
-      (with-open [obj (di/start `stoppable-object {`log log})])
+      (with-open [obj (di/start `stoppable-object [{`log log} di/ns-registry])])
       (t/is (= ::logged @p)))))
-
-
-(defn auto-closeable-object [{log `log}]
-  (reify java.lang.AutoCloseable
-    (close [_]
-      (log))))
-
-(t/deftest auto-closeable-object-test
-  (let [[p log] (logging)
-        obj     (di/start `auto-closeable-object {`log log})]
-    (di/stop obj)
-    (t/is (= ::logged @p))))

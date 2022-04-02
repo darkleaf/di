@@ -10,9 +10,9 @@
         root-handler (fn [req])
         news-handler (fn [req])]
     (with-open [obj (di/start `route-data
-                              {`route-data   route-data
-                               `root-handler root-handler
-                               `news-handler news-handler})]
+                              [{`route-data   route-data
+                                `root-handler root-handler
+                                `news-handler news-handler}])]
       (t/is (= [["/"     {:get {:handler root-handler}}]
                 ["/news" {:get {:handler news-handler}}]]
                @obj)))))
