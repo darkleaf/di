@@ -56,11 +56,15 @@
                   {:type ::missing-dependency
                    :key  key})))
 
+(defn- circular-dependency! [key]
+  (throw (ex-info (str "Circular dependency " key)
+                  {:type ::circular-dependency
+                   :key  key})))
+
 (defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key required?]
   (if (contains? under-construction key)
     (if required?
-      (throw (ex-info "Circular dependency" {:type ::circular-dependency
-                                             :key  key}))
+      (circular-dependency! key)
       acc)
     (if-some [obj (find-or-build ctx key)]
       (assoc acc key obj)
@@ -270,13 +274,15 @@
       (w/postwalk #(build % deps) form))))
 
 (defn decorating-registry [previous decorator-key]
+  (when-not (previous decorator-key)
+    (missing-dependency! decorator-key))
   (fn [key]
     (let [factory (previous key)]
       (reify Factory
+        ;; inject decorator as an optional dependency to prevent circle
         (dependencies [_]
           (combine-dependencies (dependencies factory)
                                 {decorator-key false}))
-        ;; false тут многозначный, это и необязательность и пропуск циклов
         (build [_ deps]
           (let [decorator (deps decorator-key)
                 obj       (build factory deps)]
