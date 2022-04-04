@@ -333,7 +333,7 @@
 
   nil
   (dependencies [_] nil)
-  (build [this _] this)
+  (build [_ _] nil)
 
   Object
   (dependencies [_] nil)
