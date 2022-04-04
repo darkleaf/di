@@ -33,9 +33,9 @@
       (?? ~@next))))
 
 (def ^:private dependency-type-priority
-  {:required      1
-   :skip-circular 2
-   :optional      3})
+  {:required          1
+   :skipping-circular 2
+   :optional          3})
 
 (defn combine-dependencies
   "Combines dependencies. Use it with `reduce`.
@@ -72,7 +72,7 @@
 
 (defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
   (if (under-construction key)
-    (if (= :skip-circular dep-type)
+    (if (= :skipping-circular dep-type)
       acc
       (circular-dependency! key))
     (if-some [obj (find-or-build ctx key)]
@@ -288,7 +288,7 @@
       (reify Factory
         (dependencies [_]
           (combine-dependencies (dependencies factory)
-                                {decorator-key :skip-circular}))
+                                {decorator-key :skipping-circular}))
         (build [_ deps]
           (let [decorator (deps decorator-key)
                 obj       (build factory deps)]

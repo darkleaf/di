@@ -12,8 +12,8 @@
     {:a :required}
     [{:a :required}]
 
-    {:a :skip-circular}
-    [{:a :skip-circular}]
+    {:a :skipping-circular}
+    [{:a :skipping-circular}]
 
     {:a :optional}
     [{:a :optional}]
@@ -25,7 +25,7 @@
     [{:a :optional} {:b :required}]
 
     {:a :required}
-    [{:a :optional} {:a :skip-circular} {:a :required}]
+    [{:a :optional} {:a :skipping-circular} {:a :required}]
 
-    {:a :skip-circular}
-    [{:a :optional} {:a :skip-circular}]))
+    {:a :skipping-circular}
+    [{:a :optional} {:a :skipping-circular}]))
