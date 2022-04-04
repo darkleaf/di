@@ -43,8 +43,6 @@
       (t/is (= :default @obj)))))
 
 
-;; todo: more examples for decorating-registry
-
 (defn service [-deps x]
   [:service x])
 

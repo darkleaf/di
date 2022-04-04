@@ -9,7 +9,6 @@
                               `replacement ::stub}])]
     (t/is (= ::stub @obj))))
 
-
 (t/deftest ref-n-test
   (with-open [obj (di/start `object
                             [{`object (di/ref ::cfg get-in [:a :b :c])

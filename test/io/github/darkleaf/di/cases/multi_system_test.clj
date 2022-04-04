@@ -8,8 +8,6 @@
 (defn server [{shared `shared}]
   shared)
 
-;; We have to use `deref` due to started obj can't implement `di/Factory`.
-;; `build` should return `di/Stoppable`.
 (t/deftest multi-system-test
   (with-open [shared (di/start `shared)
               a      (di/start `server [{`shared @shared} di/ns-registry])
