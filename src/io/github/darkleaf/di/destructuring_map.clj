@@ -1,15 +1,20 @@
 (ns io.github.darkleaf.di.destructuring-map
   (:refer-clojure :exclude [key]))
 
+(defn- key-tag [defaults key]
+  (if (contains? defaults key)
+      :optional
+      :required))
+
 (defn- parse-keys [k v defaults]
   (when (and (keyword? k)
              (= "keys" (name k))
              (vector? v))
     (reduce
      (fn [deps binding]
-       (let [key       (keyword (namespace k) (name binding))
-             required? (not (contains? defaults binding))]
-         (assoc deps key required?)))
+       (let [key (keyword (namespace k) (name binding))
+             tag (key-tag defaults binding)]
+         (assoc deps key tag)))
      {}
      v)))
 
@@ -20,8 +25,8 @@
     (reduce
      (fn [deps binding]
        (let [key       (symbol (namespace k) (name binding))
-             required? (not (contains? defaults binding))]
-         (assoc deps key required?)))
+             tag (key-tag defaults binding)]
+         (assoc deps key tag)))
      {}
      v)))
 
@@ -30,34 +35,34 @@
              (vector? v))
     (reduce
      (fn [deps binding]
-       (let [key       (name binding)
-             required? (not (contains? defaults binding))]
-         (assoc deps key required?)))
+       (let [key (name binding)
+             tag (key-tag defaults binding)]
+         (assoc deps key tag)))
      {}
      v)))
 
 (defn- parse-named-key [k v defaults]
   (when (and (simple-symbol? k)
              (keyword? v))
-    (let [key       v
-          required? (not (contains? defaults k))]
-      {key required?})))
+    (let [key v
+          tag (key-tag defaults k)]
+      {key tag})))
 
 (defn- parse-named-sym [k v defaults]
   (when (and (simple-symbol? k)
              (seq? v)
              (= 'quote (first v))
              (symbol? (second v)))
-    (let [key       (second v)
-          required? (not (contains? defaults k))]
-      {key required?})))
+    (let [key (second v)
+          tag (key-tag defaults k)]
+      {key tag})))
 
 (defn- parse-named-str [k v defaults]
   (when (and (simple-symbol? k)
              (string? v))
-    (let [key       v
-          required? (not (contains? defaults k))]
-      {key required?})))
+    (let [key v
+          tag (key-tag defaults k)]
+      {key tag})))
 
 (defn dependencies
   "Parses destructuring map into map of dependency key and `required?` flag"

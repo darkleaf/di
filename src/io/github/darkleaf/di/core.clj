@@ -32,6 +32,11 @@
       x#
       (?? ~@next))))
 
+(def ^:private dependency-type-priority
+  {:required      1
+   :skip-circular 2
+   :optional      3})
+
 (defn combine-dependencies
   "Combines dependencies. Use it with `reduce`.
 
@@ -40,7 +45,11 @@
   ([]
    {})
   ([a b]
-   (merge-with #(or %1 %2) a b)))
+   (merge-with (fn [x y]
+                 (->> [x y]
+                      (sort-by dependency-type-priority)
+                      first))
+               a b)))
 
 (defn- combine-throwable
   "Combines throwables. Use it with `reduce`."
@@ -61,16 +70,16 @@
                   {:type ::circular-dependency
                    :key  key})))
 
-(defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key required?]
-  (if (contains? under-construction key)
-    (if required?
-      (circular-dependency! key)
-      acc)
+(defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
+  (if (under-construction key)
+    (if (= :skip-circular dep-type)
+      acc
+      (circular-dependency! key))
     (if-some [obj (find-or-build ctx key)]
       (assoc acc key obj)
-      (if required?
-        (missing-dependency! key)
-        acc))))
+      (if (= :optional dep-type)
+        acc
+        (missing-dependency! key)))))
 
 (defn- resolve-deps [ctx deps]
   (reduce-kv (partial resolve-dep ctx)
@@ -134,7 +143,7 @@
                          (?? (previous key)
                              (get registry key)))))
 
-(defn build-registry [registries]
+(defn- build-registry [registries]
   (reduce combine-registries
           nil-registry
           registries))
@@ -273,21 +282,18 @@
     (build [_ deps]
       (w/postwalk #(build % deps) form))))
 
-(defn decorating-registry [previous decorator-key]
-  (when-not (previous decorator-key)
-    (missing-dependency! decorator-key))
+(defn decorating-registry [previous decorator-key & args]
   (fn [key]
     (let [factory (previous key)]
       (reify Factory
-        ;; inject decorator as an optional dependency to prevent circle
         (dependencies [_]
           (combine-dependencies (dependencies factory)
-                                {decorator-key false}))
+                                {decorator-key :skip-circular}))
         (build [_ deps]
           (let [decorator (deps decorator-key)
                 obj       (build factory deps)]
             (if decorator
-              (decorator key obj)
+              (apply decorator key obj args)
               obj)))))))
 
 (defn- arglists [variable]

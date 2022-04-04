@@ -9,17 +9,23 @@
     {}
     []
 
-    {:a true}
-    [{:a true}]
+    {:a :required}
+    [{:a :required}]
 
-    {:a false}
-    [{:a false}]
+    {:a :skip-circular}
+    [{:a :skip-circular}]
 
-    {:a true, :b true}
-    [{:a true} {:b true}]
+    {:a :optional}
+    [{:a :optional}]
 
-    {:a true}
-    [{:a false} {:a true}]
+    {:a :required, :b :required}
+    [{:a :required} {:b :required}]
 
-    {:a true, :b true}
-    [{:a true} {:b true}]))
+    {:a :optional, :b :required}
+    [{:a :optional} {:b :required}]
+
+    {:a :required}
+    [{:a :optional} {:a :skip-circular} {:a :required}]
+
+    {:a :skip-circular}
+    [{:a :optional} {:a :skip-circular}]))

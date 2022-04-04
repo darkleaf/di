@@ -17,54 +17,54 @@
     {:or {a 1, b 2}}
 
 
-    {:a true, :b true}
+    {:a :required, :b :required}
     {:keys [a b]}
 
-    {:a false, :b false}
+    {:a :optional, :b :optional}
     {:keys [a b] :or {a :av, b :bv}}
 
-    {::a true, ::b true}
+    {::a :required, ::b :required}
     {::keys [a b]}
 
-    {::a false, ::b false}
+    {::a :optional, ::b :optional}
     {::keys [a b] :or {a :av, b :bv}}
 
 
-    {a true, b true}
+    {a :required, b :required}
     {:syms [a b]}
 
-    {a false, b false}
+    {a :optional, b :optional}
     {:syms [a b] :or {a :av, b :bv}}
 
-    {foo/a true, foo/b true}
+    {foo/a :required, foo/b :required}
     {:foo/syms [a b]}
 
-    {foo/a false, foo/b false}
+    {foo/a :optional, foo/b :optional}
     {:foo/syms [a b] :or {a :av, b :bv}}
 
 
-    {"a" true, "b" true}
+    {"a" :required, "b" :required}
     {:strs [a b]}
 
-    {"a" false, "b" false}
+    {"a" :optional, "b" :optional}
     {:strs [a b] :or {a :av, b :bv}}
 
 
-    {:a true, ::b true}
+    {:a :required, ::b :required}
     {a :a, b ::b}
 
-    {:a false, ::b false}
+    {:a :optional, ::b :optional}
     {a :a, b ::b, :or {a :av, b :bv}}
 
 
-    {a true, foo/b true}
+    {a :required, foo/b :required}
     {a 'a, b 'foo/b}
 
-    {a false, foo/b false}
+    {a :optional, foo/b :optional}
     {a 'a, b 'foo/b, :or {a :av, b :bv}}
 
-    {"a" true, "b" true}
+    {"a" :required, "b" :required}
     {a "a", b "b"}
 
-    {"a" false, "b" false}
+    {"a" :optional, "b" :optional}
     {a "a", b "b", :or {a :av, b :bv}}))
