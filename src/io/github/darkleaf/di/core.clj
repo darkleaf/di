@@ -19,8 +19,8 @@
 (defprotocol Factory
   :extend-via-metadata true
   (dependencies [this]
-    "Returns a map of a key and a boolean flag.
-    Keys with true flag are required.")
+    "Returns a map of a key and a dependency type.
+    A type can be :required, :skipping-circular, or :optional.")
   (build [this dependencies]
     "Builds a stoppable object from dependencies."))
 
@@ -39,9 +39,7 @@
 
 (defn combine-dependencies
   "Combines dependencies. Use it with `reduce`.
-
-  Dependencies are a hash map of key and boolean flag.
-  Keys with true flag are required."
+  Dependencies are a hash map of a key and a dependency type."
   ([]
    {})
   ([a b]
@@ -132,7 +130,7 @@
              (reduce combine-throwable)
              (throw))))))
 
-(defn nil-registry [key]
+(defn- nil-registry [key]
   nil)
 
 (defn- combine-registries [previous registry]
@@ -148,7 +146,9 @@
           nil-registry
           registries))
 
-(defn ns-registry [previous]
+(defn ns-registry
+  "A registry looking for vars."
+  [previous]
   (fn [key]
     (?? (previous key)
         (when (qualified-symbol? key)
@@ -156,7 +156,9 @@
             (requiring-resolve key)
             (catch FileNotFoundException _ nil))))))
 
-(defn env-registry [previous]
+(defn env-registry
+  "A registry looking for environment variables."
+  [previous]
   (fn [key]
     (?? (previous key)
         (when (string? key)
@@ -165,19 +167,34 @@
 (defn ^AutoCloseable start
   "Starts system of dependent objects.
 
-  The key is a name of the system root.
-  It can be a var name or should be added to the registry.
-  Use keywords for var names, keywords for abstract dependencies,
+  The key argument is a name of the system root.
+  Use symbols for var names, keywords for abstract dependencies,
   and strings for environments variables.
 
-  The registry is a map of key and `Factory`.
+  The key is looked up in a registry.
 
-  Hooks are a seq of functions to instrument built objects.
-  A hook is a function of a key and an associated object with one
-  that returns an instrumented object.
+  The registries argument is a list of registry conctructors.
+  Each conctructor can be one of the following form:
+
+  - a middleware-like function `previous-factory -> key -> Factory`
+  - a vector of a function `(previous-factory args*) -> key -> Factory` and it's arguments
+  - a map of key and `Factory`
+
+  Searching for a key in the registries is usually done from left to right.
+
+  Middleware-like functions are used to chain registries.
+  This technique also allows you to instrument built objects.
+  See `decorating-registry`.
+
+  (di/start `root [{:my-abstraction implemntation
+                    `some-key replacement
+                    \"LOG_LEVEL\" \"info\"}
+                   di/ns-registry
+                   di/env-registry
+                   [di/decorating-registry `log]])
 
   Returns a container contains started root of the system.
-  The container implements `Stoppable`, `IDeref` and `IFn`.
+  The container implements `AutoCloseable`, `Stoppable`, `IDeref` and `IFn`.
 
   Use `with-open` in tests to stop the system reliably.
 
@@ -258,6 +275,14 @@
          (.applyTo ^IFn obj args))))))
 
 (defn ref
+  "A factory to refer to another one.
+
+  (def port (di/ref \"PORT\" parse-long)
+
+  (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
+
+  (di/start `root [{:my-abstraction (di/ref `implemntation)}
+                   di/ns-registry])"
   ([key]
    (-> (ref key identity)
        (vary-meta assoc ::print key)))
@@ -270,7 +295,14 @@
      (build [_ deps]
        (apply f (deps key) args)))))
 
-(defn template [form]
+(defn template
+  "A factory to template a data-structure.
+  Replaces `Factory` instances with built objects.
+
+  (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
+
+  (def routes (di/template [[\"/posts\" #'handler]]))"
+  [form]
   ^{:type   ::template
     ::print form}
   (reify Factory
@@ -282,7 +314,19 @@
     (build [_ deps]
       (w/postwalk #(build % deps) form))))
 
-(defn decorating-registry [previous decorator-key & args]
+(defn decorating-registry
+  "Wraps previous registries to decorate or instrument built objects.
+  Use it for logging, schema checking, etc.
+  The `decorator-key` can refer to a var like the following one.
+
+  (defn my-instrumentation [{state :some/state} key object & args]
+    (if (need-instrument? key object)
+      (instrument state object args)
+      object))
+
+  (di/start `root [di/ns-registry
+                   [di/decorating-registry `my-instrumentation arg1 arg2]])"
+  [previous decorator-key & args]
   (fn [key]
     (let [factory (previous key)]
       (reify Factory
