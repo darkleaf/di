@@ -20,12 +20,10 @@
   (with-open [obj (di/start `link)]
     (t/is (= 42 @obj))))
 
-
-;; port implements `di/Factory`
-(def port (di/ref "PORT" #(Long/parseLong %)))
-
+;; (def port (di/ref "PORT" #(Long/parseLong %)))
 (t/deftest port-test
-  (with-open [p (di/start `port [{"PORT" "8080"} di/ns-registry])]
+  (with-open [p (di/start `port [{"PORT" "8080"
+                                  `port  (di/ref "PORT" #(Long/parseLong %))}])]
     (t/is (= 8080 @p))))
 
 
