@@ -1,0 +1,14 @@
+{:paths ["src" "test" "resources"]
+ :deps  {org.clojure/clojure               {:mvn/version "1.11.1"}
+         io.github.darkleaf/di             {:local/root "../"}
+         ring/ring-core                    {:mvn/version "1.9.4"}
+         ring/ring-jetty-adapter           {:mvn/version "1.9.4"}
+         ring/ring-mock                    {:mvn/version "0.4.0"}
+         metosin/reitit-core               {:mvn/version "0.5.15"}
+         metosin/reitit-ring               {:mvn/version "0.5.15"}
+         metosin/ring-http-response        {:mvn/version "0.9.3"}
+         com.h2database/h2                 {:mvn/version "2.1.210"}
+         com.github.seancorfield/next.jdbc {:mvn/version "1.2.780"}
+         hikari-cp/hikari-cp               {:mvn/version "2.14.0"}
+         org.flywaydb/flyway-maven-plugin  {:mvn/version "8.5.7"}
+         metosin/jsonista                  {:mvn/version "0.3.4"}}}
