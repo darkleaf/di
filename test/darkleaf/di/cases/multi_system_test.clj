@@ -1,6 +1,6 @@
-(ns io.github.darkleaf.di.cases.multi-system-test
+(ns darkleaf.di.cases.multi-system-test
   (:require [clojure.test :as t]
-            [io.github.darkleaf.di.core :as di]))
+            [darkleaf.di.core :as di]))
 
 (defn shared [{}]
   (Math/random))

@@ -1,7 +1,7 @@
 (ns example.adapters.jetty
   (:require
    [example.adapters.reitit :as-alias reitit]
-   [io.github.darkleaf.di.core :as di]
+   [darkleaf.di.core :as di]
    [ring.adapter.jetty :as jetty])
   (:import
    [org.eclipse.jetty.server Server]))

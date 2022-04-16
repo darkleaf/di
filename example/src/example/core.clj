@@ -1,6 +1,6 @@
 (ns example.core
   (:require
-   [io.github.darkleaf.di.core :as di]
+   [darkleaf.di.core :as di]
    [next.jdbc :as jdbc]
    [ring.util.http-response :as r.resp]
    [ring.core.protocols :as r.proto]

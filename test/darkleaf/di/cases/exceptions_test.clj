@@ -1,7 +1,7 @@
-(ns io.github.darkleaf.di.cases.exceptions-test
+(ns darkleaf.di.cases.exceptions-test
   (:require
    [clojure.test :as t]
-   [io.github.darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]))
 
 (t/deftest start-test
   (let [root-build-ex (ex-info "build root" {})

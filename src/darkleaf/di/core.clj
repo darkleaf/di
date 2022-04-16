@@ -1,9 +1,9 @@
-(ns io.github.darkleaf.di.core
+(ns darkleaf.di.core
   (:refer-clojure :exclude [ref key])
   (:require
    [clojure.walk :as w]
-   [io.github.darkleaf.di.destructuring-map :as map]
-   [io.github.darkleaf.di.core :as di])
+   [darkleaf.di.destructuring-map :as map]
+   [darkleaf.di.core :as di])
   (:import
    [java.lang AutoCloseable Exception]
    [java.io FileNotFoundException Writer]

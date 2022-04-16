@@ -1,7 +1,7 @@
-(ns io.github.darkleaf.di.cases.template-test
+(ns darkleaf.di.cases.template-test
   (:require
    [clojure.test :as t]
-   [io.github.darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]))
 
 (t/deftest template-test
   (let [route-data   (di/template
@@ -18,5 +18,5 @@
                @obj)))))
 
 (t/deftest pr-test
-  (t/is (= "#io.github.darkleaf.di.core/template [:a :b :c]"
+  (t/is (= "#darkleaf.di.core/template [:a :b :c]"
            (pr-str (di/template [:a :b :c])))))

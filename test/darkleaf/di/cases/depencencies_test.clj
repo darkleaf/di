@@ -1,7 +1,7 @@
-(ns io.github.darkleaf.di.cases.depencencies-test
+(ns darkleaf.di.cases.depencencies-test
   (:require
    [clojure.test :as t]
-   [io.github.darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]))
 
 ;;   root
 ;;  / \

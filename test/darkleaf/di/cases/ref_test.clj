@@ -1,7 +1,7 @@
-(ns io.github.darkleaf.di.cases.ref-test
+(ns darkleaf.di.cases.ref-test
   (:require
    [clojure.test :as t]
-   [io.github.darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]))
 
 (t/deftest ref-test
   (with-open [obj (di/start `object
@@ -17,7 +17,7 @@
 
 
 (t/deftest pr-test
-  (t/is (= "#io.github.darkleaf.di.core/ref io.github.darkleaf.di.cases.ref-test/object"
+  (t/is (= "#darkleaf.di.core/ref darkleaf.di.cases.ref-test/object"
            (pr-str (di/ref `object))))
-  (t/is (= "#io.github.darkleaf.di.core/ref [io.github.darkleaf.di.cases.ref-test/object :key]"
+  (t/is (= "#darkleaf.di.core/ref [darkleaf.di.cases.ref-test/object :key]"
            (pr-str (di/ref `object :key)))))

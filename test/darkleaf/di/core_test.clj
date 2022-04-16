@@ -1,6 +1,6 @@
-(ns io.github.darkleaf.di.core-test
+(ns darkleaf.di.core-test
   (:require
-   [io.github.darkleaf.di.core :as di]
+   [darkleaf.di.core :as di]
    [clojure.test :as t]))
 
 (t/deftest combine-dependencies-test

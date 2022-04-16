@@ -1,7 +1,7 @@
-(ns io.github.darkleaf.di.cases.dependency-types-test
+(ns darkleaf.di.cases.dependency-types-test
   (:require
    [clojure.test :as t]
-   [io.github.darkleaf.di.core :as di])
+   [darkleaf.di.core :as di])
   (:import
    [clojure.lang ExceptionInfo]))
 
@@ -24,7 +24,7 @@
 
 (t/deftest required-circular-test
   (t/is (thrown-with-msg? ExceptionInfo
-                          #"\ACircular dependency io.github.darkleaf.di.cases.dependency-types-test/root\z"
+                          #"\ACircular dependency darkleaf.di.cases.dependency-types-test/root\z"
                           (di/start `root [{`root (factory `root :required)}]))))
 
 
@@ -39,7 +39,7 @@
 
 (t/deftest optional-circular-test
   (t/is (thrown-with-msg? ExceptionInfo
-                          #"\ACircular dependency io.github.darkleaf.di.cases.dependency-types-test/root\z"
+                          #"\ACircular dependency darkleaf.di.cases.dependency-types-test/root\z"
                           (di/start `root [{`root (factory `root :optional)}]))))
 
 

@@ -1,7 +1,7 @@
-(ns io.github.darkleaf.di.cases.root-test
+(ns darkleaf.di.cases.root-test
   (:require
    [clojure.test :as t]
-   [io.github.darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]))
 
 (t/deftest auto-closeable-test
   (let [p         (promise)
@@ -78,5 +78,5 @@
     (t/is (= 2 (apply root 1 [2])))))
 
 (t/deftest pr-test
-  (t/is (= "#io.github.darkleaf.di.core/root 42"
+  (t/is (= "#darkleaf.di.core/root 42"
            (pr-str (di/start `root [{`root 42}])))))

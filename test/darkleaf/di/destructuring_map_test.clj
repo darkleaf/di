@@ -1,6 +1,6 @@
-(ns io.github.darkleaf.di.destructuring-map-test
+(ns darkleaf.di.destructuring-map-test
   (:require
-   [io.github.darkleaf.di.destructuring-map :as sut]
+   [darkleaf.di.destructuring-map :as sut]
    [clojure.test :as t]))
 
 (t/deftest deps-test

@@ -1,7 +1,7 @@
 (ns example.adapters.hikari
   (:require
    [hikari-cp.core :as hikari]
-   [io.github.darkleaf.di.core :as di])
+   [darkleaf.di.core :as di])
   (:import
    [com.zaxxer.hikari HikariDataSource]))
 

@@ -1,4 +1,4 @@
-(ns io.github.darkleaf.di.destructuring-map
+(ns darkleaf.di.destructuring-map
   (:refer-clojure :exclude [key]))
 
 (defn- key-tag [defaults key]

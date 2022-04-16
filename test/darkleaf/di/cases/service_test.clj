@@ -1,7 +1,7 @@
-(ns io.github.darkleaf.di.cases.service-test
+(ns darkleaf.di.cases.service-test
   (:require
    [clojure.test :as t]
-   [io.github.darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]))
 
 ;; We don't need to restart the whole system if we redefine a service.
 ;; It's very helpful for interactive development.

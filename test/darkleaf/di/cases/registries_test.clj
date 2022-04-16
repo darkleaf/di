@@ -1,7 +1,7 @@
-(ns io.github.darkleaf.di.cases.registries-test
+(ns darkleaf.di.cases.registries-test
   (:require
    [clojure.test :as t]
-   [io.github.darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]))
 
 (def dep 'dep)
 
