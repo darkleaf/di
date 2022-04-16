@@ -133,36 +133,36 @@
 (defn- nil-registry [key]
   nil)
 
-(defn- combine-registries [previous registry]
+(defn- combine-registries [super registry]
   (cond
-    (fn? registry)     (registry previous)
-    (vector? registry) (apply (first registry) previous (rest registry))
+    (fn? registry)     (registry super)
+    (vector? registry) (apply (first registry) super (rest registry))
     (map? registry)    (fn [key]
-                         (?? (previous key)
-                             (get registry key)))))
+                         (?? (get registry key)
+                             (super key)))))
 
 (defn- build-registry [registries]
   (reduce combine-registries
           nil-registry
           registries))
 
-(defn ns-registry
+(defn- ns-registry
   "A registry looking for vars."
-  [previous]
+  [super]
   (fn [key]
-    (?? (previous key)
-        (when (qualified-symbol? key)
+    (?? (when (qualified-symbol? key)
           (try
             (requiring-resolve key)
-            (catch FileNotFoundException _ nil))))))
+            (catch FileNotFoundException _ nil)))
+        (super key))))
 
-(defn env-registry
+(defn- env-registry
   "A registry looking for environment variables."
-  [previous]
+  [super]
   (fn [key]
-    (?? (previous key)
-        (when (string? key)
-          (System/getenv key)))))
+    (?? (when (string? key)
+          (System/getenv key))
+        (super key))))
 
 (defn ^AutoCloseable start
   "Starts system of dependent objects.
@@ -176,11 +176,11 @@
   The registries argument is a list of registry conctructors.
   Each conctructor can be one of the following form:
 
-  - a middleware-like function `previous-factory -> key -> Factory`
-  - a vector of a function `(previous-factory args*) -> key -> Factory` and it's arguments
+  - a middleware-like function `super -> key -> Factory`
+  - a vector of a function `(super args*) -> key -> Factory` and it's arguments
   - a map of key and `Factory`
 
-  Searching for a key in the registries is usually done from left to right.
+  Super is a previous registry in the registries seq.
 
   Middleware-like functions are used to chain registries.
   This technique also allows you to instrument built objects.
@@ -200,14 +200,15 @@
 
   See the tests for use cases."
   ([key]
-   (start key [ns-registry env-registry]))
+   (start key []))
   ([key registries]
-   (let [registry (build-registry registries)
-         ctx      {:*built-map         (volatile! {})
-                   :*built-list        (volatile! '())
-                   :under-construction #{}
-                   :registry           registry}
-         obj      (try-build ctx key)]
+   (let [registries (concat [env-registry ns-registry] registries)
+         registry   (build-registry registries)
+         ctx        {:*built-map         (volatile! {})
+                     :*built-list        (volatile! '())
+                     :under-construction #{}
+                     :registry           registry}
+         obj        (try-build ctx key)]
      ^{:type   ::root
        ::print obj}
      (reify
@@ -326,9 +327,9 @@
 
   (di/start `root [di/ns-registry
                    [di/decorating-registry `my-instrumentation arg1 arg2]])"
-  [previous decorator-key & args]
+  [super decorator-key & args]
   (fn [key]
-    (let [factory (previous key)]
+    (let [factory (super key)]
       (reify Factory
         (dependencies [_]
           (combine-dependencies (dependencies factory)

@@ -10,8 +10,8 @@
 
 (t/deftest multi-system-test
   (with-open [shared (di/start `shared)
-              a      (di/start `server [{`shared @shared} di/ns-registry])
-              b      (di/start `server [{`shared @shared} di/ns-registry])]
+              a      (di/start `server [{`shared @shared}])
+              b      (di/start `server [{`shared @shared}])]
     (t/is (double? @a))
     (t/is (double? @b))
     (t/is (identical? @a @b))))

@@ -11,35 +11,27 @@
   (with-open [obj (di/start "PATH")]
     (t/is (= (System/getenv "PATH") @obj))))
 
-(t/deftest nil-registry-test
-  (t/is (thrown? Throwable (di/start `dep [])))
-  (t/is (thrown? Throwable (di/start "PATH" []))))
-
-(t/deftest ns-registry-test
-  (with-open [obj (di/start `dep [di/ns-registry])]
-    (t/is (= 'dep @obj))))
-
-(t/deftest env-registry-test
-  (with-open [obj (di/start "PATH" [di/env-registry])]
-    (t/is (= (System/getenv "PATH") @obj))))
+(t/deftest undefined-test
+  (t/is (thrown? Throwable (di/start `undefined [])))
+  (t/is (thrown? Throwable (di/start "DI_UNDEFINED" []))))
 
 (t/deftest map-registry-test
   (with-open [obj (di/start `dep [{`dep :stub}])]
     (t/is (= :stub @obj))))
 
 (t/deftest priority-test
-  (with-open [obj (di/start `dep [di/ns-registry {`dep :stub}])]
+  (with-open [obj (di/start `dep)]
     (t/is (= dep @obj)))
-  (with-open [obj (di/start `dep [{`dep :stub} di/ns-registry])]
+  (with-open [obj (di/start `dep [{`dep :stub}])]
     (t/is (= :stub @obj))))
 
 (t/deftest vector-registry-test
-  (let [reg (fn [previous default]
+  (let [reg (fn [super default]
               (fn [key]
-                (if-some [factory (previous key)]
+                (if-some [factory (super key)]
                   factory
                   default)))]
-    (with-open [obj (di/start `not-found [di/ns-registry [reg :default]])]
+    (with-open [obj (di/start `not-found [[reg :default]])]
       (t/is (= :default @obj)))))
 
 
@@ -55,7 +47,6 @@
 
 (t/deftest decorating-registry-test
   (with-open [obj (di/start `service
-                            [di/ns-registry
-                             [di/decorating-registry `instrument-service]])]
+                            [[di/decorating-registry `instrument-service]])]
     (t/is (= [:service 42] (obj 42)))
     (t/is (thrown? Throwable (obj "42")))))
