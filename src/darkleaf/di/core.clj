@@ -133,37 +133,34 @@
 (defn- nil-registry [key]
   nil)
 
-(defn- combine-registries [super registry]
+(defn- apply-middleware [registry middleware]
   (cond
-    (fn? registry)     (registry super)
-    (vector? registry) (apply (first registry) super (rest registry))
-    (map? registry)    (fn [key]
-                         (?? (get registry key)
-                             (super key)))
-    (seq? registry) (reduce combine-registries
-                            super registry)))
+    (fn? middleware)     (middleware registry)
+    (vector? middleware) (apply (first middleware) registry (rest middleware))
+    (map? middleware)    (fn [key]
+                           (?? (get middleware key)
+                               (registry key)))
+    (seq? middleware)    (reduce apply-middleware
+                                 registry middleware)
+    :else                (throw (IllegalArgumentException. "Wrong middleware kind"))))
 
-(defn- build-registry [registries]
-  (reduce combine-registries
-          nil-registry registries))
-
-(defn- ns-registry
-  "A registry looking for vars."
-  [super]
+(defn- with-ns
+  "Adds support to the registry for looking up vars."
+  [registry]
   (fn [key]
     (?? (when (qualified-symbol? key)
           (try
             (requiring-resolve key)
             (catch FileNotFoundException _ nil)))
-        (super key))))
+        (registry key))))
 
-(defn- env-registry
-  "A registry looking for environment variables."
-  [super]
+(defn- with-env
+  "Adds support to the registry for looking up environment variables."
+  [registry]
   (fn [key]
     (?? (when (string? key)
           (System/getenv key))
-        (super key))))
+        (registry key))))
 
 (defn ^AutoCloseable start
   "Starts system of dependent objects.
@@ -173,27 +170,27 @@
   and strings for environments variables.
 
   The key is looked up in a registry.
+  By default registry uses system env and clojure namespaces
+  to resolve string and symbol keys, respectively.
 
-  The registries argument is a list of registry conctructors.
-  Each conctructor can be one of the following form:
+  You can extend it with middlewares.
+  Each middleware can be one of the following form:
 
-  - a middleware-like function `super -> key -> Factory`
-  - a vector of a function `(super args*) -> key -> Factory` and it's arguments
-  - a map of key and `Factory`
-  - a seq of the previous forms
+  - a function `registry -> key -> Factory`
+  - a vector of a function `[registry args*] -> key -> Factory` and it's arguments
+  - a map of key and `Factory` instance
+  - a sequence of the previous forms
 
-  Super is a previous registry in the registries seq.
+  Middlewares also allows you to instrument built objects.
+  It's useful for logging, schema validation, AOP, etc.
+  See `with-decorator`.
 
-  Middleware-like functions are used to chain registries.
-  This technique also allows you to instrument built objects.
-  See `decorating-registry`.
-
-  (di/start `root [{:my-abstraction implemntation
-                    `some-key replacement
-                    \"LOG_LEVEL\" \"info\"}
-                   di/ns-registry
-                   di/env-registry
-                   [di/decorating-registry `log]])
+  (di/start `root
+            {:my-abstraction implemntation
+             `some-key replacement
+             \"LOG_LEVEL\" \"info\"}
+            (concat dev-middlwares test-middlewares)
+            [di/with-decorator `log])
 
   Returns a container contains started root of the system.
   The container implements `AutoCloseable`, `Stoppable`, `IDeref` and `IFn`.
@@ -201,14 +198,14 @@
   Use `with-open` in tests to stop the system reliably.
 
   See the tests for use cases."
-  [key & registries]
-  (let [registries (concat [env-registry ns-registry] registries)
-        registry   (build-registry registries)
-        ctx        {:*built-map         (volatile! {})
-                    :*built-list        (volatile! '())
-                    :under-construction #{}
-                    :registry           registry}
-        obj        (try-build ctx key)]
+  [key & middlewares]
+  (let [middlewares (concat [with-env with-ns] middlewares)
+        registry    (apply-middleware nil-registry middlewares)
+        ctx         {:*built-map         (volatile! {})
+                     :*built-list        (volatile! '())
+                     :under-construction #{}
+                     :registry           registry}
+        obj         (try-build ctx key)]
     ^{:type   ::root
       ::print obj}
     (reify
@@ -282,8 +279,9 @@
 
   (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
 
-  (di/start `root [{:my-abstraction (di/ref `implemntation)}
-                   di/ns-registry])"
+  (di/start `root {:my-abstraction (di/ref `implemntation)})
+
+  See `template`."
   ([key]
    (-> (ref key identity)
        (vary-meta assoc ::print key)))
@@ -302,7 +300,9 @@
 
   (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
 
-  (def routes (di/template [[\"/posts\" #'handler]]))"
+  (def routes (di/template [[\"/posts\" #'handler]]))
+
+  See `ref`."
   [form]
   ^{:type   ::template
     ::print form}
@@ -315,21 +315,20 @@
     (build [_ deps]
       (w/postwalk #(build % deps) form))))
 
-(defn decorating-registry
-  "Wraps previous registries to decorate or instrument built objects.
-  Use it for logging, schema checking, etc.
-  The `decorator-key` can refer to a var like the following one.
+(defn with-decorator
+  "Wraps registry to decorate or instrument built objects.
+  Use it for logging, schema checking, AOP, etc.
+  The `decorator-key` should refer to a var like the following one.
 
   (defn my-instrumentation [{state :some/state} key object & args]
     (if (need-instrument? key object)
       (instrument state object args)
       object))
 
-  (di/start `root [di/ns-registry
-                   [di/decorating-registry `my-instrumentation arg1 arg2]])"
-  [super decorator-key & args]
+  (di/start `root [di/with-decorator `my-instrumentation arg1 arg2])"
+  [registry decorator-key & args]
   (fn [key]
-    (let [factory (super key)]
+    (let [factory (registry key)]
       (reify Factory
         (dependencies [_]
           (combine-dependencies (dependencies factory)

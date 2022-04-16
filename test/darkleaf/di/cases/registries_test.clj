@@ -54,6 +54,6 @@
 
 (t/deftest decorating-registry-test
   (with-open [obj (di/start `service
-                            [di/decorating-registry `instrument-service])]
+                            [di/with-decorator `instrument-service])]
     (t/is (= [:service 42] (obj 42)))
     (t/is (thrown? Throwable (obj "42")))))

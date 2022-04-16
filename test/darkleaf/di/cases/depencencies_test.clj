@@ -30,7 +30,7 @@
   (let [log (atom [])]
     (with-open [obj (di/start `root
                               {`log log}
-                              [di/decorating-registry `with-logging])]
+                              [di/with-decorator `with-logging])]
       (t/is (= [:root [:a [:c]] [:b [:c]]] @obj)))
     (t/is (= [[`c :built]
               [`a :built]
