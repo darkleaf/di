@@ -13,47 +13,54 @@
       [dependency-key (get deps dependency-key)])))
 
 (t/deftest required-present-test
-  (with-open [root (di/start `root [{`root       (factory :dependency :required)
-                                     :dependency 42}])]
+  (with-open [root (di/start `root
+                             {`root       (factory :dependency :required)
+                              :dependency 42})]
     (t/is (= [:dependency 42] @root))))
 
 (t/deftest required-missed-test
   (t/is (thrown-with-msg? ExceptionInfo
                           #"\AMissing dependency :dependency\z"
-                          (di/start `root [{`root (factory :dependency :required)}]))))
+                          (di/start `root
+                                    {`root (factory :dependency :required)}))))
 
 (t/deftest required-circular-test
   (t/is (thrown-with-msg? ExceptionInfo
                           #"\ACircular dependency darkleaf.di.cases.dependency-types-test/root\z"
-                          (di/start `root [{`root (factory `root :required)}]))))
-
+                          (di/start `root
+                                    {`root (factory `root :required)}))))
 
 (t/deftest optional-present-test
-  (with-open [root (di/start `root [{`root       (factory :dependency :optional)
-                                     :dependency 42}])]
+  (with-open [root (di/start `root
+                             {`root       (factory :dependency :optional)
+                              :dependency 42})]
     (t/is (= [:dependency 42] @root))))
 
 (t/deftest optional-missed-test
-  (with-open [root (di/start `root [{`root (factory :dependency :optional)}])]
+  (with-open [root (di/start `root
+                             {`root (factory :dependency :optional)})]
     (t/is (= [:dependency nil] @root))))
 
 (t/deftest optional-circular-test
   (t/is (thrown-with-msg? ExceptionInfo
                           #"\ACircular dependency darkleaf.di.cases.dependency-types-test/root\z"
-                          (di/start `root [{`root (factory `root :optional)}]))))
+                          (di/start `root {`root (factory `root :optional)}))))
 
 
 (t/deftest skipping-circular-present-test
-  (with-open [root (di/start `root [{`root       (factory :dependency :skipping-circular)
-                                     :dependency 42}])]
+  (with-open [root (di/start `root
+                             {`root       (factory :dependency :skipping-circular)
+                              :dependency 42})]
     (t/is (= [:dependency 42] @root))))
 
 
 (t/deftest sipping-circular-missed-test
   (t/is (thrown-with-msg? ExceptionInfo
                           #"\AMissing dependency :dependency\z"
-                          (di/start `root [{`root (factory :dependency :skipping-circular)}]))))
+                          (di/start `root
+                                    {`root (factory :dependency :skipping-circular)}))))
 
 (t/deftest sipping-circular-circular-test
-  (with-open [root (di/start `root [{`root (factory `root :skipping-circular)}])]
+  (with-open [root (di/start `root
+                             {`root (factory `root :skipping-circular)})]
     (t/is (= [`root nil] @root))))

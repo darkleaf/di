@@ -8,7 +8,7 @@
         stoppable (reify di/Stoppable
                     (stop [_]
                       (deliver p :done)))]
-    (with-open [root (di/start `root [{`root stoppable}])])
+    (with-open [root (di/start `root {`root stoppable})])
     (t/is (realized? p))
     (t/is (= :done @p))))
 
@@ -17,40 +17,40 @@
         stoppable (reify di/Stoppable
                     (stop [_]
                       (deliver p :done)))]
-    (di/stop (di/start `root [{`root stoppable}]))
+    (di/stop (di/start `root {`root stoppable}))
     (t/is (realized? p))
     (t/is (= :done @p))))
 
 (t/deftest ideref-test
-  (with-open [root (di/start `root [{`root 42}])]
+  (with-open [root (di/start `root {`root 42})]
     (t/is (= 42 @root))))
 
 (t/deftest ifn-test
   (with-open [root (di/start
                     `root
-                    [{`root (fn
-                              ([] 0)
-                              ([a1] 1)
-                              ([a1 a2] 2)
-                              ([a1 a2 a3] 3)
-                              ([a1 a2 a3 a4] 4)
-                              ([a1 a2 a3 a4 a5] 5)
-                              ([a1 a2 a3 a4 a5 a6] 6)
-                              ([a1 a2 a3 a4 a5 a6 a7] 7)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8] 8)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9] 9)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10] 10)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11] 11)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12] 12)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13] 13)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14] 14)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15] 15)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16] 16)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17] 17)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18] 18)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19] 19)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20] 20)
-                              ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 & args] 21))}])]
+                    {`root (fn
+                             ([] 0)
+                             ([a1] 1)
+                             ([a1 a2] 2)
+                             ([a1 a2 a3] 3)
+                             ([a1 a2 a3 a4] 4)
+                             ([a1 a2 a3 a4 a5] 5)
+                             ([a1 a2 a3 a4 a5 a6] 6)
+                             ([a1 a2 a3 a4 a5 a6 a7] 7)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8] 8)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9] 9)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10] 10)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11] 11)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12] 12)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13] 13)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14] 14)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15] 15)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16] 16)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17] 17)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18] 18)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19] 19)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20] 20)
+                             ([a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 & args] 21))})]
     (t/is (= 0 (.call root)))
     (t/is (= nil (.run root)))
     (t/is (= 0 (root)))
@@ -79,4 +79,4 @@
 
 (t/deftest pr-test
   (t/is (= "#darkleaf.di.core/root 42"
-           (pr-str (di/start `root [{`root 42}])))))
+           (pr-str (di/start `root {`root 42})))))

@@ -20,7 +20,7 @@
                    (stop [_]
                      (throw dep-stop-ex)))))
         ex   (try
-               (di/start `root [{`root root, `dep dep}])
+               (di/start `root {`root root, `dep dep})
                (catch Throwable ex
                  ex))]
     (t/is (= root-build-ex ex))

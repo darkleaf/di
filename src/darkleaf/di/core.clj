@@ -139,12 +139,13 @@
     (vector? registry) (apply (first registry) super (rest registry))
     (map? registry)    (fn [key]
                          (?? (get registry key)
-                             (super key)))))
+                             (super key)))
+    (seq? registry) (reduce combine-registries
+                            super registry)))
 
 (defn- build-registry [registries]
   (reduce combine-registries
-          nil-registry
-          registries))
+          nil-registry registries))
 
 (defn- ns-registry
   "A registry looking for vars."
@@ -179,6 +180,7 @@
   - a middleware-like function `super -> key -> Factory`
   - a vector of a function `(super args*) -> key -> Factory` and it's arguments
   - a map of key and `Factory`
+  - a seq of the previous forms
 
   Super is a previous registry in the registries seq.
 
@@ -199,81 +201,79 @@
   Use `with-open` in tests to stop the system reliably.
 
   See the tests for use cases."
-  ([key]
-   (start key []))
-  ([key registries]
-   (let [registries (concat [env-registry ns-registry] registries)
-         registry   (build-registry registries)
-         ctx        {:*built-map         (volatile! {})
-                     :*built-list        (volatile! '())
-                     :under-construction #{}
-                     :registry           registry}
-         obj        (try-build ctx key)]
-     ^{:type   ::root
-       ::print obj}
-     (reify
-       Stoppable
-       (stop [_]
-         (some->> (stop-started ctx)
-                  (reduce combine-throwable)
-                  (throw)))
-       AutoCloseable
-       (close [this]
-         (stop this))
-       IDeref
-       (deref [_]
-         obj)
-       IFn
-       (call [_]
-         (.call ^IFn obj))
-       (run [_]
-         (.run ^IFn obj))
-       (invoke [this]
-         (.invoke ^IFn obj))
-       (invoke [_          a1]
-         (.invoke ^IFn obj a1))
-       (invoke [_          a1 a2]
-         (.invoke ^IFn obj a1 a2))
-       (invoke [_          a1 a2 a3]
-         (.invoke ^IFn obj a1 a2 a3))
-       (invoke [_          a1 a2 a3 a4]
-         (.invoke ^IFn obj a1 a2 a3 a4))
-       (invoke [_          a1 a2 a3 a4 a5]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5))
-       (invoke [_          a1 a2 a3 a4 a5 a6]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20))
-       (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
-         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
-       (applyTo [_ args]
-         (.applyTo ^IFn obj args))))))
+  [key & registries]
+  (let [registries (concat [env-registry ns-registry] registries)
+        registry   (build-registry registries)
+        ctx        {:*built-map         (volatile! {})
+                    :*built-list        (volatile! '())
+                    :under-construction #{}
+                    :registry           registry}
+        obj        (try-build ctx key)]
+    ^{:type   ::root
+      ::print obj}
+    (reify
+      Stoppable
+      (stop [_]
+        (some->> (stop-started ctx)
+                 (reduce combine-throwable)
+                 (throw)))
+      AutoCloseable
+      (close [this]
+        (stop this))
+      IDeref
+      (deref [_]
+        obj)
+      IFn
+      (call [_]
+        (.call ^IFn obj))
+      (run [_]
+        (.run ^IFn obj))
+      (invoke [this]
+        (.invoke ^IFn obj))
+      (invoke [_          a1]
+        (.invoke ^IFn obj a1))
+      (invoke [_          a1 a2]
+        (.invoke ^IFn obj a1 a2))
+      (invoke [_          a1 a2 a3]
+        (.invoke ^IFn obj a1 a2 a3))
+      (invoke [_          a1 a2 a3 a4]
+        (.invoke ^IFn obj a1 a2 a3 a4))
+      (invoke [_          a1 a2 a3 a4 a5]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5))
+      (invoke [_          a1 a2 a3 a4 a5 a6]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
+      (applyTo [_ args]
+        (.applyTo ^IFn obj args)))))
 
 (defn ref
   "A factory to refer to another one.
