@@ -27,7 +27,7 @@
 (def route-data
   (di/template [["/" {:get {:handler #'root-handler}}]])) ; or (di/ref `root-handler)
 
-(def base-registry
+(def with-base-registry
   {::root              (di/template [(di/ref `jetty/server)
                                      (di/ref `flyway/migrate)])
    ::reitit/route-data #'route-data ; or (di/ref `route-data)
@@ -35,23 +35,23 @@
    ::hikari/options    (di/template {:adapter "h2"
                                      :url     (di/ref "H2_URL")})})
 
-(def dev-registry
+(def with-dev-registry
   {"PORT"   "8888"
    "H2_URL" "jdbc:h2:mem:test"})
 
 (defonce root (atom nil))
 
 (defn start []
-  (reset! root (di/start ::root [base-registry
-                                 dev-registry
-                                 di/ns-registry
-                                 di/env-registry])))
+  (reset! root (di/start ::root
+                         with-base-registry
+                         with-dev-registry)))
 
 (defn stop []
   (di/stop @root))
 
 ;; call them from the repl
 (comment
+  ;; open http://localhost:8888
   (start)
   (stop)
   nil)
