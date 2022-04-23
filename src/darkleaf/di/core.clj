@@ -2,8 +2,7 @@
   (:refer-clojure :exclude [ref key])
   (:require
    [clojure.walk :as w]
-   [darkleaf.di.destructuring-map :as map]
-   [darkleaf.di.core :as di])
+   [darkleaf.di.destructuring-map :as map])
   (:import
    [java.lang AutoCloseable Exception]
    [java.io FileNotFoundException Writer]
