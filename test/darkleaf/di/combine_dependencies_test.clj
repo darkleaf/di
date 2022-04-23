@@ -1,4 +1,4 @@
-(ns darkleaf.di.core-test
+(ns darkleaf.di.combine-dependencies-test
   (:require
    [darkleaf.di.core :as di]
    [clojure.test :as t]))

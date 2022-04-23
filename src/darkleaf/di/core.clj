@@ -162,7 +162,7 @@
         (registry key))))
 
 (defn ^AutoCloseable start
-  "Starts system of dependent objects.
+  "Starts a system of dependent objects.
 
   The key argument is a name of the system root.
   Use symbols for var names, keywords for abstract dependencies,
