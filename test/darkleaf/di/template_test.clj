@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.template-test
+(ns darkleaf.di.template-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
