@@ -1,4 +1,4 @@
-(ns darkleaf.di.tutorial.h-service-host-update-test
+(ns darkleaf.di.tutorial.h-service-hot-update-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
