@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.depencencies-test
+(ns darkleaf.di.depencencies-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

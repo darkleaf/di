@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.multi-system-test
+(ns darkleaf.di.multi-system-test
   (:require [clojure.test :as t]
             [darkleaf.di.core :as di]))
 
