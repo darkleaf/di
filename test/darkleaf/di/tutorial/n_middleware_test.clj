@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.n-middleware-test
+(ns darkleaf.di.tutorial.n-middleware-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

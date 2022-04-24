@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.l-registries-test
+(ns darkleaf.di.tutorial.l-registries-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.m-abstractions-test
+(ns darkleaf.di.tutorial.m-abstractions-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

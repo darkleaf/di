@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.i-stop-test
+(ns darkleaf.di.tutorial.i-stop-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

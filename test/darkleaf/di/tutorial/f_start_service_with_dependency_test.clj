@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.f-start-service-with-dependency-test
+(ns darkleaf.di.tutorial.f-start-service-with-dependency-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

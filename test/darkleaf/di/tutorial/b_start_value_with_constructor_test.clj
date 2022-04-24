@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.b-start-value-with-constructor-test
+(ns darkleaf.di.tutorial.b-start-value-with-constructor-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

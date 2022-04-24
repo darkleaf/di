@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.e-start-service-test
+(ns darkleaf.di.tutorial.e-start-service-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

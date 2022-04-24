@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.j-stopping-in-tests-test
+(ns darkleaf.di.tutorial.j-stopping-in-tests-test
   (:require [clojure.test :as t]
             [darkleaf.di.core :as di]))
 

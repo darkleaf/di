@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.g-convenient-service-definition-test
+(ns darkleaf.di.tutorial.g-convenient-service-definition-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

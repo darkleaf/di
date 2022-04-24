@@ -1,4 +1,4 @@
-(ns darkleaf.di.cases.d-start-value-with-optional-dependency-test
+(ns darkleaf.di.tutorial.d-start-value-with-optional-dependency-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
