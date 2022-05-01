@@ -13,7 +13,7 @@
 (defprotocol Stoppable
   :extend-via-metadata true
   (stop [this]
-    "Stops an object. Returns nothing."))
+    "Stops the object. Returns nothing."))
 
 (defprotocol Factory
   :extend-via-metadata true
@@ -272,7 +272,7 @@
         (.applyTo ^IFn obj args)))))
 
 (defn ref
-  "A factory to refer to another one.
+  "Returns a factory referencing to another one.
 
   (def port (di/ref \"PORT\" parse-long)
 
@@ -294,7 +294,7 @@
        (apply f (deps key) args)))))
 
 (defn template
-  "A factory to template a data-structure.
+  "Returns a factory for templating a data-structure.
   Replaces `Factory` instances with built objects.
 
   (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
