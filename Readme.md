@@ -1,3 +1,5 @@
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.darkleaf/di.svg)](https://clojars.org/org.clojars.darkleaf/di)
+
 # Dependency injection
 
 DI is a dependency injection framework that allows you to define dependencies as cheaply as defining function arguments.
@@ -27,7 +29,7 @@ Docs:
 
 * [Step-by-step tutorial](test/darkleaf/di/tutorial)
 * [Example app](example/src/example/core.clj)
-* Api docs
+* [Clj doc](https://cljdoc.org/d/org.clojars.darkleaf/di)
 * [Tests](test/darkleaf/di)
 
 ## License
