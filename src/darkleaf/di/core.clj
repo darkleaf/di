@@ -289,7 +289,7 @@
      ::print (vec (concat [key f] args))}
    (reify Factory
      (dependencies [_]
-       {key true})
+       {key :required})
      (build [_ deps]
        (apply f (deps key) args)))))
 
