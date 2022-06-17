@@ -6,11 +6,11 @@
    [clojure.lang ExceptionInfo]))
 
 (defn factory [dependency-key dependency-type]
-  (reify di/Factory
-    (dependencies [_]
-      {dependency-key dependency-type})
-    (build [_ deps]
-      [dependency-key (get deps dependency-key)])))
+  (with-meta 'reified-factory
+    {`di/dependencies (fn [_]
+                        {dependency-key dependency-type})
+     `di/build        (fn [_ deps]
+                        [dependency-key (get deps dependency-key)])}))
 
 (t/deftest required-present-test
   (with-open [root (di/start `root

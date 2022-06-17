@@ -5,18 +5,18 @@
 
 (t/deftest auto-closeable-test
   (let [p         (promise)
-        stoppable (reify di/Stoppable
-                    (stop [_]
-                      (deliver p :done)))]
+        stoppable (with-meta 'reified-stoppable
+                    {`di/stop (fn [_]
+                                (deliver p :done))})]
     (with-open [root (di/start `root {`root stoppable})])
     (t/is (realized? p))
     (t/is (= :done @p))))
 
 (t/deftest stoppable-test
   (let [p         (promise)
-        stoppable (reify di/Stoppable
-                    (stop [_]
-                      (deliver p :done)))]
+        stoppable (with-meta 'reified-stoppable
+                    {`di/stop (fn [_]
+                                (deliver p :done))})]
     (di/stop (di/start `root {`root stoppable}))
     (t/is (realized? p))
     (t/is (= :done @p))))

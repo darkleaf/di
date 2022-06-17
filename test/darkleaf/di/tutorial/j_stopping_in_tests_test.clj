@@ -5,9 +5,9 @@
 (def ^:dynamic *log-stop*)
 
 (defn db-connection []
-  (reify di/Stoppable
-    (stop [_]
-      (*log-stop* :db-connection))))
+  (with-meta 'reified-stoppable
+    {`di/stop (fn [_]
+                (*log-stop* :db-connection))}))
 
 (defn ring-handler [{db `db-connection} -req]
   {:status 200})

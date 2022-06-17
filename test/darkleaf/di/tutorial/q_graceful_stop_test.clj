@@ -16,9 +16,9 @@
   (throw on-start-root-ex))
 
 (defn dep []
-  (reify di/Stoppable
-    (stop [_]
-      (throw on-stop-dep-ex))))
+  (with-meta 'reified-stoppable
+    {`di/stop (fn [_]
+                (throw on-stop-dep-ex))}))
 
 (t/deftest graceful-start-test
   (let [ex   (try
