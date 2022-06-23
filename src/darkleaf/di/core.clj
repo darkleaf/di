@@ -301,6 +301,21 @@
      (build [_ deps]
        (apply f (deps key) args)))))
 
+(defn opt-ref
+  "Returns a factory referencing to another possible undefined factory.
+   See `ref` and `template`."
+  ([key]
+   (-> (opt-ref key identity)
+       (vary-meta assoc ::print key)))
+  ([key f & args]
+   ^{:type   ::opt-ref
+     ::print (vec (concat [key f] args))}
+   (reify Factory
+     (dependencies [_]
+       {key :optional})
+     (build [_ deps]
+       (apply f (deps key) args)))))
+
 (defn template
   "Returns a factory for templating a data-structure.
   Replaces `Factory` instances with built objects.
@@ -398,6 +413,7 @@
 
 (derive ::root     ::reified)
 (derive ::ref      ::reified)
+(derive ::opt-ref  ::reified)
 (derive ::template ::reified)
 
 (defmethod print-method ::reified [o ^Writer w]
