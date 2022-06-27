@@ -303,6 +303,10 @@
 
 (defn opt-ref
   "Returns a factory referencing to another possible undefined factory.
+
+  (def port (di/opt-ref \"PORT\" (fnil parse-log \"8080\")))
+  (def port (di/opt-ref ::config get :port 8080))
+
    See `ref` and `template`."
   ([key]
    (-> (opt-ref key identity)

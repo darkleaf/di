@@ -10,11 +10,11 @@
     (t/is (= ::stub @obj))))
 
 (t/deftest opt-ref-n-test
-  (with-open [obj (di/start `object
-                            {`object (di/opt-ref ::cfg get-in [:a :b :c])
-                             ::cfg   {:a {:b {:c ::value}}}})]
-    (t/is (= ::value @obj))))
-
+  (let [registry {`object (di/opt-ref ::cfg get :port 8080)}]
+    (with-open [obj (di/start `object registry {::cfg {:port 9999}})]
+      (t/is (= 9999 @obj)))
+    (with-open [obj (di/start `object registry)]
+      (t/is (= 8080 @obj)))))
 
 (t/deftest pr-test
   (t/is (= "#darkleaf.di.core/opt-ref darkleaf.di.opt-ref-test/object"
