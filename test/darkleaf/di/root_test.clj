@@ -1,11 +1,12 @@
 (ns darkleaf.di.root-test
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]
+   [darkleaf.di.protocols :as p]))
 
 (t/deftest auto-closeable-test
   (let [p         (promise)
-        stoppable (reify di/Stoppable
+        stoppable (reify p/Stoppable
                     (stop [_]
                       (deliver p :done)))]
     (with-open [root (di/start `root {`root stoppable})])
@@ -14,7 +15,7 @@
 
 (t/deftest stoppable-test
   (let [p         (promise)
-        stoppable (reify di/Stoppable
+        stoppable (reify p/Stoppable
                     (stop [_]
                       (deliver p :done)))]
     (di/stop (di/start `root {`root stoppable}))

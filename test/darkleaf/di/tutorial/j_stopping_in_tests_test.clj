@@ -1,11 +1,13 @@
 (ns darkleaf.di.tutorial.j-stopping-in-tests-test
-  (:require [clojure.test :as t]
-            [darkleaf.di.core :as di]))
+  (:require
+   [clojure.test :as t]
+   [darkleaf.di.core :as di]
+   [darkleaf.di.protocols :as p]))
 
 (def ^:dynamic *log-stop*)
 
 (defn db-connection []
-  (reify di/Stoppable
+  (reify p/Stoppable
     (stop [_]
       (*log-stop* :db-connection))))
 

@@ -1,12 +1,13 @@
 (ns darkleaf.di.dependency-types-test
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di])
+   [darkleaf.di.core :as di]
+   [darkleaf.di.protocols :as p])
   (:import
-   [clojure.lang ExceptionInfo]))
+   (clojure.lang ExceptionInfo)))
 
 (defn factory [dependency-key dependency-type]
-  (reify di/Factory
+  (reify p/Factory
     (dependencies [_]
       {dependency-key dependency-type})
     (build [_ deps]

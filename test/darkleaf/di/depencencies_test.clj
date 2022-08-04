@@ -1,7 +1,8 @@
 (ns darkleaf.di.depencencies-test
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]
+   [darkleaf.di.protocols :as p]))
 
 ;;   root
 ;;  / \
@@ -23,8 +24,8 @@
 
 (defn with-logging [{log `log} key obj]
   (swap! log conj [key :built])
-  (with-meta obj {`di/stop (fn [_]
-                             (swap! log conj [key :stopped]))}))
+  (with-meta obj {`p/stop (fn [_]
+                            (swap! log conj [key :stopped]))}))
 
 (t/deftest order-test
   (let [log (atom [])]

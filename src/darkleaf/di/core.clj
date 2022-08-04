@@ -2,26 +2,14 @@
   (:refer-clojure :exclude [ref key])
   (:require
    [clojure.walk :as w]
-   [darkleaf.di.destructuring-map :as map])
+   [darkleaf.di.destructuring-map :as map]
+   [darkleaf.di.protocols :as p])
   (:import
-   [java.lang AutoCloseable Exception]
-   [java.io FileNotFoundException Writer]
-   [clojure.lang IDeref IFn Var]))
+   (clojure.lang IDeref IFn Var)
+   (java.io FileNotFoundException Writer)
+   (java.lang AutoCloseable)))
 
 (set! *warn-on-reflection* true)
-
-(defprotocol Stoppable
-  :extend-via-metadata true
-  (stop [this]
-    "Stops the object. Returns nothing."))
-
-(defprotocol Factory
-  :extend-via-metadata true
-  (dependencies [this]
-    "Returns a map of a key and a dependency type.
-    A type can be :required, :skipping-circular, or :optional.")
-  (build [this dependencies]
-    "Builds a stoppable object from dependencies."))
 
 (defmacro ^:private ??
   ([] nil)
@@ -89,9 +77,9 @@
 (defn- build-obj*
   "Handles highter order components."
   [ctx factory]
-  (let [declared-deps (dependencies factory)
+  (let [declared-deps (p/dependencies factory)
         resolved-deps (resolve-deps ctx declared-deps)
-        obj           (build factory resolved-deps)]
+        obj           (p/build factory resolved-deps)]
     (if (identical? factory obj)
       obj
       (recur ctx obj))))
@@ -124,7 +112,7 @@
 (defn- stop-started [{:keys [*built-list]}]
   (let [built-list @*built-list]
     (vswap! *built-list empty)
-    (try-run-all stop built-list)))
+    (try-run-all p/stop built-list)))
 
 (defn- try-build [ctx key]
   (try
@@ -216,14 +204,14 @@
     ^{:type   ::root
       ::print obj}
     (reify
-      Stoppable
+      p/Stoppable
       (stop [_]
         (some->> (stop-started ctx)
                  (reduce combine-throwable)
                  (throw)))
       AutoCloseable
       (close [this]
-        (stop this))
+        (p/stop this))
       IDeref
       (deref [_]
         obj)
@@ -279,6 +267,9 @@
       (applyTo [_ args]
         (.applyTo ^IFn obj args)))))
 
+(defn stop [x]
+  (p/stop x))
+
 (defn ref
   "Returns a factory referencing to another one.
 
@@ -295,7 +286,7 @@
   ([key f & args]
    ^{:type   ::ref
      ::print (vec (concat [key f] args))}
-   (reify Factory
+   (reify p/Factory
      (dependencies [_]
        {key :required})
      (build [_ deps]
@@ -314,7 +305,7 @@
   ([key f & args]
    ^{:type   ::opt-ref
      ::print (vec (concat [key f] args))}
-   (reify Factory
+   (reify p/Factory
      (dependencies [_]
        {key :optional})
      (build [_ deps]
@@ -332,14 +323,14 @@
   [form]
   ^{:type   ::template
     ::print form}
-  (reify Factory
+  (reify p/Factory
     (dependencies [_]
       (->> form
            (tree-seq coll? seq)
-           (map dependencies)
+           (map p/dependencies)
            (reduce combine-dependencies)))
     (build [_ deps]
-      (w/postwalk #(build % deps) form))))
+      (w/postwalk #(p/build % deps) form))))
 
 (defn with-decorator
   "Wraps registry to decorate or instrument built objects.
@@ -355,13 +346,13 @@
   [registry decorator-key & args]
   (fn [key]
     (let [factory (registry key)]
-      (reify Factory
+      (reify p/Factory
         (dependencies [_]
-          (combine-dependencies (dependencies factory)
+          (combine-dependencies (p/dependencies factory)
                                 {decorator-key :skipping-circular}))
         (build [_ deps]
           (let [decorator (deps decorator-key)
-                obj       (build factory deps)]
+                obj       (p/build factory deps)]
             (if decorator
               (apply decorator key obj args)
               obj)))))))
@@ -390,16 +381,16 @@
       1 (variable deps)
       (partial variable deps))))
 
-(extend-protocol Factory
+(extend-protocol p/Factory
   Var
   (dependencies [this]
     (if (defn? this)
       (dependencies-fn this)
-      (dependencies @this)))
+      (p/dependencies @this)))
   (build [this deps]
     (if (defn? this)
       (build-fn this deps)
-      (build @this deps)))
+      (p/build @this deps)))
 
   nil
   (dependencies [_] nil)
@@ -409,7 +400,7 @@
   (dependencies [_] nil)
   (build [this _] this))
 
-(extend-protocol Stoppable
+(extend-protocol p/Stoppable
   nil
   (stop [_])
   Object
