@@ -3,7 +3,7 @@
             [darkleaf.di.core :as di]))
 
 ;; In DI, each key corresponds to one object. So if you want to use two databases
-;; you have-to define two keys.
+;; you have to define two keys.
 
 (defn datasource [url user password]
   [:ds-stub url user password])
