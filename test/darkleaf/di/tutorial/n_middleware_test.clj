@@ -28,11 +28,11 @@
 (t/deftest service-test
   (with-open [system-root (di/start `service
                                     {::datasource {:x 42}}
-                                    [di/with-decorator `with-schema])]
+                                    (di/with-decorator `with-schema))]
     (t/is (= [:service 42] (system-root :x)))))
 
 (t/deftest schema-test
   (t/is (thrown? AssertionError
                  (di/start `service
                            {::datasource "wrong"}
-                           [di/with-decorator `with-schema]))))
+                           (di/with-decorator `with-schema)))))

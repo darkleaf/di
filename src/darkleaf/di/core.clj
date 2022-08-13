@@ -128,14 +128,13 @@
 
 (defn- apply-middleware [registry middleware]
   (cond
-    (fn? middleware)     (middleware registry)
-    (vector? middleware) (apply (first middleware) registry (rest middleware))
-    (map? middleware)    (fn [key]
-                           (?? (get middleware key)
-                               (registry key)))
-    (seq? middleware)    (reduce apply-middleware
-                                 registry middleware)
-    :else                (throw (IllegalArgumentException. "Wrong middleware kind"))))
+    (fn? middleware)         (middleware registry)
+    (map? middleware)        (fn [key]
+                               (?? (get middleware key)
+                                   (registry key)))
+    (sequential? middleware) (reduce apply-middleware
+                                     registry middleware)
+    :else                    (throw (IllegalArgumentException. "Wrong middleware kind"))))
 
 (defn- with-ns
   "Adds support to the registry for looking up vars."
@@ -170,7 +169,6 @@
   Each middleware can be one of the following form:
 
   - a function `registry -> key -> Factory`
-  - a vector of a function `[registry args*] -> key -> Factory` and it's arguments
   - a map of key and `Factory` instance
   - a sequence of the previous forms
 
@@ -182,8 +180,8 @@
             {:my-abstraction implemntation
              `some-key replacement
              \"LOG_LEVEL\" \"info\"}
-            (concat dev-middlwares test-middlewares)
-            [di/with-decorator `log])
+            [dev-middlwares test-middlewares]
+            (di/with-decorator `log))
 
   Returns a container contains started root of the system.
   The container implements `AutoCloseable`, `Stoppable`, `IDeref` and `IFn`.
@@ -340,20 +338,21 @@
       (instrument state object args)
       object))
 
-  (di/start `root [di/with-decorator `my-instrumentation arg1 arg2])"
-  [registry decorator-key & args]
-  (fn [key]
-    (let [factory (registry key)]
-      (reify p/Factory
-        (dependencies [_]
-          (combine-dependencies (p/dependencies factory)
-                                {decorator-key :skipping-circular}))
-        (build [_ deps]
-          (let [decorator (deps decorator-key)
-                obj       (p/build factory deps)]
-            (if decorator
-              (apply decorator key obj args)
-              obj)))))))
+  (di/start `root (di/with-decorator `my-instrumentation arg1 arg2))"
+  [decorator-key & args]
+  (fn [registry]
+    (fn [key]
+      (let [factory (registry key)]
+        (reify p/Factory
+          (dependencies [_]
+            (combine-dependencies (p/dependencies factory)
+                                  {decorator-key :skipping-circular}))
+          (build [_ deps]
+            (let [decorator (deps decorator-key)
+                  obj       (p/build factory deps)]
+              (if decorator
+                (apply decorator key obj args)
+                obj))))))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))

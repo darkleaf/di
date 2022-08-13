@@ -26,17 +26,18 @@
     (t/is (= :stub @obj))))
 
 (t/deftest vector-registry-test
-  (let [reg (fn [super default]
-              (fn [key]
-                (if-some [factory (super key)]
-                  factory
-                  default)))]
-    (with-open [obj (di/start `not-found [reg :default])]
+  (let [reg (fn [default]
+              (fn [super]
+                (fn [key]
+                   (if-some [factory (super key)]
+                     factory
+                     default))))]
+    (with-open [obj (di/start `not-found (reg :default))]
       (t/is (= :default @obj)))))
 
-(t/deftest seq-registry-test
-  (let [registries (list {::a 1}
-                         {::b 2})]
+(t/deftest sequential-registry-test
+  (let [registries [{::a 1}
+                    {::b 2}]]
     (with-open [obj (di/start ::a registries)]
       (t/is (= 1 @obj)))
     (with-open [obj (di/start ::b registries)]
@@ -54,6 +55,6 @@
 
 (t/deftest decorating-registry-test
   (with-open [obj (di/start `service
-                            [di/with-decorator `instrument-service])]
+                            (di/with-decorator `instrument-service))]
     (t/is (= [:service 42] (obj 42)))
     (t/is (thrown? Throwable (obj "42")))))
