@@ -31,9 +31,7 @@
    {})
   ([a b]
    (merge-with (fn [x y]
-                 (->> [x y]
-                      (sort-by dependency-type-priority)
-                      first))
+                 (min-key dependency-type-priority x y))
                a b)))
 
 (defn- combine-throwable
