@@ -328,31 +328,26 @@
     (build [_ deps]
       (w/postwalk #(p/build % deps) form))))
 
-(defn with-decorator
-  "Wraps registry to decorate or instrument built objects.
-  Use it for logging, schema checking, AOP, etc.
-  The `decorator-key` should refer to a var like the following one.
+(defn wrap
+  ;; "Wraps registry to decorate or instrument built objects.
+  ;; Use it for logging, schema checking, AOP, etc.
+  ;; The `decorator-key` should refer to a var like the following one.
 
-  (defn my-instrumentation [{state :some/state} key object & args]
-    (if (need-instrument? key object)
-      (instrument state object args)
-      object))
+  ;; (defn my-instrumentation [{state :some/state} key object & args]
+  ;;   (if (need-instrument? key object)
+  ;;     (instrument state object args)
+  ;;     object))
 
-  (di/start `root (di/with-decorator `my-instrumentation arg1 arg2))"
-  [decorator-key & args]
+  ;; (di/start `root (di/with-decorator `my-instrumentation arg1 arg2))"
+  [decorator & args]
   (fn [registry]
     (fn [key]
       (let [factory (registry key)]
         (reify p/Factory
           (dependencies [_]
-            (combine-dependencies (p/dependencies factory)
-                                  {decorator-key :skipping-circular}))
+            (p/dependencies factory))
           (build [_ deps]
-            (let [decorator (deps decorator-key)
-                  obj       (p/build factory deps)]
-              (if decorator
-                (apply decorator key obj args)
-                obj))))))))
+            (apply decorator key (p/build factory deps) args)))))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))

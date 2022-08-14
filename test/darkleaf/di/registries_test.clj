@@ -46,7 +46,7 @@
 (defn service [-deps x]
   [:service x])
 
-(defn instrument-service [-deps key obj]
+(defn instrument-service [key obj]
   (if (= `service key)
     (fn [x]
       (assert (int? x))
@@ -55,6 +55,6 @@
 
 (t/deftest decorating-registry-test
   (with-open [obj (di/start `service
-                            (di/with-decorator `instrument-service))]
+                            (di/wrap instrument-service))]
     (t/is (= [:service 42] (obj 42)))
     (t/is (thrown? Throwable (obj "42")))))
