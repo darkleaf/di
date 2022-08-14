@@ -9,6 +9,6 @@
   :extend-via-metadata true
   (dependencies [this]
     "Returns a map of a key and a dependency type.
-    A type can be :required, :skipping-circular, or :optional.")
+    A type can be `:required` or `:optional`.")
   (build [this dependencies]
     "Builds a stoppable object from dependencies."))

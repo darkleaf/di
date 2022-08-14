@@ -20,9 +20,8 @@
       (?? ~@next))))
 
 (def ^:private dependency-type-priority
-  {:required          1
-   :skipping-circular 2
-   :optional          3})
+  {:required 1
+   :optional 2})
 
 (defn combine-dependencies
   "Combines dependencies. Use it with `reduce`.
@@ -55,9 +54,7 @@
 
 (defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
   (if (under-construction key)
-    (if (= :skipping-circular dep-type)
-      acc
-      (circular-dependency! key))
+    (circular-dependency! key)
     (if-some [obj (find-or-build ctx key)]
       (assoc acc key obj)
       (if (= :optional dep-type)

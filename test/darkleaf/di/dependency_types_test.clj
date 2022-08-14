@@ -46,22 +46,3 @@
   (t/is (thrown-with-msg? ExceptionInfo
                           #"\ACircular dependency darkleaf.di.dependency-types-test/root\z"
                           (di/start `root {`root (factory `root :optional)}))))
-
-
-(t/deftest skipping-circular-present-test
-  (with-open [root (di/start `root
-                             {`root       (factory :dependency :skipping-circular)
-                              :dependency 42})]
-    (t/is (= [:dependency 42] @root))))
-
-
-(t/deftest sipping-circular-missed-test
-  (t/is (thrown-with-msg? ExceptionInfo
-                          #"\AMissing dependency :dependency\z"
-                          (di/start `root
-                                    {`root (factory :dependency :skipping-circular)}))))
-
-(t/deftest sipping-circular-circular-test
-  (with-open [root (di/start `root
-                             {`root (factory `root :skipping-circular)})]
-    (t/is (= [`root nil] @root))))
