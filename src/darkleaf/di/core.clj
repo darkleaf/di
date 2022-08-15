@@ -325,6 +325,13 @@
     (build [_ deps]
       (w/postwalk #(p/build % deps) form))))
 
+(defn bind [factory f & args]
+  (reify p/Factory
+    (dependencies [_]
+      (p/dependencies factory))
+    (build [_ deps]
+      (apply f (p/build factory deps) args))))
+
 (defn wrap
   ;; "Wraps registry to decorate or instrument built objects.
   ;; Use it for logging, schema checking, AOP, etc.
@@ -345,6 +352,11 @@
             (p/dependencies factory))
           (build [_ deps]
             (apply decorator key (p/build factory deps) args)))))))
+
+(defn transform [key object target-key f & args]
+  (if (= target-key key)
+    (bind (template args) #(apply f object %))
+    object))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))
