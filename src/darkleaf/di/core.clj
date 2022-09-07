@@ -272,37 +272,37 @@
 
   (di/start `root {:my-abstraction (di/ref `implemntation)})
 
-  See `template`."
+  See `opt-ref` and `template`."
   ([key]
-   (-> (ref key identity)
-       (vary-meta assoc ::print key)))
-  ([key f & args]
    ^{:type   ::ref
-     ::print (vec (concat [key f] args))}
+     ::print key}
    (reify p/Factory
      (dependencies [_]
        {key :required})
      (build [_ deps]
-       (apply f (deps key) args)))))
+       (deps key)))))
 
 (defn opt-ref
   "Returns a factory referencing to another possible undefined factory.
+  `not-found` argument can be a factory.
 
-  (def port (di/opt-ref \"PORT\" (fnil parse-log \"8080\")))
-  (def port (di/opt-ref ::config get :port 8080))
+  (def port (-> (di/opt-ref \"PORT\" \"8080\")
+                (di/bind parse-log)))
 
-   See `ref` and `template`."
+  (di/opt-ref ::dep (di/ref ::default))
+
+  See `ref` and `template`."
   ([key]
-   (-> (opt-ref key identity)
+   (-> (opt-ref key nil)
        (vary-meta assoc ::print key)))
-  ([key f & args]
+  ([key not-found]
    ^{:type   ::opt-ref
-     ::print (vec (concat [key f] args))}
+     ::print [key not-found]}
    (reify p/Factory
      (dependencies [_]
        {key :optional})
      (build [_ deps]
-       (apply f (deps key) args)))))
+       (deps key not-found)))))
 
 (defn template
   "Returns a factory for templating a data-structure.
