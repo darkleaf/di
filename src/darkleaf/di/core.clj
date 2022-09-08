@@ -292,8 +292,6 @@
    ^{:type   ::opt-ref
      ::print [key not-found]}
    (reify p/Factory
-     #_(dependencies [_]
-         {key :optional})
      (build [_ ctx]
        (?? (resolve-dep ctx key :optional)
            (build not-found ctx))))))
@@ -319,22 +317,16 @@
     (build [_ ctx]
       (apply f (build factory ctx) args))))
 
-#_(defn wrap
-    ;; "Wraps registry to decorate or instrument built objects.
-    ;; Use it for logging, schema checking, AOP, etc.
-    ;; The `decorator-key` should refer to a var like the following one.
+;; "Wraps registry to decorate or instrument built objects.
+;; Use it for logging, schema checking, AOP, etc.
+;; The `decorator-key` should refer to a var like the following one.
 
-    ;; (defn my-instrumentation [{state :some/state} key object & args]
-    ;;   (if (need-instrument? key object)
-    ;;     (instrument state object args)
-    ;;     object))
+;; (defn my-instrumentation [{state :some/state} key object & args]
+;;   (if (need-instrument? key object)
+;;     (instrument state object args)
+;;     object))
 
-    ;; (di/start `root (di/with-decorator `my-instrumentation arg1 arg2))"
-    [decorator & args]
-    (fn [registry]
-      (fn [key]
-        (let [factory (registry key)]
-          (apply decorator key factory args)))))
+;; (di/start `root (di/with-decorator `my-instrumentation arg1 arg2))"
 
 (defn wrap [decorator & args]
   (let [self-factories (into [decorator] args)]
@@ -355,10 +347,6 @@
     (fn [key]
       (let [factory (registry key)]
         (if (= target-key key)
-
-          ;; тут нужно проверить останов, что не задваивается
-
-
           (bind (template (into [f factory] args))
                 (fn [[f obj & args]] (apply f obj args)))
           factory)))))
