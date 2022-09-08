@@ -31,6 +31,17 @@
     (t/is (= [:dep] @root))))
 
 
+;; (defn object []
+;;   (Object.))
+
+;; (t/deftest identity-test
+;;   (with-open [root (di/start ::root
+;;                              {::root (di/template [#'object
+;;                                                    #'object])})]
+;;     (t/is (not (identical? (first @root)
+;;                            (second @root))))))
+
+
 (def circular (di/template [#'circular]))
 
 (t/deftest circular-test
