@@ -329,7 +329,7 @@
 ;; (di/start `root (di/with-decorator `my-instrumentation arg1 arg2))"
 
 (defn wrap [decorator & args]
-  (let [self-factories (into [decorator] args)]
+  (let [own-factories (into [decorator] args)]
     (fn [registry]
       (fn [key]
         (let [factory   (registry key)
@@ -337,7 +337,7 @@
                               (fn [[decorator obj & args]] (apply decorator key obj args)))]
           (reify p/Factory
             (build [_ {:as ctx, :keys [under-construction]}]
-              (if (some under-construction self-factories)
+              (if (some under-construction own-factories)
                 (build factory ctx)
                 ;; `build` already has been invoked in `bind`
                 (p/build decorated ctx)))))))))
