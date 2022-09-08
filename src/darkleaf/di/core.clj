@@ -47,12 +47,10 @@
                   {:type ::missing-dependency
                    :key  key})))
 
-;; под это нужно тест написать
-;; например, var содержит шаблон, где этот вар используется
 (defn- circular-dependency! [factory]
-  (throw (ex-info (str "Circular dependency " #_key)
-                  {:type ::circular-dependency
-                   #_#_:key  key})))
+  (throw (ex-info (str "Circular dependency " factory)
+                  {:type    ::circular-dependency
+                   :factory factory})))
 
 (defn- build [factory {:as ctx, :keys [under-construction *built-list]}]
   (when (under-construction factory)

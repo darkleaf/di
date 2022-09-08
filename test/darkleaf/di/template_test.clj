@@ -1,7 +1,9 @@
 (ns darkleaf.di.template-test
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di])
+  (:import
+   (clojure.lang ExceptionInfo)))
 
 (t/deftest template-ref-test
   (t/are [expected actual]
@@ -27,6 +29,14 @@
 (t/deftest template-var-test
   (with-open [root (di/start `template)]
     (t/is (= [:dep] @root))))
+
+
+(def circular (di/template [#'circular]))
+
+(t/deftest circular-test
+  (t/is (thrown-with-msg? ExceptionInfo
+                          #"\ACircular dependency #'darkleaf.di.template-test/circular\z"
+                          (di/start `circular))))
 
 
 (t/deftest pr-test
