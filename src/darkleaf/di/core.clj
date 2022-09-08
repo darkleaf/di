@@ -383,7 +383,7 @@
 (defn- build-fn [variable ctx]
   (let [enable-key (-> variable meta (get ::enable-key ::enabled))
         fallback   (-> variable meta ::fallback)
-        enabled?   (find-or-build ctx enable-key)]
+        enabled?   (resolve-dep ctx enable-key :required)]
     (if enabled?
       (build-fn' variable ctx)
       fallback)))
