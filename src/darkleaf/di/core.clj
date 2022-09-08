@@ -377,7 +377,7 @@
        (map map/dependencies)
        (reduce combine-dependencies)))
 
-(defn- build-fn* [variable deps]
+(defn- build-fn'' [variable deps]
   (let [max-arity (->> variable
                        arglists
                        (map count)
@@ -387,14 +387,17 @@
       1 (variable deps)
       (partial variable deps))))
 
+(defn- build-fn' [variable ctx]
+  (let [declared-deps (dependencies-fn variable)
+        resolved-deps (resolve-deps ctx declared-deps)]
+    (build-fn'' variable resolved-deps)))
+
 (defn- build-fn [variable ctx]
   (let [enable-key (-> variable meta (get ::enable-key ::enabled))
         fallback   (-> variable meta ::fallback)
         enabled?   (find-or-build ctx enable-key)]
     (if enabled?
-      (let [declared-deps (dependencies-fn variable)
-            resolved-deps (resolve-deps ctx declared-deps)]
-        (build-fn* variable resolved-deps))
+      (build-fn' variable ctx)
       fallback)))
 
 (extend-protocol p/Factory
