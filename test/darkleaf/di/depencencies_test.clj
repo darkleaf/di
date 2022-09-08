@@ -23,22 +23,16 @@
   [:c])
 
 ;; todo: каждый отдельно оборачивать
-(defn with-logging [key obj]
-  (if (#{`root `a `b `c} key)
-    (reify p/Factory
-      (dependencies [_]
-        {`log :required})
-      (build [_ {log `log}]
-        (swap! log conj [key :built])
-        (with-meta obj {`p/stop (fn [_]
-                                  (swap! log conj [key :stopped]))})))
-    obj))
+(defn with-logging [{log `log} key obj]
+  (swap! log conj [key :built])
+  (with-meta obj {`p/stop (fn [_]
+                            (swap! log conj [key :stopped]))}))
 
 (t/deftest order-test
   (let [log (atom [])]
     (with-open [obj (di/start `root
                               {`log log}
-                              (di/wrap with-logging))]
+                              (di/wrap #'with-logging))]
       (t/is (= [:root [:a [:c]] [:b [:c]]] @obj)))
     (t/is (= [[`c :built]
               [`a :built]

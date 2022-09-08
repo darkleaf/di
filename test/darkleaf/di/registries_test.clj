@@ -1,7 +1,8 @@
 (ns darkleaf.di.registries-test
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]
+   [darkleaf.di.protocols :as p]))
 
 (def dep 'dep)
 
@@ -46,15 +47,13 @@
 (defn service [-deps x]
   [:service x])
 
-(defn instrument-service [key obj]
-  (if (= `service key)
-    (fn [x]
-      (assert (int? x))
-      (obj x))
-    obj))
+(defn instrument-service [obj]
+  (fn [x]
+    (assert (int? x))
+    (obj x)))
 
-(t/deftest decorating-registry-test
+(t/deftest transform-test
   (with-open [obj (di/start `service
-                            (di/wrap instrument-service))]
+                            (di/transform `service instrument-service))]
     (t/is (= [:service 42] (obj 42)))
     (t/is (thrown? Throwable (obj "42")))))

@@ -26,14 +26,14 @@
 
 (t/deftest opt-ref-not-found-factory-test
   (let [registry {::root (di/template {:ref (di/opt-ref ::ref (di/ref ::default))})}]
-    #_(with-open [obj (di/start ::root
-                                registry
-                                {::ref :value})]
-        (t/is (= {:ref :value} @obj)))
-    #_(with-open [obj (di/start ::root
-                                registry
-                                {::default :default})]
-        (t/is (= {:ref :default} @obj)))))
+    (with-open [obj (di/start ::root
+                              registry
+                              {::ref :value})]
+      (t/is (= {:ref :value} @obj)))
+    (with-open [obj (di/start ::root
+                              registry
+                              {::default :default})]
+      (t/is (= {:ref :default} @obj)))))
 
 
 (t/deftest pr-test

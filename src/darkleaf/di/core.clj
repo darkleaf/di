@@ -47,43 +47,40 @@
                   {:type ::missing-dependency
                    :key  key})))
 
-(defn- circular-dependency! [key]
-  (throw (ex-info (str "Circular dependency " key)
+;; под это нужно тест написать
+;; например, var содержит шаблон, где этот вар используется
+(defn- circular-dependency! [factory]
+  (throw (ex-info (str "Circular dependency " #_key)
                   {:type ::circular-dependency
-                   :key  key})))
+                   #_#_:key  key})))
 
-(defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
-  (if (under-construction key)
-    (circular-dependency! key)
-    (if-some [obj (find-or-build ctx key)]
-      (assoc acc key obj)
-      (if (= :optional dep-type)
-        acc
-        (missing-dependency! key)))))
+(defn- build [factory {:as ctx, :keys [under-construction *built-list]}]
+  (when (under-construction factory)
+    (circular-dependency! factory))
+  (let [ctx (update ctx :under-construction conj factory)
+        obj (p/build factory ctx)]
+    (vswap! *built-list conj obj)
+    obj))
+
+(defn- resolve-dep [ctx key dep-type]
+  (?? (find-or-build ctx key)
+      (when (= :required dep-type)
+        (missing-dependency! key))))
 
 (defn- resolve-deps [ctx deps]
-  (reduce-kv (partial resolve-dep ctx)
+  (reduce-kv (fn [acc key dep-type]
+               (if-some [obj (resolve-dep ctx key dep-type)]
+                 (assoc acc key obj)
+                 acc))
              {}
              deps))
 
 (defn- find-obj [{:keys [*built-map]} key]
   (get @*built-map key))
 
-(defn- build-obj*
-  "Handles highter order components."
-  [ctx factory]
-  (let [declared-deps (p/dependencies factory)
-        resolved-deps (resolve-deps ctx declared-deps)
-        obj           (p/build factory resolved-deps)]
-    (if (identical? factory obj)
-      obj
-      (recur ctx obj))))
-
-(defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *built-list]} key]
-  (let [ctx     (update ctx :under-construction conj key)
-        factory (registry key)
-        obj     (build-obj* ctx factory)]
-    (vswap! *built-list conj obj)
+(defn- build-obj [{:as ctx, :keys [registry *built-map]} key]
+  (let [factory (registry key)
+        obj     (build factory ctx)]
     (vswap! *built-map  assoc key obj)
     obj))
 
@@ -189,7 +186,7 @@
   [key & middlewares]
   (let [middlewares (concat [with-env with-ns] middlewares)
         registry    (apply-middleware nil-registry middlewares)
-        ctx         {:*built-map         (volatile! {})
+        ctx         {:*built-map         (volatile! {::enabled true})
                      :*built-list        (volatile! '())
                      :under-construction #{}
                      :registry           registry}
@@ -277,10 +274,8 @@
    ^{:type   ::ref
      ::print key}
    (reify p/Factory
-     (dependencies [_]
-       {key :required})
-     (build [_ deps]
-       (deps key)))))
+     (build [_ ctx]
+       (resolve-dep ctx key :required)))))
 
 (defn opt-ref
   "Returns a factory referencing to another possible undefined factory.
@@ -299,10 +294,11 @@
    ^{:type   ::opt-ref
      ::print [key not-found]}
    (reify p/Factory
-     (dependencies [_]
-       {key :optional})
-     (build [_ deps]
-       (deps key not-found)))))
+     #_(dependencies [_]
+         {key :optional})
+     (build [_ ctx]
+       (?? (resolve-dep ctx key :optional)
+           (build not-found ctx))))))
 
 (defn template
   "Returns a factory for templating a data-structure.
@@ -317,46 +313,57 @@
   ^{:type   ::template
     ::print form}
   (reify p/Factory
-    (dependencies [_]
-      (->> form
-           (tree-seq coll? seq)
-           (map p/dependencies)
-           (reduce combine-dependencies)))
-    (build [_ deps]
-      (w/postwalk #(p/build % deps) form))))
+    (build [_ ctx]
+      (w/postwalk #(build % ctx) form))))
 
 (defn bind [factory f & args]
   (reify p/Factory
-    (dependencies [_]
-      (p/dependencies factory))
-    (build [_ deps]
-      (apply f (p/build factory deps) args))))
+    (build [_ ctx]
+      (apply f (build factory ctx) args))))
 
-(defn wrap
-  ;; "Wraps registry to decorate or instrument built objects.
-  ;; Use it for logging, schema checking, AOP, etc.
-  ;; The `decorator-key` should refer to a var like the following one.
+#_(defn wrap
+    ;; "Wraps registry to decorate or instrument built objects.
+    ;; Use it for logging, schema checking, AOP, etc.
+    ;; The `decorator-key` should refer to a var like the following one.
 
-  ;; (defn my-instrumentation [{state :some/state} key object & args]
-  ;;   (if (need-instrument? key object)
-  ;;     (instrument state object args)
-  ;;     object))
+    ;; (defn my-instrumentation [{state :some/state} key object & args]
+    ;;   (if (need-instrument? key object)
+    ;;     (instrument state object args)
+    ;;     object))
 
-  ;; (di/start `root (di/with-decorator `my-instrumentation arg1 arg2))"
-  [decorator & args]
+    ;; (di/start `root (di/with-decorator `my-instrumentation arg1 arg2))"
+    [decorator & args]
+    (fn [registry]
+      (fn [key]
+        (let [factory (registry key)]
+          (apply decorator key factory args)))))
+
+(defn wrap [decorator & args]
+  (let [self-factories (into [decorator] args)]
+    (fn [registry]
+      (fn [key]
+        (let [factory   (registry key)
+              decorated (bind (template (into [decorator factory] args))
+                              (fn [[decorator obj & args]] (apply decorator key obj args)))]
+          (reify p/Factory
+            (build [_ {:as ctx, :keys [under-construction]}]
+              (if (some under-construction self-factories)
+                (build factory ctx)
+                ;; `build` already has been invoked in `bind`
+                (p/build decorated ctx)))))))))
+
+(defn transform [target-key f & args]
   (fn [registry]
     (fn [key]
       (let [factory (registry key)]
-        (reify p/Factory
-          (dependencies [_]
-            (p/dependencies factory))
-          (build [_ deps]
-            (apply decorator key (p/build factory deps) args)))))))
+        (if (= target-key key)
 
-(defn transform [key object target-key f & args]
-  (if (= target-key key)
-    (bind (template args) #(apply f object %))
-    object))
+          ;; тут нужно проверить останов, что не задваивается
+
+
+          (bind (template (into [f factory] args))
+                (fn [[f obj & args]] (apply f obj args)))
+          factory)))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))
@@ -372,7 +379,7 @@
        (map map/dependencies)
        (reduce combine-dependencies)))
 
-(defn- build-fn [variable deps]
+(defn- build-fn* [variable deps]
   (let [max-arity (->> variable
                        arglists
                        (map count)
@@ -382,23 +389,27 @@
       1 (variable deps)
       (partial variable deps))))
 
+(defn- build-fn [variable ctx]
+  (let [enable-key (-> variable meta (get ::enable-key ::enabled))
+        fallback   (-> variable meta ::fallback)
+        enabled?   (find-or-build ctx enable-key)]
+    (if enabled?
+      (let [declared-deps (dependencies-fn variable)
+            resolved-deps (resolve-deps ctx declared-deps)]
+        (build-fn* variable resolved-deps))
+      fallback)))
+
 (extend-protocol p/Factory
   Var
-  (dependencies [this]
+  (build [this ctx]
     (if (defn? this)
-      (dependencies-fn this)
-      (p/dependencies @this)))
-  (build [this deps]
-    (if (defn? this)
-      (build-fn this deps)
-      (p/build @this deps)))
+      (build-fn this ctx)
+      (build @this ctx)))
 
   nil
-  (dependencies [_] nil)
   (build [_ _] nil)
 
   Object
-  (dependencies [_] nil)
   (build [this _] this))
 
 (extend-protocol p/Stoppable

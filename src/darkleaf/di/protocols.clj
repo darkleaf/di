@@ -7,8 +7,5 @@
 
 (defprotocol Factory
   :extend-via-metadata true
-  (dependencies [this]
-    "Returns a map of a key and a dependency type.
-    A type can be `:required` or `:optional`.")
-  (build [this dependencies]
-    "Builds a stoppable object from dependencies."))
+  (build [this ctx]
+    "Builds a stoppable object."))
