@@ -317,18 +317,26 @@
     (build [_ ctx]
       (apply f (build factory ctx) args))))
 
-;; "Wraps registry to decorate or instrument built objects.
-;; Use it for logging, schema checking, AOP, etc.
-;; The `decorator-key` should refer to a var like the following one.
+(defn wrap
+  "Wraps registry to decorate or instrument built objects.
+  Use it for logging, schema checking, AOP, etc.
+  The `decorator` is a function of [key object & args].
 
-;; (defn my-instrumentation [{state :some/state} key object & args]
-;;   (if (need-instrument? key object)
-;;     (instrument state object args)
-;;     object))
+  It is smart enough not to instrument decorator's dependencies with the same decorator
+  to avoid circular dependencies.
 
-;; (di/start `root (di/with-decorator `my-instrumentation arg1 arg2))"
+  The `decorator` and `args` can be factories.
 
-(defn wrap [decorator & args]
+  (defn first-instrumentaion [{state :some/state} key object arg1 arg2]
+    object)
+  (di/start ::root (di/wrap (di/ref `first-instrumentation) arg1 (di/ref ::arg2)))
+  (di/start ::root (di/wrap #'first-instrumentation arg1 arg2))
+
+  (defn second-instrumentaion [key object arg1 arg2]
+    object)
+  (di/start ::root (di/wrap second-instrumentation arg1 (di/ref ::arg2)))
+  (di/start ::root (di/wrap second-instrumentation arg1 arg2))"
+  [decorator & args]
   (let [own-factories (into [decorator] args)]
     (fn [registry]
       (fn [key]
