@@ -5,7 +5,12 @@
   (stop [this]
     "Stops the object. Returns nothing."))
 
+;; internal
+
+(defprotocol Ref
+  (ref-key [this])
+  (ref-type [this]))
+
 (defprotocol Factory
-  :extend-via-metadata true
-  (build [this ctx]
+  (factory-build [this ctx]
     "Builds a stoppable object."))

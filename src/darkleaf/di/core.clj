@@ -40,30 +40,37 @@
    (.addSuppressed a b)
    a))
 
-(declare find-or-build)
-
 (defn- missing-dependency! [key]
   (throw (ex-info (str "Missing dependency " key)
                   {:type ::missing-dependency
                    :key  key})))
 
-(defn- circular-dependency! [factory]
-  (throw (ex-info (str "Circular dependency " factory)
-                  {:type    ::circular-dependency
-                   :factory factory})))
+(defn- circular-dependency! [key]
+  (throw (ex-info (str "Circular dependency " key)
+                  {:type ::circular-dependency
+                   :key  key})))
 
-(defn- build [factory {:as ctx, :keys [under-construction *built-list]}]
-  (when (under-construction factory)
-    (circular-dependency! factory))
-  (let [ctx (update ctx :under-construction conj factory)
-        obj (p/build factory ctx)]
+(declare resolve-dep)
+
+(defn- ref-build [ctx ref]
+  (let [dep-key  (p/ref-key ref)
+        dep-type (p/ref-type ref)]
+    (if (nil? dep-key)
+      ref
+      (resolve-dep ctx dep-key dep-type))))
+
+(defn- factory-build [{:as ctx :keys [*built-list]} factory]
+  (let [obj (p/factory-build factory ctx)]
     (vswap! *built-list conj obj)
     obj))
 
-(defn- resolve-dep [ctx key dep-type]
-  (?? (find-or-build ctx key)
-      (when (= :required dep-type)
-        (missing-dependency! key))))
+(defn- ref-build [{:as ctx} ref]
+  (let [ref-key  (p/ref-key ref)
+        ref-type (p/ref-type ref)
+        obj      (if (nil? ref-key)
+                   ref
+                   (resolve-dep ctx ref-key ref-type))]
+    obj))
 
 (defn- resolve-deps [ctx deps]
   (reduce-kv (fn [acc key dep-type]
@@ -76,15 +83,20 @@
 (defn- find-obj [{:keys [*built-map]} key]
   (get @*built-map key))
 
-(defn- build-obj [{:as ctx, :keys [registry *built-map]} key]
+(defn- build-obj [{:as ctx, :keys [under-construction registry]} key]
+  (when (under-construction key)
+    (circular-dependency! key))
   (let [factory (registry key)
-        obj     (build factory ctx)]
+        ctx     (update ctx :under-construction conj key)]
+    (factory-build ctx factory)))
+
+(defn- resolve-dep [{:as ctx :keys [*built-list *built-map]} key dep-type]
+  (let [obj (?? (find-obj  ctx key)
+                (build-obj ctx key)
+                (when (= :required dep-type)
+                  (missing-dependency! key)))]
     (vswap! *built-map  assoc key obj)
     obj))
-
-(defn- find-or-build [ctx key]
-  (?? (find-obj  ctx key)
-      (build-obj ctx key)))
 
 (defn- try-run [proc x]
   (try
@@ -271,13 +283,14 @@
   ([key]
    ^{:type   ::ref
      ::print key}
-   (reify p/Factory
-     (build [_ ctx]
-       (resolve-dep ctx key :required)))))
+   (reify
+     p/Ref
+     (ref-key [_] key)
+     (ref-type [_] :required))))
 
+;; todo: doc
 (defn opt-ref
   "Returns a factory referencing to another possible undefined factory.
-  `not-found` argument can be a factory.
 
   (def port (-> (di/opt-ref \"PORT\" \"8080\")
                 (di/bind parse-log)))
@@ -286,15 +299,12 @@
 
   See `ref` and `template`."
   ([key]
-   (-> (opt-ref key nil)
-       (vary-meta assoc ::print key)))
-  ([key not-found]
    ^{:type   ::opt-ref
-     ::print [key not-found]}
-   (reify p/Factory
-     (build [_ ctx]
-       (?? (resolve-dep ctx key :optional)
-           (build not-found ctx))))))
+     ::print key}
+   (reify
+     p/Ref
+     (ref-key [_] key)
+     (ref-type [_] :optional))))
 
 (defn template
   "Returns a factory for templating a data-structure.
@@ -309,13 +319,17 @@
   ^{:type   ::template
     ::print form}
   (reify p/Factory
-    (build [_ ctx]
-      (w/postwalk #(build % ctx) form))))
+    (factory-build [_ ctx]
+      (w/postwalk (partial ref-build ctx) form))))
 
-(defn bind [factory f & args]
+(defn bind [factory f-ref & arg-refs]
   (reify p/Factory
-    (build [_ ctx]
-      (apply f (build factory ctx) args))))
+    (factory-build [_ ctx]
+      (let [obj  (factory-build ctx factory)
+            f    (ref-build ctx f-ref)
+            args (map (partial ref-build ctx) arg-refs)
+            ref  (apply f obj args)]
+        (ref-build ctx ref)))))
 
 (defn wrap
   "Wraps registry to decorate or instrument built objects.
@@ -336,27 +350,32 @@
     object)
   (di/start ::root (di/wrap second-instrumentation arg1 (di/ref ::arg2)))
   (di/start ::root (di/wrap second-instrumentation arg1 arg2))"
-  [decorator & args]
-  (let [own-factories (into [decorator] args)]
+  [decorator-ref & arg-refs]
+  (let [own-keys (->> (concat [decorator-ref] arg-refs)
+                      (map p/ref-key))]
     (fn [registry]
       (fn [key]
-        (let [factory   (registry key)
-              decorated (bind (template (into [decorator factory] args))
-                              (fn [[decorator obj & args]] (apply decorator key obj args)))]
+        (let [factory (registry key)]
           (reify p/Factory
-            (build [_ {:as ctx, :keys [under-construction]}]
-              (if (some under-construction own-factories)
-                (build factory ctx)
-                ;; `build` already has been invoked in `bind`
-                (p/build decorated ctx)))))))))
+            (factory-build [_ {:as ctx, :keys [under-construction]}]
+              (let [obj (p/factory-build factory ctx)]
+                (if (some under-construction own-keys)
+                  obj
+                  (let [decorator (ref-build ctx decorator-ref)
+                        args      (map (partial ref-build ctx) arg-refs)]
+                    (apply decorator key obj args)))))))))))
 
-(defn transform [target-key f & args]
+(defn transform [target-key f-ref & arg-refs]
   (fn [registry]
     (fn [key]
       (let [factory (registry key)]
         (if (= target-key key)
-          (bind (template (into [f factory] args))
-                (fn [[f obj & args]] (apply f obj args)))
+          (reify p/Factory
+            (factory-build [_ ctx]
+              (let [obj  (factory-build ctx factory)
+                    f    (ref-build ctx f-ref)
+                    args (map (partial ref-build ctx) arg-refs)]
+                (apply f obj args))))
           factory)))))
 
 (defn- arglists [variable]
@@ -396,23 +415,37 @@
       (build-fn' variable ctx)
       fallback)))
 
-(extend-protocol p/Factory
-  Var
-  (build [this ctx]
+(extend-type Var
+  p/Ref
+  (ref-key [this] (symbol this))
+  (ref-type [_] :required)
+  p/Factory
+  (factory-build [this ctx]
     (if (defn? this)
       (build-fn this ctx)
-      (build @this ctx)))
+      (p/factory-build @this ctx))))
 
-  nil
-  (build [_ _] nil)
+(extend-type Object
+  p/Ref
+  (ref-key [_])
+  (ref-type [_])
+  p/Factory
+  (factory-build [this ctx]
 
-  Object
-  (build [this _] this))
+    ;; FUCK!!!
+    ;; оно будет 2 раза в очередь на остановку складываться
 
-(extend-protocol p/Stoppable
-  nil
-  (stop [_])
-  Object
+    (ref-build ctx this))
+  p/Stoppable
+  (stop [_]))
+
+(extend-type nil
+  p/Ref
+  (ref-key [_])
+  (ref-type [_])
+  p/Factory
+  (factory-build [_ _])
+  p/Stoppable
   (stop [_]))
 
 (derive ::root     ::reified)

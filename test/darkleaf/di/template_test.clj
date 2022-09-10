@@ -46,7 +46,7 @@
 
 (t/deftest circular-test
   (t/is (thrown-with-msg? ExceptionInfo
-                          #"\ACircular dependency #'darkleaf.di.template-test/circular\z"
+                          #"\ACircular dependency darkleaf.di.template-test/circular\z"
                           (di/start `circular))))
 
 
