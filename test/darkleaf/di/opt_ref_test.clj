@@ -15,8 +15,6 @@
                               {::root (di/opt-ref `dep)})]
       (t/is (nil? @obj))))
 
-#_(t/deftest pr-test
-    (t/is (= "#darkleaf.di.core/opt-ref darkleaf.di.opt-ref-test/object"
-             (pr-str (di/opt-ref `object))))
-    (t/is (= "#darkleaf.di.core/opt-ref [darkleaf.di.opt-ref-test/object :key]"
-             (pr-str (di/opt-ref `object :key)))))
+(t/deftest pr-test
+  (t/is (= "#darkleaf.di.core/opt-ref darkleaf.di.opt-ref-test/object"
+           (pr-str (di/opt-ref `object)))))

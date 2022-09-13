@@ -17,8 +17,6 @@
                           (di/start ::root
                                     {::root (di/ref `dep)}))))
 
-#_(t/deftest pr-test
-    (t/is (= "#darkleaf.di.core/ref darkleaf.di.ref-test/object"
-             (pr-str (di/ref `object))))
-    (t/is (= "#darkleaf.di.core/ref [darkleaf.di.ref-test/object :key]"
-             (pr-str (di/ref `object :key)))))
+(t/deftest pr-test
+  (t/is (= "#darkleaf.di.core/ref darkleaf.di.ref-test/object"
+           (pr-str (di/ref `object)))))

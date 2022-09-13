@@ -510,8 +510,6 @@
   (stop [_]))
 
 (derive ::root     ::reified)
-(derive ::ref      ::reified)
-(derive ::opt-ref  ::reified)
 (derive ::template ::reified)
 
 (defmethod print-method ::reified [o ^Writer w]
@@ -520,3 +518,11 @@
   (.write w " ")
   (binding [*out* w]
     (pr (-> o meta ::print))))
+
+(defmethod print-method Ref [o ^Writer w]
+  (.write w "#darkleaf.di.core/")
+  (.write w (case (:type o)
+              :required "ref"
+              :optional "opt-ref"))
+  (.write w " ")
+  (.write w (-> o :key str)))
