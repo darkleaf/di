@@ -60,3 +60,15 @@
                             (di/instrument service-instrumentation))]
     (t/is (= [:service 42] (obj 42)))
     (t/is (thrown? Throwable (obj "42")))))
+
+
+
+(t/deftest conditional-test
+  (with-open [root (di/start ::root
+                             {::flag :a}
+                             (di/conditional ::flag
+                                             #(case %
+                                                :a {::root 1}
+                                                :b {::root 2}
+                                                {::root 3})))]
+    (t/is (= 1 @root))))

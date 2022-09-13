@@ -464,6 +464,12 @@
                       obj  (p/build factory deps)]
                   (apply f obj args))))))))))
 
+(defn conditional [key f]
+  (fn [registry]
+    (let [object     (registry key)
+          middleware (f object)]
+      (apply-middleware registry middleware))))
+
 (defn- arglists [variable]
   (-> variable meta :arglists))
 
