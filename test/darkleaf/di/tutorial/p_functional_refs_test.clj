@@ -39,12 +39,8 @@
                                                            (di/ref ::other)))))})]
     (t/is (= :two @root))))
 
-
-
-
-
 ;; You can also use a ref to test an abstraction.
-;; Also consider `di/wrap` and `di/update-key`.
+;; Also consider `di/instrument` and `di/update-key`.
 
 (s/check-asserts true)
 

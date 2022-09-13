@@ -7,7 +7,7 @@
 ;; Maps and lists are special cases of ones.
 ;; They a usefull for logging, schema validation, AOP, etc.
 
-;; For this case we have `di/with-decorator` middleware.
+;; For this case we have `di/instrument` middleware.
 ;; https://en.wikipedia.org/wiki/Decorator_pattern
 
 (defmulti check-schema! (fn [object key] key))
@@ -27,11 +27,11 @@
 (t/deftest service-test
   (with-open [system-root (di/start `service
                                     {::datasource {:x 42}}
-                                    (di/wrap with-schema))]
+                                    (di/instrument with-schema))]
     (t/is (= [:service 42] (system-root :x)))))
 
 (t/deftest schema-test
   (t/is (thrown? AssertionError
                  (di/start `service
                            {::datasource "wrong"}
-                           (di/wrap with-schema)))))
+                           (di/instrument with-schema)))))

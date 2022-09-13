@@ -43,10 +43,12 @@
     (with-open [obj (di/start ::b registries)]
       (t/is (= 2 @obj)))))
 
+
+;; todo: move to tutorial
 (defn service [-deps x]
   [:service x])
 
-(defn instrument-service [obj key]
+(defn service-instrumentation [obj key]
   (if (= `service key)
     (fn [x]
       (assert (int? x))
@@ -55,6 +57,6 @@
 
 (t/deftest decorating-registry-test
   (with-open [obj (di/start `service
-                            (di/wrap instrument-service))]
+                            (di/instrument service-instrumentation))]
     (t/is (= [:service 42] (obj 42)))
     (t/is (thrown? Throwable (obj "42")))))

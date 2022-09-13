@@ -174,7 +174,7 @@
 
   Middlewares also allows you to instrument built objects.
   It's useful for logging, schema validation, AOP, etc.
-  See `wrap`, `update-key`.
+  See `instrument`, `update-key`.
 
   (di/start `root
             {:my-abstraction implemntation
@@ -343,7 +343,8 @@
 (defn bind
   "Applies f to an object that the factory produces.
   f accepts a built object and returns updated one.
-  Also f can return `ref`, for example, to select an implementation.
+  Also f can return `ref`, for example, to select an implementation or
+  to enable/disable a feature.
 
   f should return a `p/Stoppable` object, which also stops the original object.
 
@@ -355,6 +356,11 @@
                                       \"one\" (di/ref ::one)
                                       \"two\" (di/ref ::two)
                                       (di/ref ::other)))))
+
+  (def handler (-> (di/opt-ref \"HANDLER_ENABLED\")
+                   (di/bind #(if (#{true \"true\" \"1\"} %)
+                               (di/ref `handler-impl)
+                               fallback))))
 
   See `ref`, `template`."
   [factory f]
@@ -368,37 +374,35 @@
 
 (def ^:private key? (some-fn symbol? keyword? string?))
 
-
-;; wrap-keys (?)
-(defn wrap
-  "A registry middleware for decorating or instrumenting built objects.
+(defn instrument
+  "A registry middleware for instrumenting or decorating built objects.
   Use it for logging, schema checking, AOP, etc.
 
-  decorator and args are keys.
-  Also decorator can be a function in term of `ifn?`.
+  f and args are keys.
+  Also f can be a function in term of `ifn?`.
 
-  A resolved decorator is a function of [object key & args].
-  decorator should return a `p/Stoppable` object, which also stops the original object.
+  A resolved f must be a function of [object key & args] -> new-object.
+  f should return a `p/Stoppable` object, which also stops the original object.
 
   In complex cases f can return `ref` to implement higher order components. See `bind`.
 
-  It is smart enough not to instrument decorator's dependencies with the same decorator
+  It is smart enough not to instrument f's dependencies with the same f
   to avoid circular dependencies.
 
   (defn stateful-instrumentaion [{state :some/state} object key arg1 arg2] ...)
-  (di/start ::root (di/wrap `stateful-instrumentation `arg1 ::arg2 \"arg3\")))
+  (di/start ::root (di/instrument `stateful-instrumentation `arg1 ::arg2 \"arg3\")))
 
   (defn stateless-instrumentaion [object key arg1 arg2 arg3] ...)
-  (di/start ::root (di/wrap   stateless-instrumentation `arg1 ::arg2 \"arg3\"))
-  (di/start ::root (di/wrap #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
+  (di/start ::root (di/instrument   stateless-instrumentation `arg1 ::arg2 \"arg3\"))
+  (di/start ::root (di/instrument #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
 
   See `update-key`, `bind`."
-  [decorator & args]
-  {:pre [(or (key? decorator)
-             (ifn? decorator))
+  [f & args]
+  {:pre [(or (key? f)
+             (ifn? f))
          (every? key? args)]}
   (let [own-keys            (cond-> (set args)
-                              (key? decorator) (conj decorator))
+                              (key? f) (conj f))
         *under-construction (volatile! #{})]
     (fn [registry]
       (fn [key]
@@ -417,13 +421,13 @@
                        (zipmap own-keys (repeat :required))))
               (build [_ deps]
                 (vswap! *under-construction disj key)
-                (let [decorator (deps decorator decorator)
+                (let [f (deps f f)
                       args      (map deps args)
                       obj       (p/build factory deps)]
-                  (apply decorator obj key args))))))))))
+                  (apply f obj key args))))))))))
 
 (defn update-key
-  "A registry middleware for updating built object.
+  "A registry middleware for updating built objects.
 
   target is a key to update.
   f and args are keys.
@@ -438,7 +442,7 @@
 
   (di/start ::root (di/update-key `routes conj `subsystem-routes))
 
-  See `update`, `wrap`, `bind`."
+  See `update`, `isntrument`, `bind`."
   [target f & args]
   {:pre [(or (key? f)
              (ifn? f))
