@@ -397,10 +397,26 @@
                       obj       (p/build factory deps)]
                   (apply decorator obj key args))))))))))
 
-(defn transform [key object target-key f & args]
-  (if (= target-key key)
-    (bind (template args) #(apply f object %))
-    object))
+(defn update-key [target f & args]
+  {:pre [(or (key? f)
+             (ifn? f))
+         (every? key? args)]}
+  (let [own-keys (cond-> (set args)
+                   (key? f) (conj f))]
+    (fn [registry]
+      (fn [key]
+        (let [factory (registry key)]
+          (if (not= target key)
+            factory
+            (reify p/Factory
+              (dependencies [_]
+                (merge (p/dependencies factory)
+                       (zipmap own-keys (repeat :required))))
+              (build [_ deps]
+                (let [f    (deps f f)
+                      args (map deps args)
+                      obj  (p/build factory deps)]
+                  (apply f obj args))))))))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))
