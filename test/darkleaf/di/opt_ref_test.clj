@@ -9,11 +9,11 @@
                              `replacement ::stub})]
     (t/is (= ::stub @obj))))
 
-;; todo: use bind
-#_(t/deftest opt-ref-missed-test
-    (with-open [obj (di/start ::root
-                              {::root (di/opt-ref `dep)})]
-      (t/is (nil? @obj))))
+(t/deftest opt-ref-missed-test
+  (with-open [obj (di/start ::root
+                            {::root (-> (di/opt-ref `dep)
+                                        (di/bind (fnil identity :default)))})]
+    (t/is (= :default @obj))))
 
 (t/deftest pr-test
   (t/is (= "#darkleaf.di.core/opt-ref darkleaf.di.opt-ref-test/object"
