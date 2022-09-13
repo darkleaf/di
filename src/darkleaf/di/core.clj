@@ -263,6 +263,11 @@
 (defn stop [x]
   (p/stop x))
 
+;; у нее роли
+;; 1. в template
+;; 2.1. в реестрах
+;; 2.2. в значениях var
+;; 3. в bind
 (defrecord Ref [key type]
   p/Factory
   (dependencies [_]
@@ -272,6 +277,22 @@
 
 (alter-meta! #'->Ref assoc :private true)
 (alter-meta! #'map->Ref assoc :private true)
+
+;; в шаблонах нельзя использовать все фабрики
+;; если испльзовать var, то будут не уникальные инстансы
+;; плюс у меня все заточено на отображение ключа в объект
+;; а тут получается отображение фабрики в объект,
+;; а фабрики не получится сравнивать (?) т.к. reify.
+
+(defn- ref-deps [object]
+  (if (instance? Ref object)
+    (p/dependencies object)
+    nil))
+
+(defn- ref-build [object deps]
+  (if (instance? Ref object)
+    (p/build object deps)
+    object))
 
 (defn ref
   "Returns a factory referencing to another one.
@@ -298,11 +319,9 @@
 
 (defn template
   "Returns a factory for templating a data-structure.
-  Replaces `Factory` instances with built objects.
+  Replaces `Ref` instances with built objects.
 
   (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
-
-  (def routes (di/template [[\"/posts\" #'handler]]))
 
   See `ref`."
   [form]
@@ -312,10 +331,10 @@
     (dependencies [_]
       (->> form
            (tree-seq coll? seq)
-           (map p/dependencies)
+           (map ref-deps)
            (reduce combine-dependencies)))
     (build [_ deps]
-      (w/postwalk #(p/build % deps) form))))
+      (w/postwalk #(ref-build % deps) form))))
 
 (defn bind [factory f & args]
   (reify p/Factory

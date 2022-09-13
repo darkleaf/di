@@ -20,15 +20,6 @@
     (di/template #{(di/ref ::dep)})))
 
 
-(def dep :dep)
-
-(def template (di/template [#'dep]))
-
-(t/deftest template-var-test
-  (with-open [root (di/start `template)]
-    (t/is (= [:dep] @root))))
-
-
 (t/deftest pr-test
   (t/is (= "#darkleaf.di.core/template [:a :b :c]"
            (pr-str (di/template [:a :b :c])))))
