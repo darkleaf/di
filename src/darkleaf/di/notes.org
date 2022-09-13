@@ -1,0 +1,62 @@
+* фабрика
+что-то что умеет порождать объект
+
+по идее фабрика может порождать только один объект
+
+* реестр
+key -> factory
+
+ключу соответствует всегда один объект
+
+проблема в том, что фабрик может быть больше ключей
+
+
+
+ref может реализовывать 2 протокола: refp и factory
+refp будет работать только в template
+
+
+да и var тоже можно сделать ref
+
+для объектов будет возвращаться nil?
+
+нужна еще функция fmap над фабрикой
+
+нужна ли bind?
+типа
+#+begin_src clojure
+  (-> (di/ref ::flag)
+      (di/bind (fn [flag]
+                 (case flag
+                   ... (di/ref `factory-1)
+                   ... (di/ref `factory-2)
+                   (di/ref `factory-3)
+#+end_src
+
+
+фабрики:
+var
+*template*
+ref
+object
+nil
+всякие обертки
+
+ref:
++var+
++template+ нет его тут, нельзя в template template писать
+ref
+object
+nil
+
+каждый ref это фабрика
+
+
+decorator:: object key & args -> object +stoppable?+
+wrap::      decorator-ref & arg-refs
+
+f:: object & args -> object
+transform:: target-key f-ref & arg-refs
+
+
+и нужно что-то сделать с factory-build, т.к. она не сохраняет собранный объект, как ref-build

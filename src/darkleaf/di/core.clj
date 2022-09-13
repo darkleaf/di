@@ -53,24 +53,24 @@
 (declare resolve-dep)
 
 (defn- ref-build [ctx ref]
-  (let [dep-key  (p/ref-key ref)
-        dep-type (p/ref-type ref)]
-    (if (nil? dep-key)
-      ref
-      (resolve-dep ctx dep-key dep-type))))
+  #_(let [dep-key  (p/ref-key ref)
+          dep-type (p/ref-type ref)]
+      (if (nil? dep-key)
+        ref
+        (resolve-dep ctx dep-key dep-type))))
 
 (defn- factory-build [{:as ctx :keys [*built-list]} factory]
-  (let [obj (p/factory-build factory ctx)]
-    (vswap! *built-list conj obj)
-    obj))
+  #_(let [obj (p/factory-build factory ctx)]
+      (vswap! *built-list conj obj)
+      obj))
 
 (defn- ref-build [{:as ctx} ref]
-  (let [ref-key  (p/ref-key ref)
-        ref-type (p/ref-type ref)
-        obj      (if (nil? ref-key)
-                   ref
-                   (resolve-dep ctx ref-key ref-type))]
-    obj))
+  #_(let [ref-key  (p/ref-key ref)
+          ref-type (p/ref-type ref)
+          obj      (if (nil? ref-key)
+                     ref
+                     (resolve-dep ctx ref-key ref-type))]
+      obj))
 
 (defn- resolve-deps [ctx deps]
   (reduce-kv (fn [acc key dep-type]
@@ -270,6 +270,10 @@
 (defn stop [x]
   (p/stop x))
 
+(defrecord Ref [key type])
+(alter-meta! #'->Ref assoc :private true)
+(alter-meta! #'map->Ref assoc :private true)
+
 (defn ref
   "Returns a factory referencing to another one.
 
@@ -280,13 +284,9 @@
   (di/start `root {:my-abstraction (di/ref `implemntation)})
 
   See `opt-ref` and `template`."
-  ([key]
-   ^{:type   ::ref
-     ::print key}
-   (reify
-     p/Ref
-     (ref-key [_] key)
-     (ref-type [_] :required))))
+  [key]
+  (->Ref key :required))
+
 
 ;; todo: doc
 (defn opt-ref
@@ -298,13 +298,8 @@
   (di/opt-ref ::dep (di/ref ::default))
 
   See `ref` and `template`."
-  ([key]
-   ^{:type   ::opt-ref
-     ::print key}
-   (reify
-     p/Ref
-     (ref-key [_] key)
-     (ref-type [_] :optional))))
+  [key]
+  (->Ref key :optional))
 
 (defn template
   "Returns a factory for templating a data-structure.
@@ -322,14 +317,22 @@
     (factory-build [_ ctx]
       (w/postwalk (partial ref-build ctx) form))))
 
-(defn bind [factory f-ref & arg-refs]
+(defn bind [factory f]
   (reify p/Factory
     (factory-build [_ ctx]
       (let [obj  (factory-build ctx factory)
-            f    (ref-build ctx f-ref)
-            args (map (partial ref-build ctx) arg-refs)
-            ref  (apply f obj args)]
+            ref  (f obj)]
         (ref-build ctx ref)))))
+
+(def ^:private key? (some-fn symbol? keyword? string?))
+
+;; можно еще var тут сделать
+;; и это уже тянет на протокол
+
+(defn- call [ctx fn-or-key & args]
+  (cond
+    (fn? fn-or-key) (apply fn-or-key args)
+    (key? fn-or-key) (let [f (resolve-dep)])))
 
 (defn wrap
   "Wraps registry to decorate or instrument built objects.
@@ -358,12 +361,35 @@
         (let [factory (registry key)]
           (reify p/Factory
             (factory-build [_ {:as ctx, :keys [under-construction]}]
+              ;; вот тут нужно добавлять в список остановки
               (let [obj (p/factory-build factory ctx)]
                 (if (some under-construction own-keys)
                   obj
                   (let [decorator (ref-build ctx decorator-ref)
                         args      (map (partial ref-build ctx) arg-refs)]
                     (apply decorator key obj args)))))))))))
+
+
+(comment
+  (di/wrap `decorator key)
+  (di/update-key `f ::some-key key))
+
+
+
+
+;; update-key
+
+(update-key k f & args)
+
+(update-key `service xxx `wrapper arg1 arg2)
+
+
+x:: object f args -> (f obj & args)
+
+
+
+(wrap decorator key-as-arg)
+
 
 (defn transform [target-key f-ref & arg-refs]
   (fn [registry]
@@ -377,6 +403,12 @@
                     args (map (partial ref-build ctx) arg-refs)]
                 (apply f obj args))))
           factory)))))
+
+
+;; можно так-то сделать `key?` и в wrap & transform использовать key? или fn? для функции
+;; для wrap агрументы можно сделать значениями
+;; для transform аргументы всегда ключи
+
 
 (defn- arglists [variable]
   (-> variable meta :arglists))
