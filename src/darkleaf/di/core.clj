@@ -263,6 +263,16 @@
 (defn stop [x]
   (p/stop x))
 
+(defrecord Ref [key type]
+  p/Factory
+  (dependencies [_]
+    {key type})
+  (build [_ deps]
+    (deps key)))
+
+(alter-meta! #'->Ref assoc :private true)
+(alter-meta! #'map->Ref assoc :private true)
+
 (defn ref
   "Returns a factory referencing to another one.
 
@@ -273,17 +283,8 @@
   (di/start `root {:my-abstraction (di/ref `implemntation)})
 
   See `template`."
-  ([key]
-   (-> (ref key identity)
-       (vary-meta assoc ::print key)))
-  ([key f & args]
-   ^{:type   ::ref
-     ::print (vec (concat [key f] args))}
-   (reify p/Factory
-     (dependencies [_]
-       {key :required})
-     (build [_ deps]
-       (apply f (deps key) args)))))
+  [key]
+  (->Ref key :required))
 
 (defn opt-ref
   "Returns a factory referencing to another possible undefined factory.
@@ -292,17 +293,8 @@
   (def port (di/opt-ref ::config get :port 8080))
 
    See `ref` and `template`."
-  ([key]
-   (-> (opt-ref key identity)
-       (vary-meta assoc ::print key)))
-  ([key f & args]
-   ^{:type   ::opt-ref
-     ::print (vec (concat [key f] args))}
-   (reify p/Factory
-     (dependencies [_]
-       {key :optional})
-     (build [_ deps]
-       (apply f (deps key) args)))))
+  [key]
+  (->Ref key :optional))
 
 (defn template
   "Returns a factory for templating a data-structure.

@@ -19,7 +19,8 @@
 
 ;; The easy way
 
-(def port* (di/ref "PORT" #(Long/parseLong %)))
+(def port* (-> (di/ref "PORT")
+               (di/bind #(Long/parseLong %))))
 
 (t/deftest port-test
   (with-open [system-root (di/start `port* {"PORT" "8080"})]
@@ -32,7 +33,8 @@
 (s/check-asserts true)
 
 (s/def ::datasource ifn?)
-(def datasource (di/ref ::datasource #(s/assert ::datasource %)))
+(def datasource (-> (di/ref ::datasource)
+                    (di/bind #(s/assert ::datasource %))))
 
 (defn handler [{ds `datasource} -arg]
   :ok)
