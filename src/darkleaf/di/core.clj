@@ -348,26 +348,54 @@
           (p/build deps)
           (f)))))
 
+(def ^:private key? (some-fn symbol? keyword? string?))
+
 (defn wrap
-  ;; "Wraps registry to decorate or instrument built objects.
-  ;; Use it for logging, schema checking, AOP, etc.
-  ;; The `decorator-key` should refer to a var like the following one.
+  "Wraps registry to decorate or instrument built objects.
+  Use it for logging, schema checking, AOP, etc.
 
-  ;; (defn my-instrumentation [{state :some/state} key object & args]
-  ;;   (if (need-instrument? key object)
-  ;;     (instrument state object args)
-  ;;     object))
+  The `decorator` and the `args` are keys.
+  Also the `decorator` can be ifn.
 
-  ;; (di/start `root (di/with-decorator `my-instrumentation arg1 arg2))"
+  The resolved `decorator` is a function of [key object & args].
+
+  It is smart enough not to instrument decorator's dependencies with the same decorator
+  to avoid circular dependencies.
+
+  (defn stateful-instrumentaion [{state :some/state} object key arg1 arg2] ...)
+  (di/start ::root (di/wrap `stateful-instrumentation `arg1 ::arg2 \"arg3\")))
+
+  (defn stateless-instrumentaion [object key arg1 arg2 arg3] ...)
+  (di/start ::root (di/wrap   stateless-instrumentation `arg1 ::arg2 \"arg3\"))
+  (di/start ::root (di/wrap #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))"
   [decorator & args]
-  (fn [registry]
-    (fn [key]
-      (let [factory (registry key)]
-        (reify p/Factory
-          (dependencies [_]
-            (p/dependencies factory))
-          (build [_ deps]
-            (apply decorator key (p/build factory deps) args)))))))
+  {:pre [(or (key? decorator)
+             (ifn? decorator))
+         (every? key? args)]}
+  (let [own-keys            (cond-> (set args)
+                              (key? decorator) (conj decorator))
+        *under-construction (volatile! #{})]
+    (fn [registry]
+      (fn [key]
+        (vswap! *under-construction conj key)
+        (let [factory (registry key)]
+          (if (some @*under-construction own-keys)
+            (reify p/Factory
+              (dependencies [_]
+                (p/dependencies factory))
+              (build [_ deps]
+                (vswap! *under-construction disj key)
+                (p/build factory deps)))
+            (reify p/Factory
+              (dependencies [_]
+                (merge (p/dependencies factory)
+                       (zipmap own-keys (repeat :required))))
+              (build [_ deps]
+                (vswap! *under-construction disj key)
+                (let [decorator (deps decorator decorator)
+                      args      (map deps args)
+                      obj       (p/build factory deps)]
+                  (apply decorator obj key args))))))))))
 
 (defn transform [key object target-key f & args]
   (if (= target-key key)

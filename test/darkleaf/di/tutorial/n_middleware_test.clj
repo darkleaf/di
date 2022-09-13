@@ -10,16 +10,15 @@
 ;; For this case we have `di/with-decorator` middleware.
 ;; https://en.wikipedia.org/wiki/Decorator_pattern
 
-(defmulti check-schema! (fn [key object] key))
+(defmulti check-schema! (fn [object key] key))
 
-(defmethod check-schema! :default [_ object])
+(defmethod check-schema! :default [_ _] nil)
 
-(defn with-schema [key object]
-  (check-schema! key object)
+(defn with-schema [object key]
+  (check-schema! object key)
   object)
 
-
-(defmethod check-schema! ::datasource [_ ds]
+(defmethod check-schema! ::datasource [ds _]
   (assert (ifn? ds)))
 
 (defn service [{ds ::datasource} x]

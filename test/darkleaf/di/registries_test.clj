@@ -46,7 +46,7 @@
 (defn service [-deps x]
   [:service x])
 
-(defn instrument-service [key obj]
+(defn instrument-service [obj key]
   (if (= `service key)
     (fn [x]
       (assert (int? x))
