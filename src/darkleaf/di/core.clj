@@ -336,12 +336,14 @@
     (build [_ deps]
       (w/postwalk #(ref-build % deps) form))))
 
-(defn bind [factory f & args]
+(defn bind [factory f]
   (reify p/Factory
     (dependencies [_]
       (p/dependencies factory))
     (build [_ deps]
-      (apply f (p/build factory deps) args))))
+      (-> factory
+          (p/build deps)
+          (f)))))
 
 (defn wrap
   ;; "Wraps registry to decorate or instrument built objects.
