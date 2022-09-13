@@ -15,13 +15,12 @@
 
 (def news-handler (fn [req]))
 
-(def route-data
-  (di/template
-   [["/"     {:get {:handler (di/ref `root-handler)}}]
-    ["/news" {:get {:handler (di/ref `news-handler)}}]]))
-
 (t/deftest template-test
-  (with-open [system-root (di/start `route-data)]
+  (with-open [system-root (di/start `route-data
+                                    {`route-data
+                                     (di/template
+                                      [["/"     {:get {:handler (di/ref `root-handler)}}]
+                                       ["/news" {:get {:handler (di/ref `news-handler)}}]])})]
     (t/is (= [["/"     {:get {:handler root-handler}}]
               ["/news" {:get {:handler news-handler}}]]
              @system-root))))
