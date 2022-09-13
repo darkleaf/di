@@ -72,7 +72,7 @@
 (declare ref-deps ref-build)
 
 (defn- build-obj*
-  "Handles factories return refs"
+  "Handles higher order components"
   [ctx factory]
   (let [declared-deps     (p/dependencies factory)
         resolved-deps     (resolve-deps ctx declared-deps)
@@ -157,24 +157,24 @@
 (defn ^AutoCloseable start
   "Starts a system of dependent objects.
 
-  The key argument is a name of the system root.
+  key is a name of the system root.
   Use symbols for var names, keywords for abstract dependencies,
   and strings for environments variables.
 
-  The key is looked up in a registry.
-  By default registry uses system env and clojure namespaces
-  to resolve string and symbol keys, respectively.
+  key is looked up in a registry.
+  By default registry uses Clojure namespaces and system env
+  to resolve symbols and strings, respectively.
 
   You can extend it with middlewares.
   Each middleware can be one of the following form:
 
   - a function `registry -> key -> Factory`
-  - a map of key and `Factory` instance
+  - a map of key and `p/Factory` instance
   - a sequence of the previous forms
 
   Middlewares also allows you to instrument built objects.
   It's useful for logging, schema validation, AOP, etc.
-  See `with-decorator`.
+  See `wrap`, `update-key`.
 
   (di/start `root
             {:my-abstraction implemntation
@@ -263,8 +263,10 @@
       (applyTo [_ args]
         (.applyTo ^IFn obj args)))))
 
-(defn stop [x]
-  (p/stop x))
+(defn stop
+  "Stops the root of a system"
+  [root]
+  (p/stop root))
 
 ;; у нее роли
 ;; 1. в template
@@ -298,35 +300,34 @@
     object))
 
 (defn ref
-  "Returns a factory referencing to another one.
+  "Returns a factory referencing to a key.
 
-  (def port (di/ref \"PORT\" parse-long)
+  (def port (di/ref \"PORT\"))
+  (defn server [{port `port}] ...)
 
   (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
 
-  (di/start `root {:my-abstraction (di/ref `implemntation)})
+  (di/start `root {::my-abstraction (di/ref `my-implementation)})
 
-  See `template`."
+  See `template`, `opt-ref`, `bind`, `p/build`."
   [key]
   (->Ref key :required))
 
 (defn opt-ref
-  "Returns a factory referencing to another possible undefined factory.
+  "Returns a factory referencing to a possible undefined key.
+  Produces nil in that case.
 
-  (def port (di/opt-ref \"PORT\" (fnil parse-log \"8080\")))
-  (def port (di/opt-ref ::config get :port 8080))
-
-   See `ref` and `template`."
+  See `template`, `ref`, `bind`."
   [key]
   (->Ref key :optional))
 
 (defn template
   "Returns a factory for templating a data-structure.
-  Replaces `Ref` instances with built objects.
+  Replaces `ref` or `opt-ref` instances with built objects.
 
   (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
 
-  See `ref`."
+  See `ref` and `opt-ref`."
   [form]
   ^{:type   ::template
     ::print form}
@@ -339,7 +340,24 @@
     (build [_ deps]
       (w/postwalk #(ref-build % deps) form))))
 
-(defn bind [factory f]
+(defn bind
+  "Applies f to an object that the factory produces.
+  f accepts a built object and returns updated one.
+  Also f can return `ref`, for example, to select an implementation.
+
+  f should return a `p/Stoppable` object, which also stops the original object.
+
+  (def port (-> (di/ref \"PORT\")
+                (di/bind parse-long)))
+
+  (def implementation (-> (di/ref \"IMPLEMENTATION_NAME\")
+                          (di/bind #(case %
+                                      \"one\" (di/ref ::one)
+                                      \"two\" (di/ref ::two)
+                                      (di/ref ::other)))))
+
+  See `ref`, `template`."
+  [factory f]
   (reify p/Factory
     (dependencies [_]
       (p/dependencies factory))
@@ -350,14 +368,19 @@
 
 (def ^:private key? (some-fn symbol? keyword? string?))
 
+
+;; wrap-keys (?)
 (defn wrap
-  "Wraps registry to decorate or instrument built objects.
+  "A registry middleware for decorating or instrumenting built objects.
   Use it for logging, schema checking, AOP, etc.
 
-  The `decorator` and the `args` are keys.
-  Also the `decorator` can be ifn.
+  decorator and args are keys.
+  Also decorator can be a function in term of `ifn?`.
 
-  The resolved `decorator` is a function of [key object & args].
+  A resolved decorator is a function of [object key & args].
+  decorator should return a `p/Stoppable` object, which also stops the original object.
+
+  In complex cases f can return `ref` to implement higher order components. See `bind`.
 
   It is smart enough not to instrument decorator's dependencies with the same decorator
   to avoid circular dependencies.
@@ -367,7 +390,9 @@
 
   (defn stateless-instrumentaion [object key arg1 arg2 arg3] ...)
   (di/start ::root (di/wrap   stateless-instrumentation `arg1 ::arg2 \"arg3\"))
-  (di/start ::root (di/wrap #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))"
+  (di/start ::root (di/wrap #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
+
+  See `update-key`, `bind`."
   [decorator & args]
   {:pre [(or (key? decorator)
              (ifn? decorator))
@@ -397,7 +422,24 @@
                       obj       (p/build factory deps)]
                   (apply decorator obj key args))))))))))
 
-(defn update-key [target f & args]
+(defn update-key
+  "A registry middleware for updating built object.
+
+  target is a key to update.
+  f and args are keys.
+  Also f can be a function in term of `ifn?`.
+
+  f should return a `p/Stoppable` object, which also stops the original object.
+
+  In complex cases f can return `ref` to implement higher order components. See `bind`.
+
+  (def routes [])
+  (def subsystem-routes (di/template [[\"/posts\" (di/ref `handler)]]))
+
+  (di/start ::root (di/update-key `routes conj `subsystem-routes))
+
+  See `update`, `wrap`, `bind`."
+  [target f & args]
   {:pre [(or (key? f)
              (ifn? f))
          (every? key? args)]}

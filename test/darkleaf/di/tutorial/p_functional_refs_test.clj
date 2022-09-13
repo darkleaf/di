@@ -36,7 +36,7 @@
                                                          (case impl-name
                                                            "one" (di/ref ::one)
                                                            "two" (di/ref ::two)
-                                                           (di/ref :other)))))})]
+                                                           (di/ref ::other)))))})]
     (t/is (= :two @root))))
 
 
@@ -44,7 +44,7 @@
 
 
 ;; You can also use a ref to test an abstraction.
-;; Also consider `di/with-decorator`.
+;; Also consider `di/wrap` and `di/update-key`.
 
 (s/check-asserts true)
 
