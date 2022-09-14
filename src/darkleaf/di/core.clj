@@ -69,18 +69,15 @@
 (defn- find-obj [{:keys [*built-map]} key]
   (get @*built-map key))
 
-(declare ref-deps ref-build)
-
 (defn- build-obj*
-  "Handles higher order components"
+  "Handles highter order components."
   [ctx factory]
-  (let [declared-deps     (p/dependencies factory)
-        resolved-deps     (resolve-deps ctx declared-deps)
-        ref               (p/build factory resolved-deps)
-        declared-ref-deps (ref-deps ref)
-        resolved-ref-deps (resolve-deps ctx declared-ref-deps)
-        obj               (ref-build ref resolved-ref-deps)]
-    obj))
+  (let [declared-deps (p/dependencies factory)
+        resolved-deps (resolve-deps ctx declared-deps)
+        obj           (p/build factory resolved-deps)]
+    (if (identical? factory obj)
+      obj
+      (recur ctx obj))))
 
 (defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *built-list]} key]
   (let [ctx     (update ctx :under-construction conj key)
