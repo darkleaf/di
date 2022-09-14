@@ -60,23 +60,3 @@
                             (di/instrument service-instrumentation))]
     (t/is (= [:service 42] (obj 42)))
     (t/is (thrown? Throwable (obj "42")))))
-
-
-
-(t/deftest select-by-fn-test
-  (with-open [root (di/start ::root
-                             {::flag :a}
-                             (di/select-by ::flag
-                                           #(case %
-                                              :a {::root 1}
-                                              :b {::root 2}
-                                              {::root 3})))]
-    (t/is (= 1 @root))))
-
-(t/deftest select-by-map-test
-  (with-open [root (di/start ::root
-                             {::flag :a}
-                             (di/select-by ::flag
-                                           {:a {::root 1}
-                                            :b {::root 2}}))]
-    (t/is (= 1 @root))))

@@ -189,7 +189,7 @@
   Use `with-open` in tests to stop the system reliably.
 
   See the tests for use cases.
-  See `instrument`, `update-key`, `select-by`."
+  See `instrument`, `update-key`."
   [key & middlewares]
   (let [middlewares (concat [with-env with-ns] middlewares)
         registry    (apply-middleware nil-registry middlewares)
@@ -397,7 +397,7 @@
   (di/start ::root (di/instrument   stateless-instrumentation `arg1 ::arg2 \"arg3\"))
   (di/start ::root (di/instrument #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
 
-  See `start`, `update-key`, `select-by`, `bind`."
+  See `start`, `update-key`, `bind`."
   [f & args]
   {:pre [(or (key? f)
              (ifn? f))
@@ -446,7 +446,7 @@
   If you don't want to resolve keys like :some-value, you should use them in closures:
   (di/update-key `key #(assoc %1 :some-name %2) `some-value)
 
-  See `update`, `start`, `instrument`, `select-by`, `bind`."
+  See `update`, `start`, `instrument`, `bind`."
   [target f & args]
   {:pre [(or (key? f)
              (ifn? f))
@@ -467,34 +467,6 @@
                       args (map deps args)
                       obj  (p/build factory deps)]
                   (apply f obj args))))))))))
-
-(defn select-by
-  "Selects a registry middleware by key.
-
-  f accepts an object resolved by key and returns a registry middleware.
-
-  (di/start ::root
-            {::flag :a}
-            (di/select-by ::flag
-                          #(case %
-                             :a {::root 1}
-                             :b [{::root 2}
-                                 other-registry-middlware]
-                             (di/select-by ...))))
-
-  (di/start ::root
-            {::flag :a}
-            (di/select-by ::flag
-                          {:a {::root 1}
-                           :b [{::root 2}
-                               other-registry-middlware]}))
-
-  See `start`, `instrument`, `update-key`."
-  [key f]
-  (fn [registry]
-    (let [object     (registry key)
-          middleware (f object)]
-      (apply-middleware registry middleware))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))
