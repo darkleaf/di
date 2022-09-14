@@ -345,7 +345,7 @@
   "Applies f to an object that the factory produces.
   f accepts a built object and returns updated one.
   Also f can return `ref`, for example, to select an implementation or
-  to enable/disable a feature.
+  to enable or disable a feature.
 
   f should return a `p/Stoppable` object, which also stops the original object.
 
