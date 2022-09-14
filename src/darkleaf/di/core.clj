@@ -165,7 +165,7 @@
   By default registry uses Clojure namespaces and system env
   to resolve symbols and strings, respectively.
 
-  You can extend it with middlewares.
+  You can extend it with registry middlewares.
   Each middleware can be one of the following form:
 
   - a function `registry -> key -> Factory`
@@ -181,14 +181,15 @@
              `some-key replacement
              \"LOG_LEVEL\" \"info\"}
             [dev-middlwares test-middlewares]
-            (di/with-decorator `log))
+            (di/instrument `log))
 
   Returns a container contains started root of the system.
   The container implements `AutoCloseable`, `Stoppable`, `IDeref` and `IFn`.
 
   Use `with-open` in tests to stop the system reliably.
 
-  See the tests for use cases."
+  See the tests for use cases.
+  See `instrument`, `update-key`, `select-by`."
   [key & middlewares]
   (let [middlewares (concat [with-env with-ns] middlewares)
         registry    (apply-middleware nil-registry middlewares)
@@ -396,7 +397,7 @@
   (di/start ::root (di/instrument   stateless-instrumentation `arg1 ::arg2 \"arg3\"))
   (di/start ::root (di/instrument #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
 
-  See `update-key`, `bind`."
+  See `start`, `update-key`, `select-by`, `bind`."
   [f & args]
   {:pre [(or (key? f)
              (ifn? f))
@@ -442,7 +443,7 @@
 
   (di/start ::root (di/update-key `routes conj `subsystem-routes))
 
-  See `update`, `isntrument`, `bind`."
+  See `update`, `start`, `instrument`, `select-by`, `bind`."
   [target f & args]
   {:pre [(or (key? f)
              (ifn? f))
@@ -464,7 +465,29 @@
                       obj  (p/build factory deps)]
                   (apply f obj args))))))))))
 
-(defn conditional [key f]
+(defn select-by
+  "Selects a registry middleware by key.
+
+  f accepts an object resolved by key and returns a registry middleware.
+
+  (di/start ::root
+            {::flag :a}
+            (di/select-by ::flag
+                          #(case %
+                             :a {::root 1}
+                             :b [{::root 2}
+                                 other-registry-middlware]
+                             (di/select-by ...))))
+
+  (di/start ::root
+            {::flag :a}
+            (di/select-by ::flag
+                          {:a {::root 1}
+                           :b [{::root 2}
+                               other-registry-middlware]}))
+
+  See `start`, `instrument`, `update-key`."
+  [key f]
   (fn [registry]
     (let [object     (registry key)
           middleware (f object)]

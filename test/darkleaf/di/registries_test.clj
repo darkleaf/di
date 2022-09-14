@@ -63,12 +63,20 @@
 
 
 
-(t/deftest conditional-test
+(t/deftest select-by-fn-test
   (with-open [root (di/start ::root
                              {::flag :a}
-                             (di/conditional ::flag
-                                             #(case %
-                                                :a {::root 1}
-                                                :b {::root 2}
-                                                {::root 3})))]
+                             (di/select-by ::flag
+                                           #(case %
+                                              :a {::root 1}
+                                              :b {::root 2}
+                                              {::root 3})))]
+    (t/is (= 1 @root))))
+
+(t/deftest select-by-map-test
+  (with-open [root (di/start ::root
+                             {::flag :a}
+                             (di/select-by ::flag
+                                           {:a {::root 1}
+                                            :b {::root 2}}))]
     (t/is (= 1 @root))))
