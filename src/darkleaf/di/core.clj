@@ -443,6 +443,9 @@
 
   (di/start ::root (di/update-key `routes conj `subsystem-routes))
 
+  If you don't want to resolve keys like :some-value, you should use them in closures:
+  (di/update-key `key #(assoc %1 :some-name %2) `some-value)
+
   See `update`, `start`, `instrument`, `select-by`, `bind`."
   [target f & args]
   {:pre [(or (key? f)
