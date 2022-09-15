@@ -20,24 +20,11 @@
 ;; The easy way
 
 (def port* (-> (di/ref "PORT")
-               (di/bind #(Long/parseLong %))))
+               (di/fmap #(Long/parseLong %))))
 
 (t/deftest port-test
   (with-open [system-root (di/start `port* {"PORT" "8080"})]
     (t/is (= 8080 @system-root))))
-
-
-(t/deftest bind-test
-  (with-open [root (di/start ::root
-                             {"IMPL_NAME" "two"
-                              ::two       :two
-                              ::root      (-> (di/ref "IMPL_NAME")
-                                              (di/bind (fn [impl-name]
-                                                         (case impl-name
-                                                           "one" (di/ref ::one)
-                                                           "two" (di/ref ::two)
-                                                           (di/ref ::other)))))})]
-    (t/is (= :two @root))))
 
 ;; You can also use a ref to test an abstraction.
 ;; Also consider `di/instrument` and `di/update-key`.
@@ -46,7 +33,7 @@
 
 (s/def ::datasource ifn?)
 (def datasource (-> (di/ref ::datasource)
-                    (di/bind #(s/assert ::datasource %))))
+                    (di/fmap #(s/assert ::datasource %))))
 
 (defn handler [{ds `datasource} -arg]
   :ok)

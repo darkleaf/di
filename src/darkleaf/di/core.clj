@@ -69,20 +69,12 @@
 (defn- find-obj [{:keys [*built-map]} key]
   (get @*built-map key))
 
-(defn- build-obj*
-  "Handles highter order components."
-  [ctx factory]
-  (let [declared-deps (p/dependencies factory)
+(defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *built-list]} key]
+  (let [ctx           (update ctx :under-construction conj key)
+        factory       (registry key)
+        declared-deps (p/dependencies factory)
         resolved-deps (resolve-deps ctx declared-deps)
         obj           (p/build factory resolved-deps)]
-    (if (identical? factory obj)
-      obj
-      (recur ctx obj))))
-
-(defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *built-list]} key]
-  (let [ctx     (update ctx :under-construction conj key)
-        factory (registry key)
-        obj     (build-obj* ctx factory)]
     (vswap! *built-list conj obj)
     (vswap! *built-map  assoc key obj)
     obj))
@@ -270,7 +262,7 @@
 ;; 1. в template
 ;; 2.1. в реестрах
 ;; 2.2. в значениях var
-;; 3. в bind
+;; 3. в fmap
 (defrecord Ref [key type]
   p/Factory
   (dependencies [_]
@@ -307,7 +299,7 @@
 
   (di/start `root {::my-abstraction (di/ref `my-implementation)})
 
-  See `template`, `opt-ref`, `bind`, `p/build`."
+  See `template`, `opt-ref`, `fmap`, `p/build`."
   [key]
   (->Ref key :required))
 
@@ -315,7 +307,7 @@
   "Returns a factory referencing to a possible undefined key.
   Produces nil in that case.
 
-  See `template`, `ref`, `bind`."
+  See `template`, `ref`, `fmap`."
   [key]
   (->Ref key :optional))
 
@@ -338,37 +330,23 @@
     (build [_ deps]
       (w/postwalk #(ref-build % deps) form))))
 
-(defn bind
+(defn fmap
   "Applies f to an object that the factory produces.
   f accepts a built object and returns updated one.
-  Also f can return `ref`, for example, to select an implementation or
-  to enable or disable a feature.
 
-  f should return a `p/Stoppable` object, which also stops the original object.
+  f should return a `p/Stoppable` object, which also stops the original object if needed.
 
   (def port (-> (di/ref \"PORT\")
-                (di/bind parse-long)))
-
-  (def implementation (-> (di/ref \"IMPLEMENTATION_NAME\")
-                          (di/bind #(case %
-                                      \"one\" (di/ref ::one)
-                                      \"two\" (di/ref ::two)
-                                      (di/ref ::other)))))
-
-  (def handler (-> (di/opt-ref \"HANDLER_ENABLED\")
-                   (di/bind #(if (#{true \"true\" \"1\"} %)
-                               (di/ref `handler-impl)
-                               fallback))))
+                (di/fmap parse-long)))
 
   See `ref`, `template`."
-  [factory f]
+  [factory f & args]
   (reify p/Factory
     (dependencies [_]
       (p/dependencies factory))
     (build [_ deps]
-      (-> factory
-          (p/build deps)
-          (f)))))
+      (let [obj (p/build factory deps)]
+        (apply f obj args)))))
 
 (def ^:private key? (some-fn symbol? keyword? string?))
 
@@ -380,9 +358,7 @@
   Also f can be a function in term of `ifn?`.
 
   A resolved f must be a function of [object key & args] -> new-object.
-  f should return a `p/Stoppable` object, which also stops the original object.
-
-  In complex cases f can return `ref` to implement higher order components. See `bind`.
+  f should return a `p/Stoppable` object, which also stops the original object if needed.
 
   It is smart enough not to instrument f's dependencies with the same f
   to avoid circular dependencies.
@@ -394,7 +370,7 @@
   (di/start ::root (di/instrument   stateless-instrumentation `arg1 ::arg2 \"arg3\"))
   (di/start ::root (di/instrument #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
 
-  See `start`, `update-key`, `bind`."
+  See `start`, `update-key`, `fmap`."
   [f & args]
   {:pre [(or (key? f)
              (ifn? f))
@@ -431,9 +407,7 @@
   f and args are keys.
   Also f can be a function in term of `ifn?`.
 
-  f should return a `p/Stoppable` object, which also stops the original object.
-
-  In complex cases f can return `ref` to implement higher order components. See `bind`.
+  f should return a `p/Stoppable` object, which also stops the original object if needed.
 
   (def routes [])
   (def subsystem-routes (di/template [[\"/posts\" (di/ref `handler)]]))
@@ -443,7 +417,7 @@
   If you don't want to resolve keys like :some-value, you should use them in closures:
   (di/update-key `key #(assoc %1 :some-name %2) `some-value)
 
-  See `update`, `start`, `instrument`, `bind`."
+  See `update`, `start`, `instrument`, `fmap`."
   [target f & args]
   {:pre [(or (key? f)
              (ifn? f))

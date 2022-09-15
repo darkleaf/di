@@ -12,7 +12,7 @@
 (t/deftest opt-ref-missed-test
   (with-open [obj (di/start ::root
                             {::root (-> (di/opt-ref `dep)
-                                        (di/bind (fnil identity :default)))})]
+                                        (di/fmap (fnil identity :default)))})]
     (t/is (= :default @obj))))
 
 (t/deftest pr-test
