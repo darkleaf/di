@@ -125,14 +125,21 @@
                                      registry middleware)
     :else                    (throw (IllegalArgumentException. "Wrong middleware kind"))))
 
+(declare var->factory)
+
+(defn- try-requiring-resolve [key]
+  (when (qualified-symbol? key)
+    (try
+      (requiring-resolve key)
+      (catch FileNotFoundException _ nil))))
+
 (defn- with-ns
   "Adds support to the registry for looking up vars."
   [registry]
   (fn [key]
-    (?? (when (qualified-symbol? key)
-          (try
-            (requiring-resolve key)
-            (catch FileNotFoundException _ nil)))
+    (?? (some-> key
+                try-requiring-resolve
+                var->factory)
         (registry key))))
 
 (defn- with-env
@@ -463,17 +470,20 @@
       1 (variable deps)
       (partial variable deps))))
 
-(extend-protocol p/Factory
-  Var
-  (dependencies [this]
-    (if (defn? this)
-      (dependencies-fn this)
-      (p/dependencies @this)))
-  (build [this deps]
-    (if (defn? this)
-      (build-fn this deps)
-      (p/build @this deps)))
+(defn- var->factory [variable]
+  (if (defn? variable)
+    (reify p/Factory
+      (dependencies [_]
+        (dependencies-fn variable))
+      (build [_ deps]
+        (build-fn variable deps)))
+    (reify p/Factory
+      (dependencies [_]
+        (p/dependencies @variable))
+      (build [_ deps]
+        (p/build @variable deps)))))
 
+(extend-protocol p/Factory
   nil
   (dependencies [_] nil)
   (build [_ _] nil)
