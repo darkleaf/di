@@ -123,6 +123,7 @@
                                    (registry key)))
     (sequential? middleware) (reduce apply-middleware
                                      registry middleware)
+    (nil? middleware)        registry
     :else                    (throw (IllegalArgumentException. "Wrong middleware kind"))))
 
 (declare var->factory)
@@ -166,6 +167,7 @@
 
   - a function `registry -> key -> Factory`
   - a map of key and `p/Factory` instance
+  - nil, as no-op middleware
   - a sequence of the previous forms
 
   Middlewares also allows you to instrument built objects.
@@ -177,6 +179,8 @@
              `some-key replacement
              \"LOG_LEVEL\" \"info\"}
             [dev-middlwares test-middlewares]
+            (if dev-routes?
+              (di/update-key `route-data conj `dev-route-data)
             (di/instrument `log))
 
   Returns a container contains started root of the system.
