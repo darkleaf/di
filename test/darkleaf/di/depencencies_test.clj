@@ -29,10 +29,10 @@
 
 (t/deftest order-test
   (let [log (atom [])]
-    (with-open [obj (di/start `root
-                              {`log log}
-                              (di/instrument `with-logging))]
-      (t/is (= [:root [:a [:c]] [:b [:c]]] @obj)))
+    (with-open [root (di/start `root
+                               {`log log}
+                               (di/instrument `with-logging))]
+      (t/is (= [:root [:a [:c]] [:b [:c]]] @root)))
     (t/is (= [[`c :built]
               [`a :built]
               [`b :built]

@@ -1,11 +1,13 @@
 (ns darkleaf.di.template-test
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di])
+  (:import
+   (clojure.lang PersistentQueue)))
 
 (t/deftest template-ref-test
-  (t/are [expected actual]
-      (with-open [root (di/start `root {`root actual ::dep :dep})]
+  (t/are [expected tmpl]
+      (with-open [root (di/start ::root {::root tmpl ::dep :dep})]
         (t/is (= expected @root)))
     [:dep]
     (di/template [(di/ref ::dep)])
@@ -18,7 +20,6 @@
 
     #{:dep}
     (di/template #{(di/ref ::dep)})))
-
 
 (t/deftest pr-test
   (t/is (= "#darkleaf.di.core/template [:a :b :c]"

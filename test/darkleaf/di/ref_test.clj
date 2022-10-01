@@ -6,9 +6,9 @@
    (clojure.lang ExceptionInfo)))
 
 (t/deftest ref-test
-  (with-open [obj (di/start `object
-                            {`object     (di/ref `replacement)
-                             `replacement ::stub})]
+  (with-open [obj (di/start ::root
+                            {::root        (di/ref ::replacement)
+                             ::replacement ::stub})]
     (t/is (= ::stub @obj))))
 
 (t/deftest ref-missed-test
@@ -18,5 +18,5 @@
                                     {::root (di/ref `dep)}))))
 
 (t/deftest pr-test
-  (t/is (= "#darkleaf.di.core/ref darkleaf.di.ref-test/object"
-           (pr-str (di/ref `object)))))
+  (t/is (= "#darkleaf.di.core/ref :darkleaf.di.ref-test/object"
+           (pr-str (di/ref ::object)))))

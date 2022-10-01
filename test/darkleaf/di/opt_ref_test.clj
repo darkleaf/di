@@ -5,8 +5,8 @@
 
 (t/deftest opt-ref-test
   (with-open [obj (di/start ::root
-                            {::root       (di/opt-ref `replacement)
-                             `replacement ::stub})]
+                            {::root        (di/opt-ref ::replacement)
+                             ::replacement ::stub})]
     (t/is (= ::stub @obj))))
 
 (t/deftest opt-ref-missed-test
@@ -16,5 +16,5 @@
     (t/is (= :default @obj))))
 
 (t/deftest pr-test
-  (t/is (= "#darkleaf.di.core/opt-ref darkleaf.di.opt-ref-test/object"
-           (pr-str (di/opt-ref `object)))))
+  (t/is (= "#darkleaf.di.core/opt-ref :darkleaf.di.opt-ref-test/object"
+           (pr-str (di/opt-ref ::object)))))

@@ -14,35 +14,35 @@
       [dependency-key (get deps dependency-key)])))
 
 (t/deftest required-present-test
-  (with-open [root (di/start `root
-                             {`root       (factory :dependency :required)
-                              :dependency 42})]
-    (t/is (= [:dependency 42] @root))))
+  (with-open [root (di/start ::root
+                             {::root       (factory ::dependency :required)
+                              ::dependency 42})]
+    (t/is (= [::dependency 42] @root))))
 
 (t/deftest required-missed-test
   (t/is (thrown-with-msg? ExceptionInfo
-                          #"\AMissing dependency :dependency\z"
+                          #"\AMissing dependency :darkleaf.di.dependency-types-test/dependency\z"
                           (di/start `root
-                                    {`root (factory :dependency :required)}))))
+                                    {`root (factory ::dependency :required)}))))
 
 (t/deftest required-circular-test
   (t/is (thrown-with-msg? ExceptionInfo
-                          #"\ACircular dependency darkleaf.di.dependency-types-test/root\z"
-                          (di/start `root
-                                    {`root (factory `root :required)}))))
+                          #"\ACircular dependency :darkleaf.di.dependency-types-test/root\z"
+                          (di/start ::root
+                                    {::root (factory ::root :required)}))))
 
 (t/deftest optional-present-test
-  (with-open [root (di/start `root
-                             {`root       (factory :dependency :optional)
-                              :dependency 42})]
-    (t/is (= [:dependency 42] @root))))
+  (with-open [root (di/start ::root
+                             {::root       (factory ::dependency :optional)
+                              ::dependency 42})]
+    (t/is (= [::dependency 42] @root))))
 
 (t/deftest optional-missed-test
-  (with-open [root (di/start `root
-                             {`root (factory :dependency :optional)})]
-    (t/is (= [:dependency nil] @root))))
+  (with-open [root (di/start ::root
+                             {::root (factory ::dependency :optional)})]
+    (t/is (= [::dependency nil] @root))))
 
 (t/deftest optional-circular-test
   (t/is (thrown-with-msg? ExceptionInfo
-                          #"\ACircular dependency darkleaf.di.dependency-types-test/root\z"
-                          (di/start `root {`root (factory `root :optional)}))))
+                          #"\ACircular dependency :darkleaf.di.dependency-types-test/root\z"
+                          (di/start ::root {::root (factory ::root :optional)}))))

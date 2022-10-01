@@ -2,6 +2,8 @@
   (:require [clojure.test :as t]
             [darkleaf.di.core :as di]))
 
+;; todo: move to tutorial
+
 (defn shared [{}]
   (Math/random))
 
