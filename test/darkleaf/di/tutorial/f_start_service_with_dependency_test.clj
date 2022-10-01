@@ -3,6 +3,8 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
+#_#_#_
+
 (defn counter [{state `state}]
   (fn []
     (swap! state inc)))
