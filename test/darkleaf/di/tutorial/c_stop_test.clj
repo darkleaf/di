@@ -10,13 +10,13 @@
 (defn root [{::keys [*stopped?]}]
   (reify p/Stoppable
     (stop [_]
-      (deliver *stopped? true))))
+      (reset! *stopped? true))))
 
 (t/deftest stop-test
-  (let [*stopped? (promise)]
+  (let [*stopped? (atom false)]
     (-> (di/start `root {::*stopped? *stopped?})
         (di/stop))
-    (t/is (deref *stopped? 0 false))))
+    (t/is @*stopped?)))
 
 
 (comment

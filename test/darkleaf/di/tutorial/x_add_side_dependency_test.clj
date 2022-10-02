@@ -7,12 +7,12 @@
   'root)
 
 (defn migrations [{::keys [*migrated?]}]
-  (deliver *migrated? true))
+  (reset! *migrated? true))
 
 (t/deftest add-side-dependency-test
-  (let [*migrated? (promise)]
+  (let [*migrated? (atom false)]
     (with-open [root (di/start `root
                                (di/add-side-dependency `migrations)
                                {::*migrated? *migrated?})]
       (t/is (= 'root @root)))
-    (t/is (deref *migrated? 0 false))))
+    (t/is @*migrated?)))
