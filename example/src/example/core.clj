@@ -25,17 +25,24 @@
         (r.resp/content-type "application/json"))))
 
 (def route-data
-  (di/template [["/" {:get {:handler #'root-handler}}]])) ; or (di/ref `root-handler)
+  (di/template [["/" {:get {:handler (di/ref `root-handler)}}]]))
 
-(def with-base-registry
-  {::root              (di/template [(di/ref `jetty/server)
-                                     (di/ref `flyway/migrate)])
-   ::reitit/route-data #'route-data ; or (di/ref `route-data)
-   ::jetty/options     (di/template {:port (di/ref "PORT" parse-long)})
-   ::hikari/options    (di/template {:adapter "h2"
-                                     :url     (di/ref "H2_URL")})})
+(defn base-registry []
+  [{::root              (di/ref `jetty/server)
 
-(def with-dev-registry
+    ;; todo: conj
+    ::reitit/route-data (di/ref `route-data)
+
+
+    ;; todo: port
+    ::port              (-> (di/ref "PORT")
+                            (di/fmap parse-long))
+    ::jetty/options     (di/template {:port (di/ref ::port)})
+    ::hikari/options    (di/template {:adapter "h2"
+                                      :url     (di/ref "H2_URL")})}
+   (di/add-side-dependency `flyway/migrate)])
+
+(defn dev-registry []
   {"PORT"   "8888"
    "H2_URL" "jdbc:h2:mem:test"})
 
@@ -43,8 +50,8 @@
 
 (defn start []
   (reset! root (di/start ::root
-                         with-base-registry
-                         with-dev-registry)))
+                         (base-registry)
+                         (dev-registry))))
 
 (defn stop []
   (di/stop @root))

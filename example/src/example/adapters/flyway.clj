@@ -2,7 +2,7 @@
   (:require
    [example.adapters.hikari :as-alias hikari])
   (:import
-    [org.flywaydb.core Flyway]))
+   (org.flywaydb.core Flyway)))
 
 (defn migrate [{ds `hikari/datasource}]
   (.. (Flyway/configure)
