@@ -7,14 +7,28 @@
 ;; To stop a value, you should teach DI how to do it
 ;; through the `p/Stoppable` protocol implementation.
 
-;; In this test I implement the protocol through metadata.
-
 (defn root [{::keys [*stopped?]}]
-  (with-meta 'root
-    {`p/stop (fn [_] (deliver *stopped? true))}))
+  (reify p/Stoppable
+    (stop [_]
+      (deliver *stopped? true))))
 
 (t/deftest stop-test
   (let [*stopped? (promise)]
-    (with-open [root (di/start `root {::*stopped? *stopped?})]
-      (t/is (= 'root @root)))
+    (-> (di/start `root {::*stopped? *stopped?})
+        (di/stop))
     (t/is (deref *stopped? 0 false))))
+
+
+(comment
+  (ns project.jetty
+    (:require
+     [ring.adapter.jetty :as jetty]
+     [darkleaf.di.core :as di]
+     [darkleaf.di.protocols :as di.p])
+    (:import
+     (org.eclipse.jetty.server Server)))
+
+  (extend-type Server
+    di.p/Stoppable
+    (stop [this]
+      (.stop this))))
