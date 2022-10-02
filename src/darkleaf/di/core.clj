@@ -374,10 +374,10 @@
   It is smart enough not to instrument f's dependencies with the same f
   to avoid circular dependencies.
 
-  (defn stateful-instrumentaion [{state :some/state} object key arg1 arg2] ...)
+  (defn stateful-instrumentaion [{state :some/state} key object arg1 arg2] ...)
   (di/start ::root (di/instrument `stateful-instrumentation `arg1 ::arg2 \"arg3\")))
 
-  (defn stateless-instrumentaion [object key arg1 arg2 arg3] ...)
+  (defn stateless-instrumentaion [key object arg1 arg2 arg3] ...)
   (di/start ::root (di/instrument   stateless-instrumentation `arg1 ::arg2 \"arg3\"))
   (di/start ::root (di/instrument #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
 
@@ -409,7 +409,7 @@
                 (let [f (deps f f)
                       args      (map deps args)
                       obj       (p/build factory deps)]
-                  (apply f obj key args))))))))))
+                  (apply f key obj args))))))))))
 
 (defn update-key
   "A registry middleware for updating built objects.

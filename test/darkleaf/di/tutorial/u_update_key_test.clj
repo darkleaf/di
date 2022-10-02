@@ -3,10 +3,17 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-(t/deftest ok
-  (with-open [root (di/start `root
-                             {`root []
-                              `a 1
-                              `b 2}
-                             (di/update-key `root conj `a `b))]
-    (t/is (= [1 2] @root))))
+(def route-data [])
+
+(defn subsystem-a-route-data [-deps]
+  ["/a"])
+
+(defn subsystem-b-route-data [-deps]
+  ["/b"])
+
+(t/deftest update-key-test
+  (with-open [root (di/start `route-data
+                             (di/update-key `route-data conj
+                                            `subsystem-a-route-data
+                                            `subsystem-b-route-data))]
+    (t/is (= [["/a"] ["/b"]] @root))))

@@ -22,7 +22,7 @@
 (defn c []
   [:c])
 
-(defn with-logging [{log `log} obj key]
+(defn with-logging [{log `log} key obj]
   (swap! log conj [key :built])
   (with-meta obj {`p/stop (fn [_]
                             (swap! log conj [key :stopped]))}))
