@@ -19,8 +19,8 @@
   {:status 200 :body (str "Hi, " (get-current-user) "!")})
 
 (t/deftest handler-test
-  (with-open [system-root (di/start `ring-handler
-                                    {::datasource {1 "John"}
-                                     ::session    {:user-id 1}})]
+  (with-open [root (di/start `ring-handler
+                             {::datasource {1 "John"}
+                              ::session    {:user-id 1}})]
     (t/is (= {:status 200 :body "Hi, John!"}
-             (system-root {})))))
+             (root {})))))
