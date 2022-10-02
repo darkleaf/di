@@ -20,7 +20,7 @@
 ;; The easy way
 
 (def port* (-> (di/ref "PORT")
-               (di/fmap #(Long/parseLong %))))
+               (di/fmap parse-long)))
 
 (t/deftest port-test
   (with-open [root (di/start `port* {"PORT" "8080"})]
