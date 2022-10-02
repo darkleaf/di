@@ -13,8 +13,8 @@
   (Long/parseLong port))
 
 (t/deftest port-test
-  (with-open [system-root (di/start `port {"PORT" "8080"})]
-    (t/is (= 8080 @system-root))))
+  (with-open [root (di/start `port {"PORT" "8080"})]
+    (t/is (= 8080 @root))))
 
 
 ;; The easy way
@@ -23,24 +23,5 @@
                (di/fmap #(Long/parseLong %))))
 
 (t/deftest port-test
-  (with-open [system-root (di/start `port* {"PORT" "8080"})]
-    (t/is (= 8080 @system-root))))
-
-;; You can also use a ref to test an abstraction.
-;; Also consider `di/instrument` and `di/update-key`.
-
-(s/check-asserts true)
-
-(s/def ::datasource ifn?)
-(def datasource (-> (di/ref ::datasource)
-                    (di/fmap #(s/assert ::datasource %))))
-
-(defn handler [{ds `datasource} -arg]
-  :ok)
-
-(t/deftest handler-test
-  (t/is (thrown-with-msg? clojure.lang.ExceptionInfo
-                          #"\ASpec assertion failed.*"
-                          (di/start `handler {::datasource "wrong"})))
-  (with-open [system-root (di/start `handler {::datasource (fn [])})]
-    (t/is (= :ok (system-root :arg)))))
+  (with-open [root (di/start `port* {"PORT" "8080"})]
+    (t/is (= 8080 @root))))

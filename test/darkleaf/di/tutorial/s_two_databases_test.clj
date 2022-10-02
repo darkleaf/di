@@ -5,6 +5,9 @@
 ;; In DI, each key corresponds to one object. So if you want to use two databases
 ;; you have to define two keys.
 
+;; здесь можно фабрику использовать, чтобы не дублировать список зависимостей
+
+
 (defn datasource [url user password]
   [:ds-stub url user password])
 

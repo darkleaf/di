@@ -5,22 +5,20 @@
    [darkleaf.di.protocols :as p]))
 
 (t/deftest auto-closeable-test
-  (let [p         (promise)
+  (let [*stopped? (promise)
         stoppable (reify p/Stoppable
                     (stop [_]
-                      (deliver p :done)))]
+                      (deliver *stopped? true)))]
     (with-open [root (di/start ::root {::root stoppable})])
-    (t/is (realized? p))
-    (t/is (= :done @p))))
+    (t/is (deref *stopped? 0 false))))
 
 (t/deftest stoppable-test
-  (let [p         (promise)
+  (let [*stopped? (promise)
         stoppable (reify p/Stoppable
                     (stop [_]
-                      (deliver p :done)))]
+                      (deliver *stopped? true)))]
     (di/stop (di/start ::root {::root stoppable}))
-    (t/is (realized? p))
-    (t/is (= :done @p))))
+    (t/is (deref *stopped? 0 false))))
 
 (t/deftest ideref-test
   (with-open [root (di/start ::root {::root 42})]

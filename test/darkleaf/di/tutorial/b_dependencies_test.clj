@@ -8,6 +8,10 @@
 ;; DI uses map destructuring syntax to describe dependencies of a component.
 ;; https://clojure.org/guides/destructuring#_associative_destructuring
 
+;; зависимости объявляются ключами. Ключи - это символы, кейворды и строки.
+
+;; todo: как-то тут рассказать про все типы ключей
+
 (defn root [{a      `a
              ::syms [b]
              :or    {b ::default}
