@@ -19,16 +19,6 @@
   (with-open [root (di/start `root {`root :stub})]
     (t/is (= :stub @root))))
 
-#_(t/deftest vector-registry-test
-    (let [reg (fn [default]
-                (fn [super]
-                  (fn [key]
-                     (if-some [factory (super key)]
-                       factory
-                       default))))]
-      (with-open [obj (di/start `not-found (reg :default))]
-        (t/is (= :default @obj)))))
-
 (t/deftest sequential-registry-test
   (let [registries [{::a 1}
                     [{::b 2}]

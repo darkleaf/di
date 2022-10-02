@@ -3,10 +3,11 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-(defn value [{path "PATH"}]
-  [:path path])
+(defn root [{path "PATH"}]
+  [:root path])
 
-(t/deftest env-test
-  (let [path (System/getenv "PATH")]
-    (with-open [system-root (di/start `value)]
-      (t/is (= [:path path] @system-root)))))
+(def PATH (System/getenv "PATH"))
+
+(t/deftest root-test
+  (with-open [root (di/start `root)]
+    (t/is (= [:root PATH] @root))))

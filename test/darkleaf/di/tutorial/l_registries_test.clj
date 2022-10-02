@@ -12,25 +12,30 @@
 ;; To locally define or redefine a dependency we should use registries.
 
 (t/deftest map-registry
-  (with-open [system-root (di/start `value {`dep-a :a `dep-b :b})]
-    (t/is (= [:value :a :b] @system-root)))
+  (with-open [root (di/start `value {`dep-a :a `dep-b :b})]
+    (t/is (= [:value :a :b] @root)))
 
-  (with-open [system-root (di/start `value {`value :replacement})]
-    (t/is (= :replacement @system-root)))
+  (with-open [root (di/start `value {`value :replacement})]
+    (t/is (= :replacement @root)))
 
-  (with-open [system-root (di/start `value {`dep-a :a} {`dep-b :b})]
-    (t/is (= [:value :a :b] @system-root)))
+  (with-open [root (di/start `value {`dep-a :a} {`dep-b :b})]
+    (t/is (= [:value :a :b] @root)))
 
   ;; last wins
-  (with-open [system-root (di/start `value
-                                    {`dep-a :a `dep-b :b}
-                                    {`dep-a :a' `dep-b :b'})]
-    (t/is (= [:value :a' :b'] @system-root))))
+  (with-open [root (di/start `value
+                             {`dep-a :a `dep-b :b}
+                             {`dep-a :a' `dep-b :b'})]
+    (t/is (= [:value :a' :b'] @root))))
 
 
 ;; To avoid using `(apply di/start ...)`,
-;; we can use sequencies, not vectors, as a single registry.
-(t/deftest seq-registry
-  (let [registry (list {`dep-a :a} {`dep-b :b})]
-    (with-open [system-root (di/start `value registry)]
-      (t/is (= [:value :a :b] @system-root)))))
+;; we can use sequencies as a single registry.
+(t/deftest sequential-registry
+  (with-open [root (di/start `value [{`dep-a :a}
+                                     [{`dep-b :b}]])]
+    (t/is (= [:value :a :b] @root))))
+
+
+;; todo
+;; include .m-abstractions-test
+;; include darkleaf.di.registries-test
