@@ -1,37 +1,42 @@
 (ns darkleaf.di.tutorial.s-two-databases-test
-  (:require [clojure.test :as t]
-            [darkleaf.di.core :as di]))
+  (:require
+   [clojure.string :as str]
+   [clojure.test :as t]
+   [darkleaf.di.core :as di]
+   [darkleaf.di.protocols :as p]))
 
 ;; In DI, each key corresponds to one object. So if you want to use two databases
 ;; you have to define two keys.
 
 ;; здесь можно фабрику использовать, чтобы не дублировать список зависимостей
 
+(defn db-factory [prefix]
+  (let [prefix       (-> prefix name str/upper-case)
+        url-key      (str prefix "_DB_URL")
+        user-key     (str prefix "_DB_USER")
+        password-key (str prefix "_DB_PASSWORD")]
+    (reify p/Factory
+      (dependencies [_]
+        {url-key      :required
+         user-key     :required
+         password-key :required})
+      (build [_ deps]
+        [::db (deps url-key) (deps user-key) (deps password-key)]))))
 
-(defn datasource [url user password]
-  [:ds-stub url user password])
-
-(defn main-db [{url      "MAIN_DB_URL"
-                user     "MAIN_DB_USER"
-                password "MAIN_DB_PASSWORD"}]
-  (datasource url user password))
-
-(defn secondary-db [{url      "SECONDARY_DB_URL"
-                     user     "SECONDARY_DB_USER"
-                     password "SECONDARY_DB_PASSWORD"}]
-  (datasource url user password))
+(def main-db (db-factory :main))
+(def secondary-db (db-factory :secondary))
 
 (defn handler [{main-db      `main-db
                 secondary-db `secondary-db} -req]
   [main-db secondary-db])
 
 (t/deftest handler-test
-  (with-open [system-root (di/start `handler {"MAIN_DB_URL"           "tcp://main"
-                                              "MAIN_DB_USER"          "main"
-                                              "MAIN_DB_PASSWORD"      "secret"
-                                              "SECONDARY_DB_URL"      "tcp://secondary"
-                                              "SECONDARY_DB_USER"     "secondary"
-                                              "SECONDARY_DB_PASSWORD" "super-secret"})]
-    (t/is (= [[:ds-stub "tcp://main" "main" "secret"]
-              [:ds-stub "tcp://secondary" "secondary" "super-secret"]]
-             (system-root :unused-req)))))
+  (with-open [root (di/start `handler {"MAIN_DB_URL"           "tcp://main"
+                                       "MAIN_DB_USER"          "main"
+                                       "MAIN_DB_PASSWORD"      "secret"
+                                       "SECONDARY_DB_URL"      "tcp://secondary"
+                                       "SECONDARY_DB_USER"     "secondary"
+                                       "SECONDARY_DB_PASSWORD" "super-secret"})]
+    (t/is (= [[::db "tcp://main" "main" "secret"]
+              [::db "tcp://secondary" "secondary" "super-secret"]]
+             (root :unused-req)))))
