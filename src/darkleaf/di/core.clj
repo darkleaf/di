@@ -450,6 +450,32 @@
                       obj  (p/build factory deps)]
                   (apply f obj args))))))))))
 
+(defn add-side-dependency
+  "A registry middleware for adding side dependencies.
+  Use it for migrations or other side effects.
+
+  (defn flyway [{url \"DATABASE_URL\"}]
+    (.. Flyway
+        ...))
+
+  (di/start ::root (di/add-side-dependency `flyway))"
+  [dep-key]
+  (let [*added? (volatile! false)]
+    (fn [registry]
+      (fn [key]
+        (let [factory (registry key)]
+          (if @*added?
+            factory
+            (do
+              (vreset! *added? true)
+              (reify p/Factory
+                (dependencies [_]
+                  (-> factory
+                      p/dependencies
+                      (assoc dep-key :required)))
+                (build [_ deps]
+                  (p/build factory deps))))))))))
+
 (defn- arglists [variable]
   (-> variable meta :arglists))
 
