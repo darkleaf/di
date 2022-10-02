@@ -1,4 +1,4 @@
-(ns darkleaf.di.tutorial.q-graceful-stop-test
+(ns darkleaf.di.tutorial.y-graceful-stop-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]

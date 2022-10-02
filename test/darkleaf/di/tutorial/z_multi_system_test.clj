@@ -1,8 +1,7 @@
 (ns darkleaf.di.tutorial.z-multi-system-test
-  (:require [clojure.test :as t]
-            [darkleaf.di.core :as di]))
-
-;; todo: move to tutorial
+  (:require
+   [clojure.test :as t]
+   [darkleaf.di.core :as di]))
 
 (defn shared [{}]
   (Math/random))

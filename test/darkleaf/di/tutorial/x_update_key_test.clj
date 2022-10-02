@@ -1,4 +1,4 @@
-(ns darkleaf.di.tutorial.u-update-key-test
+(ns darkleaf.di.tutorial.x-update-key-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

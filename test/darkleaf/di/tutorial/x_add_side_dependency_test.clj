@@ -1,4 +1,4 @@
-(ns darkleaf.di.tutorial.y-add-side-dependency-test
+(ns darkleaf.di.tutorial.x-add-side-dependency-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
