@@ -24,15 +24,14 @@
 
 (defn with-logging [{log `log} key obj]
   (swap! log conj [key :built])
-  (with-meta obj {`p/stop (fn [_]
-                            (swap! log conj [key :stopped]))}))
+  (reify p/Stoppable
+    (stop [_]
+      (swap! log conj [key :stopped]))))
 
 (t/deftest order-test
   (let [log (atom [])]
-    (with-open [root (di/start `root
-                               {`log log}
-                               (di/instrument `with-logging))]
-      (t/is (= [:root [:a [:c]] [:b [:c]]] @root)))
+    (-> (di/start `root {`log log} (di/instrument `with-logging))
+        (di/stop))
     (t/is (= [[`c :built]
               [`a :built]
               [`b :built]
