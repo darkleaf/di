@@ -455,7 +455,7 @@
   Use it for migrations or other side effects.
 
   (defn flyway [{url \"DATABASE_URL\"}]
-    (.. Flyway
+    (.. (Flyway/configure)
         ...))
 
   (di/start ::root (di/add-side-dependency `flyway))"
