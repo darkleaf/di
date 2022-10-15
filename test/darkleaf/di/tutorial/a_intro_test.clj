@@ -1,4 +1,4 @@
-(ns darkleaf.di.tutorial.a-start-stop-test
+(ns darkleaf.di.tutorial.a-intro-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di])
