@@ -8,13 +8,11 @@
 ;; In DI, each key corresponds to one object. So if you want to use two databases
 ;; you have to define two keys.
 
-;; здесь можно фабрику использовать, чтобы не дублировать список зависимостей
-
-(defn db-factory [prefix]
-  (let [prefix       (-> prefix name str/upper-case)
-        url-key      (str prefix "_DB_URL")
-        user-key     (str prefix "_DB_USER")
-        password-key (str prefix "_DB_PASSWORD")]
+(defn db-factory [db-name]
+  (let [db-name      (-> db-name name str/upper-case)
+        url-key      (str "DB_" db-name "_URL")
+        user-key     (str "DB_" db-name "_USER")
+        password-key (str "DB_" db-name "_PASSWORD")]
     (reify p/Factory
       (dependencies [_]
         {url-key      :required
@@ -23,20 +21,20 @@
       (build [_ deps]
         [::db (deps url-key) (deps user-key) (deps password-key)]))))
 
-(def main-db (db-factory :main))
-(def secondary-db (db-factory :secondary))
+(def db-a (db-factory :a))
+(def db-b (db-factory :b))
 
-(defn handler [{main-db      `main-db
-                secondary-db `secondary-db} -req]
-  [main-db secondary-db])
+(defn root [{db-a `db-a
+             db-b `db-b}]
+  [db-a db-b])
 
-(t/deftest handler-test
-  (with-open [root (di/start `handler {"MAIN_DB_URL"           "tcp://main"
-                                       "MAIN_DB_USER"          "main"
-                                       "MAIN_DB_PASSWORD"      "secret"
-                                       "SECONDARY_DB_URL"      "tcp://secondary"
-                                       "SECONDARY_DB_USER"     "secondary"
-                                       "SECONDARY_DB_PASSWORD" "super-secret"})]
-    (t/is (= [[::db "tcp://main" "main" "secret"]
-              [::db "tcp://secondary" "secondary" "super-secret"]]
-             (root :unused-req)))))
+(t/deftest root-test
+  (with-open [root (di/start `root {"DB_A_URL"      "tcp://a"
+                                    "DB_A_USER"     "user_a"
+                                    "DB_A_PASSWORD" "secret"
+                                    "DB_B_URL"      "tcp://b"
+                                    "DB_B_USER"     "user_b"
+                                    "DB_B_PASSWORD" "super-secret"})]
+    (t/is (= [[::db "tcp://a" "user_a" "secret"]
+              [::db "tcp://b" "user_b" "super-secret"]]
+             @root))))
