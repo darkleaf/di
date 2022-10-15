@@ -79,7 +79,6 @@
   (with-open [root (di/start `e)]
     (t/is (= [::e 42] (root 42)))))
 
-
 ;; You don't need to restart the whole system if you redefine a service.
 ;; Just redefine a Var.
 ;; It's very helpful for interactive development.
@@ -87,14 +86,18 @@
 ;; It does not work if you change definition of dependencies,
 ;; so in this case you have to restart the system.
 
+;; The new implementation of a service will receive the same dependencies.
+;; To check that, I have to look a little ahead and define component with a dependency.
+;; As I said we consider deps in the next chapter.
+
 ;; I have to use a dynamic var to test this behaviour but
 ;; in real life during development you would redefine a static one.
 
-(defn ^:dynamic f [-deps arg]
-  [::f arg])
+(defn ^:dynamic f [{x ::x} arg]
+  [::f x arg])
 
 (t/deftest f-test
-  (with-open [root (di/start `f)]
-    (binding [f (fn [-deps arg]
-                  [::new-f arg])]
-      (t/is (= [::new-f 42] (root 42))))))
+  (with-open [root (di/start `f {::x :x})]
+    (binding [f (fn [deps arg]
+                  [::new-f (deps ::x) arg])]
+      (t/is (= [::new-f :x 42] (root 42))))))
