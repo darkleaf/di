@@ -121,6 +121,8 @@
     (map? middleware)        (fn [key]
                                (?? (get middleware key)
                                    (registry key)))
+
+    #_(seqable?) ;; может ее лучше?
     (sequential? middleware) (reduce apply-middleware
                                      registry middleware)
     (nil? middleware)        registry
