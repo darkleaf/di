@@ -7,6 +7,9 @@
 ;; and DI offers tools to handle them easily.
 ;; Here they are: `di/template` and `di/ref`.
 
+;; You can also use `di/opt-ref` for optional dependencies.
+;; If there is no defined key opt-ref resolves to nil.
+
 (def route-data
   (di/template
    [["/"     {:get {:handler (di/ref `root-handler)}}]
