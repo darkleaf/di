@@ -117,16 +117,13 @@
 
 (defn- apply-middleware [registry middleware]
   (cond
-    (fn? middleware)         (middleware registry)
-    (map? middleware)        (fn [key]
-                               (?? (get middleware key)
-                                   (registry key)))
-
-    #_(seqable?) ;; может ее лучше?
-    (sequential? middleware) (reduce apply-middleware
-                                     registry middleware)
-    (nil? middleware)        registry
-    :else                    (throw (IllegalArgumentException. "Wrong middleware kind"))))
+    (fn? middleware)      (middleware registry)
+    (map? middleware)     (fn [key]
+                            (?? (get middleware key)
+                                (registry key)))
+    (seqable? middleware) (reduce apply-middleware
+                                  registry middleware)
+    :else                 (throw (IllegalArgumentException. "Wrong middleware kind"))))
 
 (declare var->factory)
 
