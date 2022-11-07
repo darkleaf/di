@@ -1,4 +1,4 @@
-(ns darkleaf.di.tutorial.k-env-test
+(ns darkleaf.di.tutorial.n-env-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
