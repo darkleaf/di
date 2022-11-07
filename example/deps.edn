@@ -11,5 +11,5 @@
          com.h2database/h2                 {:mvn/version "2.1.210"}
          com.github.seancorfield/next.jdbc {:mvn/version "1.2.780"}
          hikari-cp/hikari-cp               {:mvn/version "2.14.0"}
-         org.flywaydb/flyway-maven-plugin  {:mvn/version "8.5.7"}
+         org.flywaydb/flyway-core          {:mvn/version "8.5.7"}
          metosin/jsonista                  {:mvn/version "0.3.4"}}}
