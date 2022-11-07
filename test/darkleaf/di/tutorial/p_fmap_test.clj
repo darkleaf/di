@@ -22,7 +22,7 @@
 (def port' (-> (di/ref "PORT")
                (di/fmap parse-long)))
 
-(t/deftest port-test
+(t/deftest port'-test
   (with-open [root (di/start `port' {"PORT" "8080"})]
     (t/is (= 8080 @root))))
 
