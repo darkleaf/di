@@ -10,7 +10,7 @@
    [example.adapters.reitit :as-alias reitit]
    [jsonista.core :as json]))
 
-(defn to-json-stream [x]
+(defn- to-json-stream [x]
   (reify r.proto/StreamableResponseBody
     (write-body-to-stream [_ _ output-stream]
       (json/write-value output-stream x))))
@@ -27,19 +27,16 @@
 (def route-data
   (di/template [["/" {:get {:handler (di/ref `root-handler)}}]]))
 
+(def port (-> (di/ref "PORT")
+              (di/fmap parse-long)))
+
 (defn base-registry []
-  [{::root              (di/ref `jetty/server)
-
-    ;; todo: conj
-    ::reitit/route-data (di/ref `route-data)
-
-
-    ;; todo: port
-    ::port              (-> (di/ref "PORT")
-                            (di/fmap parse-long))
-    ::jetty/options     (di/template {:port (di/ref ::port)})
-    ::hikari/options    (di/template {:adapter "h2"
-                                      :url     (di/ref "H2_URL")})}
+  [{::root           (di/ref `jetty/server)
+    ::jetty/handler  (di/ref `reitit/handler)
+    ::jetty/options  (di/template {:port (di/ref `port)})
+    ::hikari/options (di/template {:adapter "h2"
+                                   :url     (di/ref "H2_URL")})}
+   (di/update-key `reitit/route-data conj `route-data)
    (di/add-side-dependency `flyway/migrate)])
 
 (defn dev-registry []

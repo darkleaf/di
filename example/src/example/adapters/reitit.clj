@@ -8,7 +8,9 @@
 (defn default-handler [req]
   (r.resp/not-found))
 
-(defn handler [{route-data ::route-data}]
+(def route-data [])
+
+(defn handler [{route-data `route-data}]
   (-> route-data
       (r/router)
       (r/ring-handler #'default-handler)))
