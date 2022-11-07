@@ -24,13 +24,13 @@
   (ns project.jetty
     (:require
      [darkleaf.di.core :as di]
-     [darkleaf.di.protocols :as di.p]
+     [darkleaf.di.protocols :as dip]
      [ring.adapter.jetty :as jetty])
     (:import
      (org.eclipse.jetty.server Server)))
 
   (extend-type Server
-    di.p/Stoppable
+    dip/Stoppable
     (stop [this]
       (.stop this)))
 
