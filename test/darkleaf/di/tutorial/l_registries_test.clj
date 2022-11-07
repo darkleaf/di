@@ -29,8 +29,9 @@
 
 
 ;; To avoid using `(apply di/start ...)`,
-;; we can use sequencies as a single registry.
-(t/deftest sequential-registry
+;; we can use an seqable value as a single registry.
+;; See `clojure.core/seqable?`.
+(t/deftest seqable-registry
   (with-open [root (di/start `value [{`dep-a :a}
                                      [{`dep-b :b}]])]
     (t/is (= [:value :a :b] @root))))
