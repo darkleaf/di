@@ -424,7 +424,7 @@
 
   (di/start ::root (di/update-key `routes conj `subsystem-routes))
 
-  If you don't want to resolve keys like :some-value, you should use them in closures:
+  If you don't want to resolve keys like :some-name, you should use them in a in-place fn:
   (di/update-key `key #(assoc %1 :some-name %2) `some-value)
 
   See `update`, `start`, `instrument`, `fmap`."
