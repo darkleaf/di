@@ -7,8 +7,8 @@
    (clojure.lang ExceptionInfo)))
 
 ;; Actually, the rest of the `di/start` arguments are middlewares.
-;; Maps and lists are special cases of ones.
-;; They a usefull for logging, schema validation, AOP, etc.
+;; Maps and collections are special cases of ones.
+;; Middlewares are usefull for logging, schema validation, AOP, etc.
 
 ;; For this case we have `di/instrument` middleware.
 ;; https://en.wikipedia.org/wiki/Decorator_pattern
