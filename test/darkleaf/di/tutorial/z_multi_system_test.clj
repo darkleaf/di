@@ -19,3 +19,6 @@
     (t/is (= :a (first @a)))
     (t/is (= :b (first @b)))
     (t/is (identical? (second @a) (second @b)))))
+
+
+;; TODO: you should stop systems  самостоятельно
