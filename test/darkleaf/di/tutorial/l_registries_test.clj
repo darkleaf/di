@@ -35,8 +35,3 @@
   (with-open [root (di/start `value [{`dep-a :a}
                                      [{`dep-b :b}]])]
     (t/is (= [:value :a :b] @root))))
-
-
-;; todo
-;; include .m-abstractions-test
-;; include darkleaf.di.registries-test
