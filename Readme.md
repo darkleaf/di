@@ -23,6 +23,11 @@ to define a graph of functions and stateful objects.
 (di/start `jetty)
 ```
 
+## Versions
+
+* See `1.0` branch for previous version
+* `master` contains dev version
+
 ## Resources
 
 Docs:
