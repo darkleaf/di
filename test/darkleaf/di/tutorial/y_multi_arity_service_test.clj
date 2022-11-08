@@ -1,4 +1,4 @@
-(ns darkleaf.di.tutorial.r-multi-arity-service-test
+(ns darkleaf.di.tutorial.y-multi-arity-service-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

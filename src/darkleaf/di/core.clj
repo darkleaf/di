@@ -2,26 +2,14 @@
   (:refer-clojure :exclude [ref key])
   (:require
    [clojure.walk :as w]
-   [darkleaf.di.destructuring-map :as map])
+   [darkleaf.di.destructuring-map :as map]
+   [darkleaf.di.protocols :as p])
   (:import
-   [java.lang AutoCloseable Exception]
-   [java.io FileNotFoundException Writer]
-   [clojure.lang IDeref IFn Var]))
+   (clojure.lang IDeref IFn Var)
+   (java.io FileNotFoundException Writer)
+   (java.lang AutoCloseable)))
 
 (set! *warn-on-reflection* true)
-
-(defprotocol Stoppable
-  :extend-via-metadata true
-  (stop [this]
-    "Stops the object. Returns nothing."))
-
-(defprotocol Factory
-  :extend-via-metadata true
-  (dependencies [this]
-    "Returns a map of a key and a dependency type.
-    A type can be :required, :skipping-circular, or :optional.")
-  (build [this dependencies]
-    "Builds a stoppable object from dependencies."))
 
 (defmacro ^:private ??
   ([] nil)
@@ -32,9 +20,8 @@
       (?? ~@next))))
 
 (def ^:private dependency-type-priority
-  {:required          1
-   :skipping-circular 2
-   :optional          3})
+  {:required 1
+   :optional 2})
 
 (defn combine-dependencies
   "Combines dependencies. Use it with `reduce`.
@@ -43,9 +30,7 @@
    {})
   ([a b]
    (merge-with (fn [x y]
-                 (->> [x y]
-                      (sort-by dependency-type-priority)
-                      first))
+                 (min-key dependency-type-priority x y))
                a b)))
 
 (defn- combine-throwable
@@ -69,9 +54,7 @@
 
 (defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
   (if (under-construction key)
-    (if (= :skipping-circular dep-type)
-      acc
-      (circular-dependency! key))
+    (circular-dependency! key)
     (if-some [obj (find-or-build ctx key)]
       (assoc acc key obj)
       (if (= :optional dep-type)
@@ -86,20 +69,12 @@
 (defn- find-obj [{:keys [*built-map]} key]
   (get @*built-map key))
 
-(defn- build-obj*
-  "Handles highter order components."
-  [ctx factory]
-  (let [declared-deps (dependencies factory)
-        resolved-deps (resolve-deps ctx declared-deps)
-        obj           (build factory resolved-deps)]
-    (if (identical? factory obj)
-      obj
-      (recur ctx obj))))
-
 (defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *built-list]} key]
-  (let [ctx     (update ctx :under-construction conj key)
-        factory (registry key)
-        obj     (build-obj* ctx factory)]
+  (let [ctx           (update ctx :under-construction conj key)
+        factory       (registry key)
+        declared-deps (p/dependencies factory)
+        resolved-deps (resolve-deps ctx declared-deps)
+        obj           (p/build factory resolved-deps)]
     (vswap! *built-list conj obj)
     (vswap! *built-map  assoc key obj)
     obj))
@@ -124,7 +99,7 @@
 (defn- stop-started [{:keys [*built-list]}]
   (let [built-list @*built-list]
     (vswap! *built-list empty)
-    (try-run-all stop built-list)))
+    (try-run-all p/stop built-list)))
 
 (defn- try-build [ctx key]
   (try
@@ -142,23 +117,29 @@
 
 (defn- apply-middleware [registry middleware]
   (cond
-    (fn? middleware)     (middleware registry)
-    (vector? middleware) (apply (first middleware) registry (rest middleware))
-    (map? middleware)    (fn [key]
-                           (?? (get middleware key)
-                               (registry key)))
-    (seq? middleware)    (reduce apply-middleware
-                                 registry middleware)
-    :else                (throw (IllegalArgumentException. "Wrong middleware kind"))))
+    (fn? middleware)      (middleware registry)
+    (map? middleware)     (fn [key]
+                            (?? (get middleware key)
+                                (registry key)))
+    (seqable? middleware) (reduce apply-middleware
+                                  registry middleware)
+    :else                 (throw (IllegalArgumentException. "Wrong middleware kind"))))
+
+(declare var->factory)
+
+(defn- try-requiring-resolve [key]
+  (when (qualified-symbol? key)
+    (try
+      (requiring-resolve key)
+      (catch FileNotFoundException _ nil))))
 
 (defn- with-ns
   "Adds support to the registry for looking up vars."
   [registry]
   (fn [key]
-    (?? (when (qualified-symbol? key)
-          (try
-            (requiring-resolve key)
-            (catch FileNotFoundException _ nil)))
+    (?? (some-> key
+                try-requiring-resolve
+                var->factory)
         (registry key))))
 
 (defn- with-env
@@ -172,39 +153,42 @@
 (defn ^AutoCloseable start
   "Starts a system of dependent objects.
 
-  The key argument is a name of the system root.
+  key is a name of the system root.
   Use symbols for var names, keywords for abstract dependencies,
   and strings for environments variables.
 
-  The key is looked up in a registry.
-  By default registry uses system env and clojure namespaces
-  to resolve string and symbol keys, respectively.
+  key is looked up in a registry.
+  By default registry uses Clojure namespaces and system env
+  to resolve symbols and strings, respectively.
 
-  You can extend it with middlewares.
+  You can extend it with registry middlewares.
   Each middleware can be one of the following form:
 
   - a function `registry -> key -> Factory`
-  - a vector of a function `[registry args*] -> key -> Factory` and it's arguments
-  - a map of key and `Factory` instance
+  - a map of key and `p/Factory` instance
+  - nil, as no-op middleware
   - a sequence of the previous forms
 
   Middlewares also allows you to instrument built objects.
   It's useful for logging, schema validation, AOP, etc.
-  See `with-decorator`.
+  See `instrument`, `update-key`.
 
   (di/start `root
             {:my-abstraction implemntation
              `some-key replacement
              \"LOG_LEVEL\" \"info\"}
-            (concat dev-middlwares test-middlewares)
-            [di/with-decorator `log])
+            [dev-middlwares test-middlewares]
+            (if dev-routes?
+              (di/update-key `route-data conj `dev-route-data)
+            (di/instrument `log))
 
   Returns a container contains started root of the system.
   The container implements `AutoCloseable`, `Stoppable`, `IDeref` and `IFn`.
 
   Use `with-open` in tests to stop the system reliably.
 
-  See the tests for use cases."
+  See the tests for use cases.
+  See `instrument`, `update-key`."
   [key & middlewares]
   (let [middlewares (concat [with-env with-ns] middlewares)
         registry    (apply-middleware nil-registry middlewares)
@@ -216,14 +200,14 @@
     ^{:type   ::root
       ::print obj}
     (reify
-      Stoppable
+      p/Stoppable
       (stop [_]
         (some->> (stop-started ctx)
                  (reduce combine-throwable)
                  (throw)))
       AutoCloseable
       (close [this]
-        (stop this))
+        (p/stop this))
       IDeref
       (deref [_]
         obj)
@@ -279,92 +263,217 @@
       (applyTo [_ args]
         (.applyTo ^IFn obj args)))))
 
-(defn ref
-  "Returns a factory referencing to another one.
+(defn stop
+  "Stops the root of a system"
+  [root]
+  (p/stop root))
 
-  (def port (di/ref \"PORT\" parse-long)
+;; у нее роли
+;; 1. в template
+;; 2.1. в реестрах
+;; 2.2. в значениях var
+;; 3. в fmap
+(defrecord Ref [key type]
+  p/Factory
+  (dependencies [_]
+    {key type})
+  (build [_ deps]
+    (deps key)))
+
+(alter-meta! #'->Ref assoc :private true)
+(alter-meta! #'map->Ref assoc :private true)
+
+;; в шаблонах нельзя использовать все фабрики
+;; если испльзовать var, то будут не уникальные инстансы
+;; плюс у меня все заточено на отображение ключа в объект
+;; а тут получается отображение фабрики в объект,
+;; а фабрики не получится сравнивать (?) т.к. reify.
+
+(defn- ref-deps [object]
+  (if (instance? Ref object)
+    (p/dependencies object)
+    nil))
+
+(defn- ref-build [object deps]
+  (if (instance? Ref object)
+    (p/build object deps)
+    object))
+
+(defn ref
+  "Returns a factory referencing to a key.
+
+  (def port (di/ref \"PORT\"))
+  (defn server [{port `port}] ...)
 
   (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
 
-  (di/start `root {:my-abstraction (di/ref `implemntation)})
+  (di/start `root {::my-abstraction (di/ref `my-implementation)})
 
-  See `template`."
-  ([key]
-   (-> (ref key identity)
-       (vary-meta assoc ::print key)))
-  ([key f & args]
-   ^{:type   ::ref
-     ::print (vec (concat [key f] args))}
-   (reify Factory
-     (dependencies [_]
-       {key :required})
-     (build [_ deps]
-       (apply f (deps key) args)))))
+  See `template`, `opt-ref`, `fmap`, `p/build`."
+  [key]
+  (->Ref key :required))
 
 (defn opt-ref
-  "Returns a factory referencing to another possible undefined factory.
+  "Returns a factory referencing to a possible undefined key.
+  Produces nil in that case.
 
-  (def port (di/opt-ref \"PORT\" (fnil parse-log \"8080\")))
-  (def port (di/opt-ref ::config get :port 8080))
-
-   See `ref` and `template`."
-  ([key]
-   (-> (opt-ref key identity)
-       (vary-meta assoc ::print key)))
-  ([key f & args]
-   ^{:type   ::opt-ref
-     ::print (vec (concat [key f] args))}
-   (reify Factory
-     (dependencies [_]
-       {key :optional})
-     (build [_ deps]
-       (apply f (deps key) args)))))
+  See `template`, `ref`, `fmap`."
+  [key]
+  (->Ref key :optional))
 
 (defn template
   "Returns a factory for templating a data-structure.
-  Replaces `Factory` instances with built objects.
+  Replaces `ref` or `opt-ref` instances with built objects.
 
   (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
 
-  (def routes (di/template [[\"/posts\" #'handler]]))
-
-  See `ref`."
+  See `ref` and `opt-ref`."
   [form]
   ^{:type   ::template
     ::print form}
-  (reify Factory
+  (reify p/Factory
     (dependencies [_]
       (->> form
            (tree-seq coll? seq)
-           (map dependencies)
+           (map ref-deps)
            (reduce combine-dependencies)))
     (build [_ deps]
-      (w/postwalk #(build % deps) form))))
+      (w/postwalk #(ref-build % deps) form))))
 
-(defn with-decorator
-  "Wraps registry to decorate or instrument built objects.
+(defn fmap
+  "Applies f to an object that the factory produces.
+  f accepts a built object and returns updated one.
+
+  f should return a `p/Stoppable` object, which also stops the original object if needed.
+
+  (def port (-> (di/ref \"PORT\")
+                (di/fmap parse-long)))
+
+  See `ref`, `template`."
+  [factory f & args]
+  (reify p/Factory
+    (dependencies [_]
+      (p/dependencies factory))
+    (build [_ deps]
+      (let [obj (p/build factory deps)]
+        (apply f obj args)))))
+
+(def ^:private key? (some-fn symbol? keyword? string?))
+
+(defn instrument
+  "A registry middleware for instrumenting or decorating built objects.
   Use it for logging, schema checking, AOP, etc.
-  The `decorator-key` should refer to a var like the following one.
 
-  (defn my-instrumentation [{state :some/state} key object & args]
-    (if (need-instrument? key object)
-      (instrument state object args)
-      object))
+  f and args are keys.
+  Also f can be a function in term of `ifn?`.
 
-  (di/start `root [di/with-decorator `my-instrumentation arg1 arg2])"
-  [registry decorator-key & args]
-  (fn [key]
-    (let [factory (registry key)]
-      (reify Factory
-        (dependencies [_]
-          (combine-dependencies (dependencies factory)
-                                {decorator-key :skipping-circular}))
-        (build [_ deps]
-          (let [decorator (deps decorator-key)
-                obj       (build factory deps)]
-            (if decorator
-              (apply decorator key obj args)
-              obj)))))))
+  A resolved f must be a function of [object key & args] -> new-object.
+  f should return a `p/Stoppable` object, which also stops the original object if needed.
+
+  It is smart enough not to instrument f's dependencies with the same f
+  to avoid circular dependencies.
+
+  (defn stateful-instrumentaion [{state :some/state} key object arg1 arg2] ...)
+  (di/start ::root (di/instrument `stateful-instrumentation `arg1 ::arg2 \"arg3\")))
+
+  (defn stateless-instrumentaion [key object arg1 arg2 arg3] ...)
+  (di/start ::root (di/instrument   stateless-instrumentation `arg1 ::arg2 \"arg3\"))
+  (di/start ::root (di/instrument #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
+
+  See `start`, `update-key`, `fmap`."
+  [f & args]
+  {:pre [(or (key? f)
+             (ifn? f))
+         (every? key? args)]}
+  (let [own-keys            (cond-> (set args)
+                              (key? f) (conj f))
+        *under-construction (volatile! #{})]
+    (fn [registry]
+      (fn [key]
+        (vswap! *under-construction conj key)
+        (let [factory (registry key)]
+          (if (some @*under-construction own-keys)
+            (reify p/Factory
+              (dependencies [_]
+                (p/dependencies factory))
+              (build [_ deps]
+                (vswap! *under-construction disj key)
+                (p/build factory deps)))
+            (reify p/Factory
+              (dependencies [_]
+                (merge (p/dependencies factory)
+                       (zipmap own-keys (repeat :required))))
+              (build [_ deps]
+                (vswap! *under-construction disj key)
+                (let [f (deps f f)
+                      args      (map deps args)
+                      obj       (p/build factory deps)]
+                  (apply f key obj args))))))))))
+
+(defn update-key
+  "A registry middleware for updating built objects.
+
+  target is a key to update.
+  f and args are keys.
+  Also f can be a function in term of `ifn?`.
+
+  f should return a `p/Stoppable` object, which also stops the original object if needed.
+
+  (def routes [])
+  (def subsystem-routes (di/template [[\"/posts\" (di/ref `handler)]]))
+
+  (di/start ::root (di/update-key `routes conj `subsystem-routes))
+
+  If you don't want to resolve keys like :some-name, you should use them in a in-place fn:
+  (di/update-key `key #(assoc %1 :some-name %2) `some-value)
+
+  See `update`, `start`, `instrument`, `fmap`."
+  [target f & args]
+  {:pre [(or (key? f)
+             (ifn? f))
+         (every? key? args)]}
+  (let [own-keys (cond-> (set args)
+                   (key? f) (conj f))]
+    (fn [registry]
+      (fn [key]
+        (let [factory (registry key)]
+          (if (not= target key)
+            factory
+            (reify p/Factory
+              (dependencies [_]
+                (merge (p/dependencies factory)
+                       (zipmap own-keys (repeat :required))))
+              (build [_ deps]
+                (let [f    (deps f f)
+                      args (map deps args)
+                      obj  (p/build factory deps)]
+                  (apply f obj args))))))))))
+
+(defn add-side-dependency
+  "A registry middleware for adding side dependencies.
+  Use it for migrations or other side effects.
+
+  (defn flyway [{url \"DATABASE_URL\"}]
+    (.. (Flyway/configure)
+        ...))
+
+  (di/start ::root (di/add-side-dependency `flyway))"
+  [dep-key]
+  (let [*added? (volatile! false)]
+    (fn [registry]
+      (fn [key]
+        (let [factory (registry key)]
+          (if @*added?
+            factory
+            (do
+              (vreset! *added? true)
+              (reify p/Factory
+                (dependencies [_]
+                  (-> factory
+                      p/dependencies
+                      (assoc dep-key :required)))
+                (build [_ deps]
+                  (p/build factory deps))))))))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))
@@ -390,17 +499,20 @@
       1 (variable deps)
       (partial variable deps))))
 
-(extend-protocol Factory
-  Var
-  (dependencies [this]
-    (if (defn? this)
-      (dependencies-fn this)
-      (dependencies @this)))
-  (build [this deps]
-    (if (defn? this)
-      (build-fn this deps)
-      (build @this deps)))
+(defn- var->factory [variable]
+  (if (defn? variable)
+    (reify p/Factory
+      (dependencies [_]
+        (dependencies-fn variable))
+      (build [_ deps]
+        (build-fn variable deps)))
+    (reify p/Factory
+      (dependencies [_]
+        (p/dependencies @variable))
+      (build [_ deps]
+        (p/build @variable deps)))))
 
+(extend-protocol p/Factory
   nil
   (dependencies [_] nil)
   (build [_ _] nil)
@@ -409,15 +521,13 @@
   (dependencies [_] nil)
   (build [this _] this))
 
-(extend-protocol Stoppable
+(extend-protocol p/Stoppable
   nil
   (stop [_])
   Object
   (stop [_]))
 
 (derive ::root     ::reified)
-(derive ::ref      ::reified)
-(derive ::opt-ref  ::reified)
 (derive ::template ::reified)
 
 (defmethod print-method ::reified [o ^Writer w]
@@ -426,3 +536,11 @@
   (.write w " ")
   (binding [*out* w]
     (pr (-> o meta ::print))))
+
+(defmethod print-method Ref [o ^Writer w]
+  (.write w "#darkleaf.di.core/")
+  (.write w (case (:type o)
+              :required "ref"
+              :optional "opt-ref"))
+  (.write w " ")
+  (.write w (-> o :key str)))

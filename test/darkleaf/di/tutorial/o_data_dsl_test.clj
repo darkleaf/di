@@ -7,13 +7,8 @@
 ;; and DI offers tools to handle them easily.
 ;; Here they are: `di/template` and `di/ref`.
 
-;; I use `def` form only for testing.
-;; You should use `defn`:
-;; (defn root-handler [-deps req] ...)
-
-(def root-handler (fn [req]))
-
-(def news-handler (fn [req]))
+;; You can also use `di/opt-ref` for optional dependencies.
+;; If there is no defined key opt-ref resolves to nil.
 
 (def route-data
   (di/template
@@ -21,7 +16,10 @@
     ["/news" {:get {:handler (di/ref `news-handler)}}]]))
 
 (t/deftest template-test
-  (with-open [system-root (di/start `route-data)]
-    (t/is (= [["/"     {:get {:handler root-handler}}]
-              ["/news" {:get {:handler news-handler}}]]
-             @system-root))))
+  (letfn [(root-handler [req])
+          (news-handler [req])]
+    (with-open [root (di/start `route-data {`root-handler root-handler
+                                            `news-handler news-handler})]
+      (t/is (= [["/"     {:get {:handler root-handler}}]
+                ["/news" {:get {:handler news-handler}}]]
+               @root)))))
