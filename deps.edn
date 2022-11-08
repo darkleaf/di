@@ -1,5 +1,7 @@
 {:deps    {}
- :aliases {:dev    {:extra-paths ["test"]}
+ :aliases {:dev    {:extra-paths ["test"]
+                    :extra-deps  {io.github.cljdoc/cljdoc
+                                  {:git/sha "bfdb2eb41926e26b3a1e0d71f47aa008e18fdefb"}}}
            :test   {:extra-paths ["test"]
                     :extra-deps  {io.github.cognitect-labs/test-runner
                                   {:git/tag "v0.5.0" :git/sha "b3fd0d2"}}
@@ -11,7 +13,7 @@
            :deploy {:deps      {slipset/deps-deploy {:mvn/version "0.2.0"}}
                     :exec-fn   deps-deploy.deps-deploy/deploy
                     :exec-args {:installer :remote
-                                :artifact  "target/di.jar"}}}}
+                                :artifact  "target/di-test-cljdoc.jar"}}}}
 
 ;; clj -T:build
 ;; clj -T:deploy

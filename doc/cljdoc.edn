@@ -1,0 +1,3 @@
+{:extension-namespaces [darkleaf.di.internal.cljdoc]
+ :cljdoc.doc/tree
+ [["Intro" {:file "test/darkleaf/id/tutorial/a_intro_test.clj"}]]}

@@ -3,8 +3,8 @@
    [clojure.tools.build.api :as b]
    [clojure.string :as str]))
 
-(def lib 'org.clojars.darkleaf/di)
-(def version "1.0.1")
+(def lib 'org.clojars.darkleaf/di-test-cljdoc)
+(def version "test-cljdoc2-SNAPSHOT")
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-file (format "target/%s.jar" (name lib)))
@@ -39,7 +39,7 @@
           :jar-file  jar-file}))
 
 (defn sync-pom [_]
-  (b/copy-file {:src    (str class-dir "/META-INF/maven/org.clojars.darkleaf/di/pom.xml")
+  (b/copy-file {:src    (str class-dir "/META-INF/maven/org.clojars.darkleaf/di-test-cljdoc/pom.xml")
                 :target "pom.xml"}))
 
 (defn all [_]
