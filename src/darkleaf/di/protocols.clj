@@ -9,5 +9,4 @@
     "Returns a map of a key and a dependency type.
      A type can be `:required` or `:optional`.")
   (build [this dependencies]
-    "Builds a stoppable object from dependencies.
-     Also it can return `darkleaf.di.core/ref` to make higher order components."))
+    "Builds a stoppable object from dependencies."))
