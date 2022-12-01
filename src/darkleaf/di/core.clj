@@ -421,7 +421,7 @@
                     (unwrap [_]
                       (p/unwrap obj))
                     (stop [_]
-                      (->> [original obj]
+                      (->> [obj original]
                            (try-stop-objects)
                            (throw-many!)))))))))))))
 
@@ -467,7 +467,7 @@
                     (unwrap [_]
                       (p/unwrap obj))
                     (stop [_]
-                      (->> [original obj]
+                      (->> [obj original]
                            (try-stop-objects)
                            (throw-many!)))))))))))))
 
