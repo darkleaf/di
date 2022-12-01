@@ -25,6 +25,8 @@
 (defn with-logging [{log `log} key obj]
   (swap! log conj [key :built])
   (reify p/Stoppable
+    (unwrap [_]
+      obj)
     (stop [_]
       (swap! log conj [key :stopped]))))
 

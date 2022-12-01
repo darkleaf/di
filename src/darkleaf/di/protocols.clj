@@ -1,6 +1,7 @@
 (ns darkleaf.di.protocols)
 
 (defprotocol Stoppable
+  (unwrap [this])
   (stop [this]
     "Stops the object. Returns nothing."))
 

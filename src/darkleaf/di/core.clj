@@ -69,13 +69,14 @@
 (defn- find-obj [{:keys [*built-map]} key]
   (get @*built-map key))
 
-(defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *built-list]} key]
+(defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *stoppable-list]} key]
   (let [ctx           (update ctx :under-construction conj key)
         factory       (registry key)
         declared-deps (p/dependencies factory)
         resolved-deps (resolve-deps ctx declared-deps)
-        obj           (p/build factory resolved-deps)]
-    (vswap! *built-list conj obj)
+        stoppable     (p/build factory resolved-deps)
+        obj           (p/unwrap stoppable)]
+    (vswap! *stoppable-list conj stoppable)
     (vswap! *built-map  assoc key obj)
     obj))
 
@@ -96,21 +97,28 @@
        (filter some?)
        (seq)))
 
-(defn- stop-started [{:keys [*built-list]}]
-  (let [built-list @*built-list]
-    (vswap! *built-list empty)
-    (try-run-all p/stop built-list)))
+(defn- throw-many! [coll]
+  (some->> coll
+           seq
+           (reduce combine-throwable)
+           (throw)))
+
+(defn- try-stop-objects [objects]
+  (try-run-all p/stop objects))
+
+(defn- try-stop-started [{:keys [*stoppable-list]}]
+  (let [built-list @*stoppable-list]
+    (vswap! *stoppable-list empty)
+    (try-stop-objects built-list)))
 
 (defn- try-build [ctx key]
   (try
     (?? (build-obj ctx key)
         (missing-dependency! key))
     (catch Throwable ex
-      (let [exs (stop-started ctx)
-            exs (into [ex] exs)]
-        (->> exs
-             (reduce combine-throwable)
-             (throw))))))
+      (let [exs (try-stop-started ctx)
+            exs (cons ex exs)]
+        (throw-many! exs)))))
 
 (defn- nil-registry [key]
   nil)
@@ -193,7 +201,7 @@
   (let [middlewares (concat [with-env with-ns] middlewares)
         registry    (apply-middleware nil-registry middlewares)
         ctx         {:*built-map         (volatile! {})
-                     :*built-list        (volatile! '())
+                     :*stoppable-list    (volatile! '())
                      :under-construction #{}
                      :registry           registry}
         obj         (try-build ctx key)]
@@ -201,10 +209,11 @@
       ::print obj}
     (reify
       p/Stoppable
+      (unwrap [_]
+        obj)
       (stop [_]
-        (some->> (stop-started ctx)
-                 (reduce combine-throwable)
-                 (throw)))
+        (->> (try-stop-started ctx)
+             (throw-many!)))
       AutoCloseable
       (close [this]
         (p/stop this))
@@ -368,7 +377,6 @@
   Also f can be a function in term of `ifn?`.
 
   A resolved f must be a function of [object key & args] -> new-object.
-  f should return a `p/Stoppable` object, which also stops the original object if needed.
 
   It is smart enough not to instrument f's dependencies with the same f
   to avoid circular dependencies.
@@ -405,10 +413,17 @@
                        (zipmap own-keys (repeat :required))))
               (build [_ deps]
                 (vswap! *under-construction disj key)
-                (let [f (deps f f)
-                      args      (map deps args)
-                      obj       (p/build factory deps)]
-                  (apply f key obj args))))))))))
+                (let [f        (deps f f)
+                      args     (map deps args)
+                      original (p/build factory deps)
+                      obj      (apply f key (p/unwrap original) args)]
+                  (reify p/Stoppable
+                    (unwrap [_]
+                      (p/unwrap obj))
+                    (stop [_]
+                      (->> [original obj]
+                           (try-stop-objects)
+                           (throw-many!)))))))))))))
 
 (defn update-key
   "A registry middleware for updating built objects.
@@ -444,10 +459,17 @@
                 (merge (p/dependencies factory)
                        (zipmap own-keys (repeat :required))))
               (build [_ deps]
-                (let [f    (deps f f)
-                      args (map deps args)
-                      obj  (p/build factory deps)]
-                  (apply f obj args))))))))))
+                (let [f        (deps f f)
+                      args     (map deps args)
+                      original (p/build factory deps)
+                      obj      (apply f (p/unwrap original) args)]
+                  (reify p/Stoppable
+                    (unwrap [_]
+                      (p/unwrap obj))
+                    (stop [_]
+                      (->> [original obj]
+                           (try-stop-objects)
+                           (throw-many!)))))))))))))
 
 (defn add-side-dependency
   "A registry middleware for adding side dependencies.
@@ -501,11 +523,20 @@
 
 (defn- var->factory [variable]
   (if (defn? variable)
-    (reify p/Factory
-      (dependencies [_]
-        (dependencies-fn variable))
-      (build [_ deps]
-        (build-fn variable deps)))
+    (if-some [stop (-> variable meta ::stop)]
+      (reify p/Factory
+        (dependencies [_]
+          (dependencies-fn variable))
+        (build [_ deps]
+          (let [obj (build-fn variable deps)]
+            (reify p/Stoppable
+              (unwrap [_] obj)
+              (stop [_] (stop obj))))))
+      (reify p/Factory
+        (dependencies [_]
+          (dependencies-fn variable))
+        (build [_ deps]
+          (build-fn variable deps))))
     (reify p/Factory
       (dependencies [_]
         (p/dependencies @variable))
@@ -523,8 +554,10 @@
 
 (extend-protocol p/Stoppable
   nil
+  (unwrap [_] nil)
   (stop [_])
   Object
+  (unwrap [this] this)
   (stop [_]))
 
 (derive ::root     ::reified)

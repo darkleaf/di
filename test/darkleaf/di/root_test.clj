@@ -7,6 +7,8 @@
 (t/deftest auto-closeable-test
   (let [*stopped? (atom false)
         stoppable (reify p/Stoppable
+                    (unwrap [_]
+                      ::stoppable)
                     (stop [_]
                       (reset! *stopped? true)))]
     (with-open [root (di/start ::root {::root stoppable})])
@@ -15,6 +17,8 @@
 (t/deftest stoppable-test
   (let [*stopped? (atom false)
         stoppable (reify p/Stoppable
+                    (unwrap [_]
+                      ::stoppable)
                     (stop [_]
                       (reset! *stopped? true)))]
     (di/stop (di/start ::root {::root stoppable}))

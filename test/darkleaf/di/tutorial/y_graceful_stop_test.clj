@@ -16,6 +16,8 @@
 
 (defn dep [{on-stop-dep-ex ::on-stop-dep-ex}]
   (reify p/Stoppable
+    (unwrap [_]
+      ::obj)
     (stop [_]
       (throw on-stop-dep-ex))))
 
