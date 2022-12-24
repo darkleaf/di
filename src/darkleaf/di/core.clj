@@ -353,7 +353,7 @@
   "Applies f to an object that the factory produces.
   f accepts a built object and returns updated one.
 
-  f should return a `p/Stoppable` object, which also stops the original object if needed.
+  f should not return instance of `p/Stoppable`.
 
   (def port (-> (di/ref \"PORT\")
                 (di/fmap parse-long)))
@@ -364,8 +364,13 @@
     (dependencies [_]
       (p/dependencies factory))
     (build [_ deps]
-      (let [obj (p/build factory deps)]
-        (apply f obj args)))))
+      (let [original (p/build factory deps)
+            obj (apply f (p/unwrap original) args)]
+        (reify p/Stoppable
+          (unwrap [_]
+            obj)
+          (stop [_]
+            (p/stop original)))))))
 
 (def ^:private key? (some-fn symbol? keyword? string?))
 
@@ -377,6 +382,7 @@
   Also f can be a function in term of `ifn?`.
 
   A resolved f must be a function of [object key & args] -> new-object.
+  f should not return instance of `p/Stoppable`.
 
   It is smart enough not to instrument f's dependencies with the same f
   to avoid circular dependencies.
@@ -419,11 +425,9 @@
                       obj      (apply f key (p/unwrap original) args)]
                   (reify p/Stoppable
                     (unwrap [_]
-                      (p/unwrap obj))
+                      obj)
                     (stop [_]
-                      (->> [obj original]
-                           (try-stop-objects)
-                           (throw-many!)))))))))))))
+                      (p/stop original))))))))))))
 
 (defn update-key
   "A registry middleware for updating built objects.
@@ -431,8 +435,7 @@
   target is a key to update.
   f and args are keys.
   Also f can be a function in term of `ifn?`.
-
-  f should return a `p/Stoppable` object, which also stops the original object if needed.
+  f should not return instance of `p/Stoppable`.
 
   (def routes [])
   (def subsystem-routes (di/template [[\"/posts\" (di/ref `handler)]]))
@@ -465,11 +468,9 @@
                       obj      (apply f (p/unwrap original) args)]
                   (reify p/Stoppable
                     (unwrap [_]
-                      (p/unwrap obj))
+                      obj)
                     (stop [_]
-                      (->> [obj original]
-                           (try-stop-objects)
-                           (throw-many!)))))))))))))
+                      (p/stop original))))))))))))
 
 (defn add-side-dependency
   "A registry middleware for adding side dependencies.
