@@ -43,6 +43,11 @@
 ;; ```
 
 ;; ## Tutorial
+
+;; Each chapter is a regular Clojure test namespace.
+;; You can clone the repo and run each one in the REPL.
+
+;; ### Base
 (clerk/html
  [:ul
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/a_intro_test.clj")} "Intro"]]
@@ -52,8 +57,12 @@
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/m_abstractions_test.clj")} "Abstractions"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/n_env_test.clj")} "Env"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/o_data_dsl_test.clj")} "Data DSL"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/p_fmap_test.clj")} "Fmap"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_add_side_dependency_test.clj")} "Add side dependency"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/p_fmap_test.clj")} "Fmap"]]])
+
+;; ### Advanced
+(clerk/html
+ [:ul
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_add_side_dependency_test.clj")} "Add a side dependency"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_instrument_test.clj")} "Instrument"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_update_key_test.clj")} "Update key"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/y_graceful_stop_test.clj")} "Graceful stop"]]
@@ -67,11 +76,12 @@
 (defn view-doc [var]
   (clerk/html
    [:<>
-    [:h3
+    [:h4
      [:code (-> var symbol str)]]
     (-> var meta :arglists clerk/code)
     (-> var meta :doc clerk/md)]))
 
+;; ### `darkleaf.di.core`
 (view-doc #'di/start)
 (view-doc #'di/stop)
 (view-doc #'di/ref)
@@ -82,6 +92,12 @@
 (view-doc #'di/update-key)
 (view-doc #'di/add-side-dependency)
 (view-doc #'di/combine-dependencies)
+;; ### `darkleaf.di.protocols`
 (view-doc #'dip/stop)
 (view-doc #'dip/dependencies)
 (view-doc #'dip/build)
+
+;; ## License
+;; Copyright © 2022 Mikhail Kuzmin
+;;
+;; Licensed under Eclipse Public License v2.0.

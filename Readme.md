@@ -2,26 +2,7 @@
 
 # Dependency injection
 
-DI is a dependency injection framework that allows you to define dependencies as cheaply as defining function arguments.
-
-It uses plain clojure functions and [associative destructuring](https://clojure.org/guides/destructuring#_associative_destructuring)
-to define a graph of functions and stateful objects.
-
-```clojure
-(defn handler [{get-user `get-user} ring-req]
-  ...
-  (get-user user-id)
-  ...)
-
-(defn get-user [{ds `db/datasource} id]
-  ...)
-
-(defn jetty [{handler `handler
-              port    "PORT"}]
-  ...)
-
-(di/start `jetty)
-```
+[Site](https://darkleaf.github.io/di/)
 
 ## Versions
 
