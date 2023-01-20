@@ -3,7 +3,8 @@
   {:nextjournal.clerk/toc true}
   (:require
    [nextjournal.clerk :as clerk]
-   [darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]
+   [darkleaf.di.protocols :as dip]))
 
 {::clerk/visibility {:code :hide}}
 
@@ -20,16 +21,16 @@
 ;; (defn handler [{get-user `get-user} ring-req]
 ;;   ...
 ;;   (get-user user-id)
-;;   ...
+;;   ...)
 ;;
-;; (defn get-user [{ds `db/datasource} id]
-;;   ...
+;; (defn get-user [{ds ::db/datasource} id]
+;;   ...)
 ;;
 ;; (defn jetty
 ;;   {::di/stop #(.stop %)}
 ;;   [{handler `handler
 ;;     port    "PORT"}]
-;;   ...)
+;;   (jetty/run-jetty handler {:join? false, :port port}))
 ;;
 ;; (di/start `jetty)
 ;; ```
@@ -62,6 +63,7 @@
 
 ;; ## API
 
+^{::clerk/visibility {:result :hide}}
 (defn view-doc [var]
   (clerk/html
    [:<>
@@ -70,7 +72,6 @@
     (-> var meta :arglists clerk/code)
     (-> var meta :doc clerk/md)]))
 
-(view-doc #'di/combine-dependencies)
 (view-doc #'di/start)
 (view-doc #'di/stop)
 (view-doc #'di/ref)
@@ -80,3 +81,7 @@
 (view-doc #'di/instrument)
 (view-doc #'di/update-key)
 (view-doc #'di/add-side-dependency)
+(view-doc #'di/combine-dependencies)
+(view-doc #'dip/stop)
+(view-doc #'dip/dependencies)
+(view-doc #'dip/build)
