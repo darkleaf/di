@@ -353,7 +353,7 @@
   "Applies f to an object that the factory produces.
   f accepts a built object and returns updated one.
 
-  f should not return instance of `p/Stoppable`.
+  f should not return a non-trivial instance of `p/Stoppable`.
 
   (def port (-> (di/ref \"PORT\")
                 (di/fmap parse-long)))
@@ -382,7 +382,7 @@
   Also f can be a function in term of `ifn?`.
 
   A resolved f must be a function of [object key & args] -> new-object.
-  f should not return instance of `p/Stoppable`.
+  f should not return a non-trivial instance of `p/Stoppable`.
 
   It is smart enough not to instrument f's dependencies with the same f
   to avoid circular dependencies.
@@ -435,7 +435,7 @@
   target is a key to update.
   f and args are keys.
   Also f can be a function in term of `ifn?`.
-  f should not return instance of `p/Stoppable`.
+  f should not return a non-trivial instance of `p/Stoppable`.
 
   (def routes [])
   (def subsystem-routes (di/template [[\"/posts\" (di/ref `handler)]]))
