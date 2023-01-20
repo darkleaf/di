@@ -1,4 +1,8 @@
+;; # Registries
+
+^{::clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.l-registries-test
+  {:nextjournal.clerk/visibility {:result :hide}}
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

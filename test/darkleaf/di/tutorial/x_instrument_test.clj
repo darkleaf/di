@@ -1,4 +1,8 @@
+;; # Instrument
+
+^{::clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.x-instrument-test
+  {:nextjournal.clerk/visibility {:result :hide}}
   (:require
    [clojure.test :as t]
    [clojure.spec.alpha :as s]

@@ -1,4 +1,8 @@
+;; # Graceful stop
+
+^{::clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.y-graceful-stop-test
+  {:nextjournal.clerk/visibility {:result :hide}}
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]

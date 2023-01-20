@@ -1,4 +1,8 @@
+;; # Abstractions
+
+^{::clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.m-abstractions-test
+  {:nextjournal.clerk/visibility {:result :hide}}
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

@@ -181,6 +181,7 @@
   It's useful for logging, schema validation, AOP, etc.
   See `instrument`, `update-key`.
 
+  ```clojure
   (di/start `root
             {:my-abstraction implemntation
              `some-key replacement
@@ -189,6 +190,7 @@
             (if dev-routes?
               (di/update-key `route-data conj `dev-route-data)
             (di/instrument `log))
+  ```
 
   Returns a container contains started root of the system.
   The container implements `AutoCloseable`, `Stoppable`, `IDeref` and `IFn`.
@@ -311,12 +313,14 @@
 (defn ref
   "Returns a factory referencing to a key.
 
+  ```clojure
   (def port (di/ref \"PORT\"))
   (defn server [{port `port}] ...)
 
   (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
 
   (di/start `root {::my-abstraction (di/ref `my-implementation)})
+  ```
 
   See `template`, `opt-ref`, `fmap`, `p/build`."
   [key]
@@ -334,7 +338,9 @@
   "Returns a factory for templating a data-structure.
   Replaces `ref` or `opt-ref` instances with built objects.
 
+  ```clojure
   (def routes (di/template [[\"/posts\" (di/ref `handler)]]))
+  ```
 
   See `ref` and `opt-ref`."
   [form]
@@ -355,8 +361,10 @@
 
   f should not return a non-trivial instance of `p/Stoppable`.
 
+  ```clojure
   (def port (-> (di/ref \"PORT\")
                 (di/fmap parse-long)))
+  ```
 
   See `ref`, `template`."
   [factory f & args]
@@ -387,12 +395,14 @@
   It is smart enough not to instrument f's dependencies with the same f
   to avoid circular dependencies.
 
+  ```clojure
   (defn stateful-instrumentaion [{state :some/state} key object arg1 arg2] ...)
   (di/start ::root (di/instrument `stateful-instrumentation `arg1 ::arg2 \"arg3\")))
 
   (defn stateless-instrumentaion [key object arg1 arg2 arg3] ...)
   (di/start ::root (di/instrument   stateless-instrumentation `arg1 ::arg2 \"arg3\"))
   (di/start ::root (di/instrument #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
+  ```
 
   See `start`, `update-key`, `fmap`."
   [f & args]
@@ -437,10 +447,12 @@
   Also f can be a function in term of `ifn?`.
   f should not return a non-trivial instance of `p/Stoppable`.
 
+  ```clojure
   (def routes [])
   (def subsystem-routes (di/template [[\"/posts\" (di/ref `handler)]]))
 
   (di/start ::root (di/update-key `routes conj `subsystem-routes))
+  ```
 
   If you don't want to resolve keys like :some-name, you should use them in a in-place fn:
   (di/update-key `key #(assoc %1 :some-name %2) `some-value)
@@ -476,11 +488,14 @@
   "A registry middleware for adding side dependencies.
   Use it for migrations or other side effects.
 
+
+  ```clojure
   (defn flyway [{url \"DATABASE_URL\"}]
     (.. (Flyway/configure)
         ...))
 
-  (di/start ::root (di/add-side-dependency `flyway))"
+  (di/start ::root (di/add-side-dependency `flyway))
+  ```"
   [dep-key]
   (let [*added? (volatile! false)]
     (fn [registry]
