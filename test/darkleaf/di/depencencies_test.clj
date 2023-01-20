@@ -10,37 +10,29 @@
 ;;  \ /
 ;;   c
 
-(defn root [{a `a, b `b, log ::log}]
+(defn root
+  {::di/stop #(swap! % conj [`root :stopped])}
+  [{a `a, b `b, log ::log}]
   (swap! log conj [`root :built])
-  (reify dip/Stoppable
-    (unwrap [_]
-      [:root a b])
-    (stop [_]
-      (swap! log conj [`root :stopped]))))
+  log)
 
-(defn a [{c `c, log ::log}]
+(defn a
+  {::di/stop #(swap! % conj [`a :stopped])}
+  [{c `c, log ::log}]
   (swap! log conj [`a :built])
-  (reify dip/Stoppable
-    (unwrap [_]
-      [:a c])
-    (stop [_]
-      (swap! log conj [`a :stopped]))))
+  log)
 
-(defn b [{c `c, log ::log}]
+(defn b
+  {::di/stop #(swap! % conj [`b :stopped])}
+  [{c `c, log ::log}]
   (swap! log conj [`b :built])
-  (reify dip/Stoppable
-    (unwrap [_]
-      [:b c])
-    (stop [_]
-      (swap! log conj [`b :stopped]))))
+  log)
 
-(defn c [{log ::log}]
+(defn c
+  {::di/stop #(swap! % conj [`c :stopped])}
+  [{log ::log}]
   (swap! log conj [`c :built])
-  (reify dip/Stoppable
-    (unwrap [_]
-      [:c])
-    (stop [_]
-      (swap! log conj [`c :stopped]))))
+  log)
 
 (t/deftest order-test
   (let [log (atom [])]
