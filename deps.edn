@@ -1,17 +1,15 @@
 {:deps    {}
- :aliases {:dev    {:extra-paths ["test"]}
-           :test   {:extra-paths ["test"]
-                    :extra-deps  {io.github.cognitect-labs/test-runner
-                                  {:git/tag "v0.5.0" :git/sha "b3fd0d2"}}
-                    :main-opts   ["-m" "cognitect.test-runner"]
-                    :exec-fn     cognitect.test-runner.api/test}
-           :build  {:deps    {io.github.clojure/tools.build
-                              {:git/tag "v0.8.4" :git/sha "8c3cd69"}}
-                    :exec-fn build/all}
-           :deploy {:deps      {slipset/deps-deploy {:mvn/version "0.2.0"}}
-                    :exec-fn   deps-deploy.deps-deploy/deploy
-                    :exec-args {:installer :remote
-                                :artifact  "target/di.jar"}}}}
+ :aliases {:dev {:extra-paths ["test"]
+                 :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.0" :git/sha "b3fd0d2"}
+                               io.github.clojure/tools.build        {:git/tag "v0.8.4" :git/sha "8c3cd69"}
+                               slipset/deps-deploy                  {:mvn/version "0.2.0"}}}
+           :test    {:extra-paths ["test"]
+                     :main-opts   ["-m" "cognitect.test-runner"]
+                     :exec-fn     cognitect.test-runner.api/test}
+           :build   {:exec-fn build/all}
+           :deploy  {:exec-fn   deps-deploy.deps-deploy/deploy
+                     :exec-args {:installer :remote
+                                 :artifact  "target/di.jar"}}}}
 
-;; clj -T:build
-;; clj -T:deploy
+;; clj -T:dev:build
+;; clj -T:dev:deploy
