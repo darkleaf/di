@@ -389,7 +389,7 @@
   f and args are keys.
   Also f can be a function in term of `ifn?`.
 
-  A resolved f must be a function of [object key & args] -> new-object.
+  A resolved f must be a function of `[object key & args] -> new-object`.
   f should not return a non-trivial instance of `p/Stoppable`.
 
   It is smart enough not to instrument f's dependencies with the same f
@@ -455,7 +455,10 @@
   ```
 
   If you don't want to resolve keys like :some-name, you should use them in a in-place fn:
+
+  ```clojure
   (di/update-key `key #(assoc %1 :some-name %2) `some-value)
+  ```
 
   See `update`, `start`, `instrument`, `fmap`."
   [target f & args]
