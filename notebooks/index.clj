@@ -8,8 +8,6 @@
 
 {::clerk/visibility {:code :hide}}
 
-;; <!-- [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.darkleaf/di.svg)](https://clojars.org/org.clojars.darkleaf/di) -->
-
 ;; # Dependency injection
 
 ;; [DI](https://github.com/darkleaf/di) is a dependency injection framework
@@ -50,9 +48,13 @@
 
 ;; ## Install
 
+;; [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.darkleaf/di.svg)](https://clojars.org/org.clojars.darkleaf/di)
+
 ;; ```edn
+;; {:deps {org.clojars.darkleaf/di {:mvn/version "2.0.0"}}}
+;; ;; or
 ;; {:deps {org.clojars.darkleaf/di {:git/url "https://github.com/darkleaf/di.git"
-;;                                  :sha     "8343debcdcdfebb7e2e04911e752a0228b9de9c1"}}}
+;;                                  :sha     "%SHA%"}}}
 ;; ```
 
 ;; ## Tutorial
