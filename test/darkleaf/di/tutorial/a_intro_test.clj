@@ -96,7 +96,7 @@
   (with-open [root (di/start `e)]
     (t/is (= [::e 42] (root 42)))))
 
-;; ## REPL
+;; ## Interactive Development
 
 ;; You don't need to restart the whole system if you redefine a service.
 ;; Just redefine a Var.

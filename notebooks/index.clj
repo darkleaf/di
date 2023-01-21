@@ -12,12 +12,21 @@
 
 ;; # Dependency injection
 
-;; DI is a dependency injection framework that allows you to define dependencies as cheaply as defining function arguments.
+;; [DI](https://github.com/darkleaf/di) is a dependency injection framework
+;; that allows you to define dependencies as cheaply as defining function arguments.
 
 ;; It uses plain clojure functions and [associative destructuring](https://clojure.org/guides/destructuring#_associative_destructuring)
 ;; to define a graph of functions and stateful objects.
 
 ;; ```clojure
+;; (ns app.core
+;;   (:require
+;;    [darkleaf.di.core :as di]
+;;    [ring.adapter.jetty :as jetty]
+;;    [app.adapters.reitit :as-alias reitit]
+;;    [app.adapters.hikari :as-alias hikari]
+;;    [app.adapters.db     :as-alias db]))
+;;
 ;; (defn show-user [{ds ::db/datasource} req]
 ;;   ...)
 ;;
@@ -37,17 +46,19 @@
 ;;                   "PORT"              "8080"})
 ;; ```
 
+;; It is just a short snippet, please see [example app](https://github.com/darkleaf/di/tree/master/example).
+
 ;; ## Install
 
 ;; ```edn
 ;; {:deps {org.clojars.darkleaf/di {:git/url "https://github.com/darkleaf/di.git"
-;;                                  :sha     "ce41a37e7217c30886535fc0588bc6e452ce93c6"}}}
+;;                                  :sha     "8343debcdcdfebb7e2e04911e752a0228b9de9c1"}}}
 ;; ```
 
 ;; ## Tutorial
 
 ;; Each chapter is a regular Clojure test namespace.
-;; You can clone the repo and run each one in the REPL.
+;; You can clone [the repo](https://github.com/darkleaf/di) and run each one in the REPL.
 
 ;; ### Base
 (clerk/html
@@ -86,8 +97,8 @@
    [:<>
     [:h4
      [:code (-> var symbol str)]]
-    (-> var meta :arglists clerk/code)
-    (-> var meta :doc clerk/md)]))
+    (some-> var meta :arglists clerk/code)
+    (some-> var meta :doc clerk/md)]))
 
 ;; ### `darkleaf.di.core`
 (view-doc #'di/start)
@@ -101,7 +112,10 @@
 (view-doc #'di/add-side-dependency)
 (view-doc #'di/combine-dependencies)
 ;; ### `darkleaf.di.protocols`
+;; `darkleaf.di.protocols/Stoppable`
+(view-doc #'dip/unwrap)
 (view-doc #'dip/stop)
+;; `darkleaf.di.protocols/Factory`
 (view-doc #'dip/dependencies)
 (view-doc #'dip/build)
 
