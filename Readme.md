@@ -2,21 +2,17 @@
 
 # Dependency injection
 
-[Site](https://darkleaf.github.io/di/)
+DI is a dependency injection framework that allows you to define dependencies as cheaply as defining function arguments.
+
+* [Documentation](https://darkleaf.github.io/di/)
+* [Example app](example/src/example/core.clj)
+* [Clj doc](https://cljdoc.org/d/org.clojars.darkleaf/di)
+* [Tests](test/darkleaf/di)
 
 ## Versions
 
 * See `1.0` branch for previous version
 * `master` contains dev version
-
-## Resources
-
-Docs:
-
-* [Step-by-step tutorial](test/darkleaf/di/tutorial)
-* [Example app](example/src/example/core.clj)
-* [Clj doc](https://cljdoc.org/d/org.clojars.darkleaf/di)
-* [Tests](test/darkleaf/di)
 
 ## License
 

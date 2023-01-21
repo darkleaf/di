@@ -70,6 +70,12 @@
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/z_multi_system_test.clj")} "Multi system"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/z_two_databases_test.clj")} "Two Databases"]]])
 
+;; ## Example app
+
+;; [Example app](https://github.com/darkleaf/di/tree/master/example)
+
+;; Start with [user.clj](https://github.com/darkleaf/di/blob/master/example/dev/user.clj)
+
 ;; ## API
 
 ^{::clerk/visibility {:result :hide}}
