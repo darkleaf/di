@@ -93,6 +93,8 @@
 
 ;; ## API
 
+;; [![cljdoc badge](https://cljdoc.org/badge/org.clojars.darkleaf/di)](https://cljdoc.org/d/org.clojars.darkleaf/di/CURRENT)
+
 ^{::clerk/visibility {:result :hide}}
 (defn view-doc [var]
   (clerk/html

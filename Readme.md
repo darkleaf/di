@@ -1,4 +1,5 @@
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.darkleaf/di.svg)](https://clojars.org/org.clojars.darkleaf/di)
+[![cljdoc badge](https://cljdoc.org/badge/org.clojars.darkleaf/di)](https://cljdoc.org/d/org.clojars.darkleaf/di/CURRENT)
 
 # Dependency injection
 
