@@ -1,12 +1,12 @@
 (ns user
   (:require
    [darkleaf.di.core :as di]
-   [example.core :as example]))
+   [example.system :as system]))
 
 (defonce root (atom nil))
 
 (defn start []
-  (reset! root (di/start ::example/root (example/dev-registry))))
+  (reset! root (di/start ::system/root (system/dev-registry))))
 
 (defn stop []
   (di/stop @root))
