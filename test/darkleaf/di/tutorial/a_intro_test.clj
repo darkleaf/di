@@ -2,7 +2,8 @@
 
 ^{::clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.a-intro-test
-  {:nextjournal.clerk/visibility {:result :hide}}
+  {:nextjournal.clerk/visibility {:result :hide}
+   :nextjournal.clerk/toc        true}
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di])
@@ -11,6 +12,8 @@
 
 ;; Let's start.
 ;; In this chapter I'll show you how to deal with compoonents.
+
+;; ## Trivial system
 
 ;; The following test describes the most trivial system that
 ;; contains the most trivial component.
@@ -26,6 +29,8 @@
     (t/is (= ::a @root))
     (di/stop root)))
 
+;; ## AutoCloseable
+
 ;; A root implements `AutoCloseable`
 ;; so in tests we should use `with-open` macro
 ;; for propperly stopping.
@@ -33,6 +38,8 @@
 (t/deftest a'-test
   (with-open [root (di/start `a)]
     (t/is (= ::a @root))))
+
+;; ## Constructor
 
 ;; If you want to perform some side effect
 ;; just define a function, and DI will call it to buils a component.
@@ -44,7 +51,9 @@
   (with-open [root (di/start `b)]
     (t/is (inst? @root))))
 
-;; To define a component dependes from other cmpoenents
+;; ## Dependencies
+
+;; To define a component dependes from other components
 ;; define a function of one argument.
 ;; DI will parse associative destructuing to get dependencides of the component.
 ;; We'll condider compoenent dependencies in the next chapter.
@@ -56,6 +65,8 @@
 (t/deftest c-test
   (with-open [root (di/start `c)]
     (t/is (= ::c @root))))
+
+;; ## Functions
 
 ;; Functions a first class objects so we can build one.
 
@@ -72,6 +83,8 @@
 
 ;; I will call the components that are functions services.
 
+;; ## Services
+
 ;; DI provides more convenient way to define services.
 ;; Instead of using higher order functions
 ;; just write a function with deps and its arguments.
@@ -82,6 +95,8 @@
 (t/deftest e-test
   (with-open [root (di/start `e)]
     (t/is (= [::e 42] (root 42)))))
+
+;; ## REPL
 
 ;; You don't need to restart the whole system if you redefine a service.
 ;; Just redefine a Var.
