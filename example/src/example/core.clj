@@ -30,14 +30,16 @@
 (def port (-> (di/ref "PORT")
               (di/fmap parse-long)))
 
-(defn base-registry []
+(defn base-registry [{:keys [some-feature-flag]}]
   [{::root           (di/ref `jetty/server)
     ::jetty/handler  (di/ref `reitit/handler)
     ::jetty/options  (di/template {:port (di/ref `port)})
     ::hikari/options (di/template {:adapter "h2"
                                    :url     (di/ref "H2_URL")})}
    (di/update-key `reitit/route-data conj `route-data)
-   (di/add-side-dependency `flyway/migrate)])
+   (di/add-side-dependency `flyway/migrate)
+   #_(if some-feature-flag
+       [(di/update-key `reitit/route-data conj ...)])])
 
 (defn dev-registry []
   {"PORT"   "8888"
@@ -47,7 +49,7 @@
 
 (defn start []
   (reset! root (di/start ::root
-                         (base-registry)
+                         (base-registry {:some-feature-flag true})
                          (dev-registry))))
 
 (defn stop []
