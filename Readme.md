@@ -12,7 +12,7 @@ DI is a dependency injection framework that allows you to define dependencies as
 ## Versions
 
 * See `1.0` branch for previous version
-* `master` contains dev version
+* See `master` branch for current version
 
 ## License
 
