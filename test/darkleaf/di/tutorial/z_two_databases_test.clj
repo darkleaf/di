@@ -23,7 +23,10 @@
          user-key     :required
          password-key :required})
       (build [_ deps]
-        [::db (deps url-key) (deps user-key) (deps password-key)]))))
+        (reify p/Stoppable
+          (unwrap [_]
+            [::db (deps url-key) (deps user-key) (deps password-key)])
+          (stop [_]))))))
 
 (def db-a (db-factory :a))
 (def db-b (db-factory :b))
