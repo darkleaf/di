@@ -9,7 +9,7 @@
     <url>git@github.com:darkleaf/di.git</url>
     <connection>scm:git:git@github.com:darkleaf/di.git</connection>
     <developerConnection>scm:git:git@github.com:darkleaf/di.git</developerConnection>
-    <tag>9315abb8e7b4f634eba0c08acbd7f0985cb61140</tag>
+    <tag>bc9973296b9c7dd4a7284bc57227e88676da40e5</tag>
   </scm>
   <licenses>
     <license>
@@ -30,8 +30,8 @@
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure</artifactId>
-      <version>1.10.3</version>
+      <version>1.11.1</version>
     </dependency>
   </dependencies>
-  <version>1.0.1</version>
+  <version>2.0.0</version>
 </project>
