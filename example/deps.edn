@@ -1,4 +1,4 @@
-{:paths ["src" "test" "resources"]
+{:paths ["dev" "src" "test" "resources"]
  :deps  {org.clojure/clojure               {:mvn/version "1.11.1"}
          org.clojars.darkleaf/di           {:local/root "../"}
          ring/ring-core                    {:mvn/version "1.9.4"}

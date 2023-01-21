@@ -42,22 +42,7 @@
        [(di/update-key `reitit/route-data conj ...)])])
 
 (defn dev-registry []
-  {"PORT"   "8888"
-   "H2_URL" "jdbc:h2:mem:test"})
-
-(defonce root (atom nil))
-
-(defn start []
-  (reset! root (di/start ::root
-                         (base-registry {:some-feature-flag true})
-                         (dev-registry))))
-
-(defn stop []
-  (di/stop @root))
-
-;; call them from the repl
-(comment
-  ;; open http://localhost:8888
-  (start)
-  (stop)
-  nil)
+  (let [flags  {:some-feature-flag true}]
+    [(base-registry flags)
+     {"PORT"   "8888"
+      "H2_URL" "jdbc:h2:mem:test"}]))
