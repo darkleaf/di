@@ -18,21 +18,23 @@
 ;; to define a graph of functions and stateful objects.
 
 ;; ```clojure
-;; (defn handler [{get-user `get-user} ring-req]
-;;   ...
-;;   (get-user user-id)
+;; (defn show-user [{ds ::db/datasource} req]
 ;;   ...)
 ;;
-;; (defn get-user [{ds ::db/datasource} id]
-;;   ...)
+;; (def route-data
+;;   (di/template
+;;     [["/users/:id" {:get {:handler (di/ref `show-user)}}]]))
 ;;
 ;; (defn jetty
 ;;   {::di/stop #(.stop %)}
-;;   [{handler `handler
+;;   [{handler ::handler
 ;;     port    "PORT"}]
-;;   (jetty/run-jetty handler {:join? false, :port port}))
+;;   (jetty/run-jetty handler {:join? false, :port (parse-long port)}))
 ;;
-;; (di/start `jetty)
+;; (di/start `jetty {::handler           (di/ref `reitit/handler)
+;;                   ::reitit/route-data (di/ref `reitit/data)
+;;                   ::db/datasource     (di/ref `hikari/datasource)
+;;                   "PORT"              "8080"})
 ;; ```
 
 ;; ## Install
