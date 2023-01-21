@@ -13,7 +13,7 @@
 ;; # Dependency injection
 
 ;; [DI](https://github.com/darkleaf/di) is a dependency injection framework
-;; that allows you to define dependencies as cheaply as defining function arguments.
+;; that allows you to define dependencies as easily as you define function arguments.
 
 ;; It uses plain clojure functions and [associative destructuring](https://clojure.org/guides/destructuring#_associative_destructuring)
 ;; to define a graph of functions and stateful objects.

@@ -2,7 +2,7 @@
 
 # Dependency injection
 
-DI is a dependency injection framework that allows you to define dependencies as cheaply as defining function arguments.
+DI is a dependency injection framework that allows you to define dependencies as easily as you define function arguments.
 
 * [Documentation](https://darkleaf.github.io/di/)
 * [Example app](example/src/example/core.clj)
