@@ -169,6 +169,23 @@
           (subsystem-a)
           #_(subsystem-N))
 
+;; ## Feature flags
+
+;; In most cases I prefer to use feature flags instead of branching.
+;; DI allows it:
+
+(defn subsystem-a* [{:keys [subsytem-a-enabled]}]
+  (if subsytem-a-enabled
+    (di/update-key `route-data concat `subsystem-a-route-data)))
+
+(defn registry [flags]
+  [{"PORT"         8080
+    :jetty/handler (di/ref `web-handler)}
+   (subsystem-a* flags)
+   #_(subsystem-N flags)])
+
+(di/start `jetty-server (registry {:subsystem-a-enabled true}))
+
 ;; ## Error handling
 
 ;; Both Integrant and Component break REPL development.
