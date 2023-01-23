@@ -13,5 +13,5 @@
 
 
   (clerk/build! {:index "notebooks/index.clj"
-                 :paths ["notebooks/" "test/**/*.clj"]})
+                 :paths ["notebooks/*.clj" "test/**/*.clj"]})
   nil)

@@ -57,6 +57,11 @@
 ;;                                  :sha     "%SHA%"}}}
 ;; ```
 
+;; ## Comparison with other tools
+
+(clerk/html
+  [:a {:href (clerk/doc-url "notebooks/integrant.clj")} "Comparison of Integrant and DI"])
+
 ;; ## Tutorial
 
 ;; Each chapter is a regular Clojure test namespace.
