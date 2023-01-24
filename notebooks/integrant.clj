@@ -195,6 +195,9 @@
 
 ;; DI is smart enough to stop already started components.
 
+;; UPD: You can use [integrant-repl](https://github.com/weavejester/integrant-repl).
+;; It [takes care](https://github.com/weavejester/integrant-repl/blob/master/src/integrant/repl.clj#L22) of this case.
+
 ;; ## AOP
 
 ;; I think AOP is quite dangerous practice.
