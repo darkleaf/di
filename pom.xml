@@ -9,7 +9,7 @@
     <url>git@github.com:darkleaf/di.git</url>
     <connection>scm:git:git@github.com:darkleaf/di.git</connection>
     <developerConnection>scm:git:git@github.com:darkleaf/di.git</developerConnection>
-    <tag>bc9973296b9c7dd4a7284bc57227e88676da40e5</tag>
+    <tag>4e970dc8fca83e303e03e4accb07d4f4440dd830</tag>
   </scm>
   <licenses>
     <license>
@@ -33,5 +33,5 @@
       <version>1.11.1</version>
     </dependency>
   </dependencies>
-  <version>2.0.0</version>
+  <version>2.1.0</version>
 </project>
