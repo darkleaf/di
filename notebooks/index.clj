@@ -77,7 +77,8 @@
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/m_abstractions_test.clj")} "Abstractions"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/n_env_test.clj")} "Env"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/o_data_dsl_test.clj")} "Data DSL"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/p_fmap_test.clj")} "Fmap"]]])
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/p_fmap_test.clj")} "Fmap"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/q_starting_many_keys_test.clj")} "Staring many keys"]]])
 
 ;; ### Advanced
 (clerk/html

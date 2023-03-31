@@ -210,9 +210,17 @@
   ```
 
   Returns a container contains started root of the system.
-  The container implements `AutoCloseable`, `Stoppable`, `IDeref` and `IFn`.
+  The container implements `AutoCloseable`, `Stoppable`, `IDeref`, `IFn` and `Indexed`.
 
   Use `with-open` in tests to stop the system reliably.
+
+  You can pass a vector as the key argument to start many keys:
+
+  ```clojure
+  (with-open [root (di/start [`handler `helper])]
+    (let [[handler helper] root]
+       ...))
+  ```
 
   See the tests for use cases.
   See `instrument`, `update-key`."
