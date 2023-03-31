@@ -15,7 +15,7 @@
    [darkleaf.di.destructuring-map :as map]
    [darkleaf.di.protocols :as p])
   (:import
-   (clojure.lang IDeref IFn Var)
+   (clojure.lang IDeref IFn Var Indexed)
    (java.io FileNotFoundException Writer)
    (java.lang AutoCloseable)))
 
@@ -168,6 +168,13 @@
           (System/getenv key))
         (registry key))))
 
+(declare ref template)
+
+(defn- key->key&registry [key]
+  (cond
+    (vector? key) [::implicit-root {::implicit-root (->> key (map ref) template)}]
+    true          [key nil]))
+
 (defn ^AutoCloseable start
   "Starts a system of dependent objects.
 
@@ -210,7 +217,9 @@
   See the tests for use cases.
   See `instrument`, `update-key`."
   [key & middlewares]
-  (let [middlewares (concat [with-env with-ns] middlewares)
+  (let [[key root-registry] (key->key&registry key)
+
+        middlewares (concat [with-env with-ns root-registry] middlewares)
         registry    (apply-middleware nil-registry middlewares)
         ctx         {:*built-map         (volatile! {})
                      :*stoppable-list    (volatile! '())
@@ -232,6 +241,13 @@
       IDeref
       (deref [_]
         obj)
+      Indexed
+      (nth [_    i]
+        (nth obj i))
+      (nth [_    i not-found]
+        (nth obj i not-found))
+      (count [_]
+        (count obj))
       IFn
       (call [_]
         (.call ^IFn obj))
