@@ -1,6 +1,6 @@
 ;; # Update key
 
-^{::clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.x-update-key-test
   {:nextjournal.clerk/visibility {:result :hide}}
   (:require

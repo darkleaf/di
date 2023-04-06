@@ -1,6 +1,6 @@
 ;; # Env
 
-^{::clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.n-env-test
   {:nextjournal.clerk/visibility {:result :hide}}
   (:require

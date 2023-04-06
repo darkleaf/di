@@ -1,6 +1,6 @@
 ;; # Instrument
 
-^{::clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.x-instrument-test
   {:nextjournal.clerk/visibility {:result :hide}}
   (:require

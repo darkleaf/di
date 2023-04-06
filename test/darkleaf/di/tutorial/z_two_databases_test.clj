@@ -1,6 +1,6 @@
 ;; # Two databases
 
-^{::clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.z-two-databases-test
   {:nextjournal.clerk/visibility {:result :hide}}
   (:require

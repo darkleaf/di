@@ -1,5 +1,5 @@
 ;; # Multi system
-^{::clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.z-multi-system-test
   {:nextjournal.clerk/visibility {:result :hide}}
   (:require

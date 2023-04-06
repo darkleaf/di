@@ -1,6 +1,6 @@
 ;; # Intro
 
-^{::clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.a-intro-test
   {:nextjournal.clerk/visibility {:result :hide}
    :nextjournal.clerk/toc        true}
