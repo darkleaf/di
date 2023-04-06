@@ -13,7 +13,8 @@
   (:require
    [clojure.walk :as w]
    [darkleaf.di.destructuring-map :as map]
-   [darkleaf.di.protocols :as p])
+   [darkleaf.di.protocols :as p]
+   [darkleaf.di.ref :as ref])
   (:import
    (clojure.lang IDeref IFn Var Indexed)
    (java.io FileNotFoundException Writer)
@@ -313,37 +314,6 @@
   [root]
   (p/stop root))
 
-;; у нее роли
-;; 1. в template
-;; 2.1. в реестрах
-;; 2.2. в значениях var
-;; 3. в fmap
-(defrecord Ref [key type]
-  p/Factory
-  (dependencies [_]
-    {key type})
-  (build [_ deps]
-    (deps key)))
-
-(alter-meta! #'->Ref assoc :private true)
-(alter-meta! #'map->Ref assoc :private true)
-
-;; в шаблонах нельзя использовать все фабрики
-;; если испльзовать var, то будут не уникальные инстансы
-;; плюс у меня все заточено на отображение ключа в объект
-;; а тут получается отображение фабрики в объект,
-;; а фабрики не получится сравнивать (?) т.к. reify.
-
-(defn- ref-deps [object]
-  (if (instance? Ref object)
-    (p/dependencies object)
-    nil))
-
-(defn- ref-build [object deps]
-  (if (instance? Ref object)
-    (p/build object deps)
-    object))
-
 (defn ref
   "Returns a factory referencing to a key.
 
@@ -358,7 +328,7 @@
 
   See `template`, `opt-ref`, `fmap`, `p/build`."
   [key]
-  (->Ref key :required))
+  (ref/->Ref key :required))
 
 (defn opt-ref
   "Returns a factory referencing to a possible undefined key.
@@ -366,7 +336,7 @@
 
   See `template`, `ref`, `fmap`."
   [key]
-  (->Ref key :optional))
+  (ref/->Ref key :optional))
 
 (defn template
   "Returns a factory for templating a data-structure.
@@ -384,10 +354,10 @@
     (dependencies [_]
       (->> form
            (tree-seq coll? seq)
-           (map ref-deps)
+           (map ref/deps)
            (reduce combine-dependencies)))
     (build [_ deps]
-      (w/postwalk #(ref-build % deps) form))))
+      (w/postwalk #(ref/build % deps) form))))
 
 (defn fmap
   "Applies f to an object that the factory produces.
@@ -622,11 +592,3 @@
   (.write w " ")
   (binding [*out* w]
     (pr (-> o meta ::print))))
-
-(defmethod print-method Ref [o ^Writer w]
-  (.write w "#darkleaf.di.core/")
-  (.write w (case (:type o)
-              :required "ref"
-              :optional "opt-ref"))
-  (.write w " ")
-  (.write w (-> o :key str)))
