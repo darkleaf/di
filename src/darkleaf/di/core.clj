@@ -544,27 +544,37 @@
       1 (variable deps)
       (partial variable deps))))
 
-(defn- var->factory [variable]
-  (if (defn? variable)
-    (if-some [stop (-> variable meta ::stop)]
-      (reify p/Factory
-        (dependencies [_]
-          (dependencies-fn variable))
-        (build [_ deps]
-          (let [obj (build-fn variable deps)]
-            (reify p/Stoppable
-              (unwrap [_] obj)
-              (stop [_] (stop obj))))))
-      (reify p/Factory
-        (dependencies [_]
-          (dependencies-fn variable))
-        (build [_ deps]
-          (build-fn variable deps))))
+(defn- var->factory-defn [variable]
+  (when (defn? variable)
     (reify p/Factory
       (dependencies [_]
-        (p/dependencies @variable))
+        (dependencies-fn variable))
       (build [_ deps]
-        (p/build @variable deps)))))
+        (build-fn variable deps)))))
+
+(defn- var->factory-default [variable]
+  (reify p/Factory
+    (dependencies [_]
+      (p/dependencies @variable))
+    (build [_ deps]
+      (p/build @variable deps))))
+
+(defn- wrap-stop [factory variable]
+  (if-some [stop (-> variable meta ::stop)]
+    (reify p/Factory
+      (dependencies [_]
+        (p/dependencies factory))
+      (build [_ deps]
+        (let [obj (p/build factory deps)]
+          (reify p/Stoppable
+            (unwrap [_] obj)
+            (stop [_] (stop obj))))))
+    factory))
+
+(defn- var->factory [variable]
+  (-> (?? (var->factory-defn variable)
+          (var->factory-default variable))
+      (wrap-stop variable)))
 
 (extend-protocol p/Factory
   nil
