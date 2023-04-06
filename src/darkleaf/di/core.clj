@@ -561,6 +561,14 @@
       (build [_ deps]
         (build-fn variable deps)))))
 
+(defn- var->factory-meta-deps [variable]
+  (if-some [deps (some-> variable meta ::deps (zipmap (repeat :required)))]
+    (reify p/Factory
+      (dependencies [_]
+        deps)
+      (build [_ deps]
+        (partial variable deps)))))
+
 (defn- var->factory-default [variable]
   (reify p/Factory
     (dependencies [_]
@@ -569,7 +577,8 @@
       (p/build @variable deps))))
 
 (defn- var->factory [variable]
-  (?? (var->factory-defn variable)
+  (?? (var->factory-meta-deps variable)
+      (var->factory-defn variable)
       (var->factory-default variable)))
 
 (extend-protocol p/Factory
