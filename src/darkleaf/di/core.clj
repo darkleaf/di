@@ -534,14 +534,23 @@
        (map map/dependencies)
        (reduce combine-dependencies)))
 
+(defn- wrap-stop [obj variable]
+  (if-some [stop (-> variable meta ::stop)]
+    (reify p/Stoppable
+      (unwrap [_] obj)
+      (stop [_] (stop obj)))
+    obj))
+
 (defn- build-fn [variable deps]
   (let [max-arity (->> variable
                        arglists
                        (map count)
                        (reduce max 0) long)]
     (case max-arity
-      0 (variable)
-      1 (variable deps)
+      0 (-> (variable)
+            (wrap-stop variable))
+      1 (-> (variable deps)
+            (wrap-stop variable))
       (partial variable deps))))
 
 (defn- var->factory-defn [variable]
@@ -559,22 +568,9 @@
     (build [_ deps]
       (p/build @variable deps))))
 
-(defn- wrap-stop [factory variable]
-  (if-some [stop (-> variable meta ::stop)]
-    (reify p/Factory
-      (dependencies [_]
-        (p/dependencies factory))
-      (build [_ deps]
-        (let [obj (p/build factory deps)]
-          (reify p/Stoppable
-            (unwrap [_] obj)
-            (stop [_] (stop obj))))))
-    factory))
-
 (defn- var->factory [variable]
-  (-> (?? (var->factory-defn variable)
-          (var->factory-default variable))
-      (wrap-stop variable)))
+  (?? (var->factory-defn variable)
+      (var->factory-default variable)))
 
 (extend-protocol p/Factory
   nil
