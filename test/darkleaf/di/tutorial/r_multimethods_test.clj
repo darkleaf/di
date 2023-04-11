@@ -1,7 +1,15 @@
+;; # Multimethods
+
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.r-multimethods-test
+  {:nextjournal.clerk/visibility {:result :hide}}
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
+
+;; You can use `defmulti` like `defn` to define a service.
+;; Instead of `defn`, there is no way to get a definition of dependencies
+;; and we have to define them as `::di/deps` on metadata.
 
 (defmulti service
   {::di/deps [::x]}
@@ -14,6 +22,9 @@
   (with-open [root (di/start `service {::x :value})]
     (t/is (= [:kind :value] (root :kind)))))
 
+;; `::di/deps` defines only required dependencies, mostly for simplicity.
+;; If you need to use an optional dependency,
+;; simply set convert it to a required dependency by adding a default value.
 
 (defn- wrap-default [x default]
   (if (some? x) x default))

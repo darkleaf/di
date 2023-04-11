@@ -1,4 +1,8 @@
+;; # Starting many keys
+
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.q-starting-many-keys-test
+  {:nextjournal.clerk/visibility {:result :hide}}
   (:require
    [darkleaf.di.core :as di]
    [clojure.test :as t]))
