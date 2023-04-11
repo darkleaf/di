@@ -1,3 +1,15 @@
+# 2.2.0
+
+## Multimethods as services
+
+Now you can define a sevice with a multimethod:
+
+```clojure
+(defmulti service
+  {::di/deps [::x]}
+  (fn [-deps kind] kind))
+```
+
 # 2.1.0
 
 ## Starting many keys
