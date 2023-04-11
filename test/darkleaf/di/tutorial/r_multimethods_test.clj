@@ -24,7 +24,7 @@
 
 ;; `::di/deps` defines only required dependencies, mostly for simplicity.
 ;; If you need to use an optional dependency,
-;; simply set convert it to a required dependency by adding a default value.
+;; simply convert it to a required dependency by adding a default value.
 
 (defn- wrap-default [x default]
   (if (some? x) x default))
