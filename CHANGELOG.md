@@ -2,7 +2,7 @@
 
 ## Multimethods as services
 
-Now you can define a sevice with a multimethod:
+Now you can define a service with a multimethod:
 
 ```clojure
 (defmulti service
