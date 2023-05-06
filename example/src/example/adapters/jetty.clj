@@ -4,7 +4,9 @@
    [ring.adapter.jetty :as jetty]))
 
 (defn server
-  {::di/stop #(.stop %)}
+  {::di/stop (memfn stop)}
   [{handler ::handler
-    options ::options}]
-  (jetty/run-jetty handler (assoc options :join? false)))
+    port    :env.long/PORT
+    :or     {port 8080}}]
+  (jetty/run-jetty handler {:join? false
+                            :port  port}))
