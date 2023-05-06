@@ -1,10 +1,11 @@
 (ns example.core
   (:require
    [darkleaf.di.core :as di]
+   [example.adapters.hikari :as-alias hikari]
+   [jsonista.core :as json]
    [next.jdbc :as jdbc]
-   [ring.util.http-response :as r.resp]
    [ring.core.protocols :as r.proto]
-   [jsonista.core :as json]))
+   [ring.util.http-response :as r.resp]))
 
 (defn- to-json-stream [x]
   (reify r.proto/StreamableResponseBody
