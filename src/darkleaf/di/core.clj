@@ -607,3 +607,34 @@
   (.write w " ")
   (binding [*out* w]
     (pr (-> o meta ::print))))
+
+(defn- try-namespace [x]
+  (when (ident? x)
+    (namespace x)))
+
+(defn env-parsing
+  "A registry middleware for parsing environment variables.
+  You can define a dependency of env as a string key like \"PORT\",
+  and its value will be a string.
+  With this middleware, you can define it as a qualified keyword like :env.long/PORT,
+  and its value will be a number.
+  cmap is a map of prefixes and parsers.
+
+  ```clojure
+  (defn root [{port :env.long/PORT}]
+    ...)
+
+  (di/start `root (di/env-parsing :env.long parse-long
+                                  :env.edn  edn/read-string
+                                  :env.json json/read-value))
+  ```"
+  {:added "2.3.0"}
+  [& {:as cmap}]
+  {:pre [(map? cmap)
+         (every? simple-keyword? (keys cmap))
+         (every? ifn? (vals cmap))]}
+  (fn [registry]
+    (fn [key]
+      (if-some [parser (some-> key try-namespace keyword cmap)]
+        (-> key name opt-ref (fmap #(some-> % parser)))
+        (registry key)))))

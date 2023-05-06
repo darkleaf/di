@@ -118,6 +118,7 @@
 (view-doc #'di/opt-ref)
 (view-doc #'di/template)
 (view-doc #'di/fmap)
+(view-doc #'di/env-parsing)
 (view-doc #'di/instrument)
 (view-doc #'di/update-key)
 (view-doc #'di/add-side-dependency)
