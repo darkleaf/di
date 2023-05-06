@@ -22,6 +22,16 @@
       (t/is (= false @@root)))
     (t/is @*stopped?)))
 
+;; In most cases, a component will be a Java class.
+;; To prevent reflection calls use `memfn`
+;; ```clojue
+;; (defn- connection-manager
+;;   {::di/stop (memfn ^AutoCloseable close)}
+;;   [{max-conn :env.long/CONNECTION_MANAGER_MAX_CONN
+;;     :or {max-conn 50}}]
+;;   (ConnctionManager. max-conn))
+;; ```
+
 ;; You can also manually implement `dip/Stoppable` via `reify`, `extend-protocol`, etc.
 
 (defn root-explicit
