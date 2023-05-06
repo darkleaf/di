@@ -33,15 +33,18 @@
 ;;     [["/users/:id" {:get {:handler (di/ref `show-user)}}]]))
 ;;
 ;; (defn jetty
-;;   {::di/stop #(.stop %)}
+;;   {::di/stop (memfn stop)}
 ;;   [{handler ::handler
-;;     port    "PORT"}]
-;;   (jetty/run-jetty handler {:join? false, :port (parse-long port)}))
+;;     port    :env.long/PORT
+;;     :or     {port 8080}
+;;   (jetty/run-jetty handler {:join? false, :port port}))
 ;;
-;; (di/start `jetty {::handler           (di/ref `reitit/handler)
-;;                   ::reitit/route-data (di/ref `reitit/data)
-;;                   ::db/datasource     (di/ref `hikari/datasource)
-;;                   "PORT"              "8080"})
+;; (di/start `jetty
+;;           (di/env-parsing :env/long parse-long)
+;;           {::handler           (di/ref `reitit/handler)
+;;            ::reitit/route-data (di/ref `reitit/data)
+;;            ::db/datasource     (di/ref `hikari/datasource)
+;;            "PORT"              "9090"})
 ;; ```
 
 ;; It is just a short snippet, please see [example app](https://github.com/darkleaf/di/tree/master/example).
