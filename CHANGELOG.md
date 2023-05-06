@@ -1,3 +1,21 @@
+# 2.3.0
+
+## Env parsing
+
+With `di/env-parsing` middleware, you can add env parsers.
+
+```clojure
+(defn jetty
+  {::di/stop (memfn stop)}
+  [{port    :env.long/PORT
+    handler `handler
+    :or  {port 8080}}]
+  (jetty/run-jetty handler {:join? false
+                            :port port}))
+
+(di/start `jetty (di/env-parsing {:env.long parse-long}))
+```
+
 # 2.2.0
 
 ## Multimethods as services
