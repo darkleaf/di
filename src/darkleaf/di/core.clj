@@ -649,8 +649,8 @@
             (reify p/Factory
               (dependencies [_]
                 (let [deps (p/dependencies factory)]
-                  (update-keys deps rmap)))
+                  (set/rename-keys deps rmap)))
               (build [this deps]
-                (let [deps (update-keys deps inverted-rmap)]
+                (let [deps (set/rename-keys deps inverted-rmap)]
                   (p/build factory deps))))
             factory))))))
