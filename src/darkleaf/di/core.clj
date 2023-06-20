@@ -11,6 +11,7 @@
 (ns darkleaf.di.core
   (:refer-clojure :exclude [ref key])
   (:require
+   [clojure.set :as set]
    [clojure.walk :as w]
    [darkleaf.di.destructuring-map :as map]
    [darkleaf.di.protocols :as p]
@@ -638,3 +639,18 @@
       (if-some [parser (some-> key try-namespace keyword cmap)]
         (-> key name opt-ref (fmap #(some-> % parser)))
         (registry key)))))
+
+(defn rename-deps [target rmap]
+  (let [inverted-rmap (set/map-invert rmap)]
+    (fn [registry]
+      (fn [key]
+        (let [factory (registry key)]
+          (if (= target key)
+            (reify p/Factory
+              (dependencies [_]
+                (let [deps (p/dependencies factory)]
+                  (update-keys deps rmap)))
+              (build [this deps]
+                (let [deps (update-keys deps inverted-rmap)]
+                  (p/build factory deps))))
+            factory))))))
