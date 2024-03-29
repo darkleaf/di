@@ -640,17 +640,17 @@
         (-> key name opt-ref (fmap #(some-> % parser)))
         (registry key)))))
 
-(defn rename-deps [target rmap]
-  (let [inverted-rmap (set/map-invert rmap)]
-    (fn [registry]
-      (fn [key]
-        (let [factory (registry key)]
-          (if (= target key)
-            (reify p/Factory
-              (dependencies [_]
-                (let [deps (p/dependencies factory)]
-                  (set/rename-keys deps rmap)))
-              (build [this deps]
-                (let [deps (set/rename-keys deps inverted-rmap)]
-                  (p/build factory deps))))
-            factory))))))
+;; (defn rename-deps [target rmap]
+;;   (let [inverted-rmap (set/map-invert rmap)]
+;;     (fn [registry]
+;;       (fn [key]
+;;         (let [factory (registry key)]
+;;           (if (= target key)
+;;             (reify p/Factory
+;;               (dependencies [_]
+;;                 (let [deps (p/dependencies factory)]
+;;                   (set/rename-keys deps rmap)))
+;;               (build [this deps]
+;;                 (let [deps (set/rename-keys deps inverted-rmap)]
+;;                   (p/build factory deps))))
+;;             factory))))))
