@@ -1,3 +1,17 @@
+# next
+
+## Starting many keys as a map
+
+Now you can pass a map as the key argument to start many keys:
+
+```clojure
+(t/deftest lookup-test
+  (with-open [root (di/start {:a `a :b `b})]
+    (let [{:keys [a b]} root]
+      (t/is (= :a a))
+      (t/is (= :b b)))))
+```
+
 # 2.3.0
 
 ## Env parsing

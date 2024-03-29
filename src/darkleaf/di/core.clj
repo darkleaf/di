@@ -17,7 +17,7 @@
    [darkleaf.di.protocols :as p]
    [darkleaf.di.ref :as ref])
   (:import
-   (clojure.lang IDeref IFn Var Indexed)
+   (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
    (java.lang AutoCloseable)))
 
@@ -175,6 +175,7 @@
 (defn- key->key&registry [key]
   (cond
     (vector? key) [::implicit-root {::implicit-root (->> key (map ref) template)}]
+    (map? key)    [::implicit-root {::implicit-root (-> key (update-vals ref) template)}]
     true          [key nil]))
 
 (defn ^AutoCloseable start
@@ -258,6 +259,11 @@
         (nth obj i not-found))
       (count [_]
         (count obj))
+      ILookup
+      (valAt [_  key]
+        (get obj key))
+      (valAt [_  key not-found]
+        (get obj key not-found))
       IFn
       (call [_]
         (.call ^IFn obj))

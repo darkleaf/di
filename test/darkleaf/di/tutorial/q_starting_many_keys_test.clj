@@ -19,8 +19,17 @@
 ;; The root container implements `clojure.lang.Indexed`
 ;; so you can use destructuring without derefing the root.
 
-(t/deftest ok-test
+(t/deftest indexed-test
   (with-open [root (di/start [`a `b])]
     (let [[a b] root]
+      (t/is (= :a a))
+      (t/is (= :b b)))))
+
+;; The root container implements `clojure.lang.ILookup`
+;; so you can use destructuring without derefing the root.
+
+(t/deftest lookup-test
+  (with-open [root (di/start {:a `a :b `b})]
+    (let [{:keys [a b]} root]
       (t/is (= :a a))
       (t/is (= :b b)))))
