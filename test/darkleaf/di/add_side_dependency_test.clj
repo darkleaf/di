@@ -3,6 +3,27 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
+(t/deftest bug--array-map->hash-map--prepare
+  (t/is (= clojure.lang.PersistentArrayMap
+           (class {:a 1
+                   :b 2
+                   :c 3
+                   :d 4
+                   :e 5
+                   :f 6
+                   :g 7
+                   :h 8})))
+  (t/is (= clojure.lang.PersistentHashMap
+           (class {:a 1
+                   :b 2
+                   :c 3
+                   :d 4
+                   :e 5
+                   :f 6
+                   :g 7
+                   :h 8
+                   :i 9}))))
+
 (defn- a [{log ::log}]
   (swap! log conj :a)
   :a)
@@ -39,26 +60,6 @@
   (swap! log conj :side-dep))
 
 (t/deftest bug-array-map->hash-map
-  (t/is (= clojure.lang.PersistentArrayMap
-           (class {:a 1
-                   :b 2
-                   :c 3
-                   :d 4
-                   :e 5
-                   :f 6
-                   :g 7
-                   :h 8})))
-  (t/is (= clojure.lang.PersistentHashMap
-           (class {:a 1
-                   :b 2
-                   :c 3
-                   :d 4
-                   :e 5
-                   :f 6
-                   :g 7
-                   :h 8
-                   :i 9})))
-
   (let [log (atom [])]
     (with-open [root (di/start ::root
                                {::log  log
@@ -72,7 +73,7 @@
                                          :g (di/ref `g)
                                          :h (di/ref `h)})}
                                (di/add-side-dependency `side-dep))]
-      (t/is (= :side-dep (last @log)))
+      (t/is (= [:a :b :c :d :e :f :g :h :side-dep] @log))
       (t/is (= {:a :a
                 :b :b
                 :c :c
