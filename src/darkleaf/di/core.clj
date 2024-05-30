@@ -511,21 +511,27 @@
   (di/start ::root (di/add-side-dependency `flyway))
   ```"
   [dep-key]
-  (let [*added? (volatile! false)]
+  (let [*orig-key     (volatile! nil)
+        *orig-factory (volatile! nil)
+        new-key       (gensym "darkleaf.di.core/new-root#")
+        new-factory   (reify p/Factory
+                        (dependencies [_]
+                          ;; array-map preserves order of keys
+                          {new-key :required
+                           dep-key :required})
+                        (build [_ deps]
+                          (new-key deps)))]
     (fn [registry]
       (fn [key]
         (let [factory (registry key)]
-          (if @*added?
-            factory
-            (do
-              (vreset! *added? true)
-              (reify p/Factory
-                (dependencies [_]
-                  (-> factory
-                      p/dependencies
-                      (assoc dep-key :required)))
-                (build [_ deps]
-                  (p/build factory deps))))))))))
+          (when (nil? @*orig-key)
+            (vreset! *orig-key key))
+          (when (nil? @*orig-factory)
+            (vreset! *orig-factory factory))
+          (cond
+            (= @*orig-key key) new-factory
+            (= new-key key)    @*orig-factory
+            :else factory))))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))

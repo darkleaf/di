@@ -1,3 +1,9 @@
+# 2.4.1
+
+## Fixing `di/add-side-dependency`
+
+When root had eight dependencies a system with side depencency started up in the wrong order.
+
 # 2.4.0
 
 ## Starting many keys as a map
