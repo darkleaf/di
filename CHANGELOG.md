@@ -1,3 +1,7 @@
+# 2.4.2
+
+## Fixing `di/add-side-dependency`
+
 # 2.4.1
 
 ## Fixing `di/add-side-dependency`
