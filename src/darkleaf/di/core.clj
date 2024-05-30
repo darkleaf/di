@@ -513,7 +513,7 @@
   [dep-key]
   (let [*orig-key     (volatile! nil)
         *orig-factory (volatile! nil)
-        new-key       (gensym "darkleaf.di.core/new-root#")
+        new-key       (gensym "darkleaf.di.core/new-key#")
         new-factory   (reify p/Factory
                         (dependencies [_]
                           ;; array-map preserves order of keys
@@ -523,15 +523,14 @@
                           (new-key deps)))]
     (fn [registry]
       (fn [key]
-        (let [factory (registry key)]
-          (when (nil? @*orig-key)
-            (vreset! *orig-key key))
-          (when (nil? @*orig-factory)
-            (vreset! *orig-factory factory))
-          (cond
-            (= @*orig-key key) new-factory
-            (= new-key key)    @*orig-factory
-            :else factory))))))
+        (when (nil? @*orig-key)
+          (vreset! *orig-key key))
+        (when (nil? @*orig-factory)
+          (vreset! *orig-factory (registry key)))
+        (cond
+          (= @*orig-key key) new-factory
+          (= new-key key)    @*orig-factory
+          :else              (registry key))))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))

@@ -82,3 +82,31 @@
                 :f :f
                 :g :g
                 :h :h} @root)))))
+
+(defn- side-dep2 [{log ::log}]
+  (swap! log conj :side-dep2))
+
+(t/deftest bug-array-map->hash-map-2
+  (let [log (atom [])]
+    (with-open [root (di/start ::root
+                               {::log  log}
+                               (di/add-side-dependency `side-dep)
+                               {::root (di/template
+                                        {:a (di/ref `a)
+                                         :b (di/ref `b)
+                                         :c (di/ref `c)
+                                         :d (di/ref `d)
+                                         :e (di/ref `e)
+                                         :f (di/ref `f)
+                                         :g (di/ref `g)
+                                         :h (di/ref `h)})}
+                               (di/add-side-dependency `side-dep2))]
+      (t/is (= [:a :side-dep :b :c :d :e :f :g :h :side-dep2] @log))
+      (t/is (= {:a :a
+                :b :b
+                :c :c
+                :d :d
+                :e :e
+                :f :f
+                :g :g
+                :h :h} @root)))))
