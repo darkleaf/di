@@ -9,8 +9,9 @@
 ;; **********************************************************************/
 
 (ns darkleaf.di.core
-  (:refer-clojure :exclude [ref key])
+  (:refer-clojure :exclude [ref key ns-publics])
   (:require
+   [clojure.core :as c]
    [clojure.set :as set]
    [clojure.walk :as w]
    [darkleaf.di.destructuring-map :as map]
@@ -665,3 +666,30 @@
 ;;                 (let [deps (set/rename-keys deps inverted-rmap)]
 ;;                   (p/build factory deps))))
 ;;             factory))))))
+
+
+(defn- usefull-var? [var]
+  (and (bound? var)
+       (some? @var)))
+
+(defn ns-publics []
+  (fn [registry]
+    (fn [key]
+      (if (and (qualified-keyword? key)
+               (= "ns-publics" (namespace key)))
+        (let [component-ns      (symbol (name key))
+              component-vars    (do
+                                  (require component-ns)
+                                  (c/ns-publics component-ns))
+              component-symbols (->> component-vars
+                                     vals
+                                     (filter usefull-var?)
+                                     (map symbol))
+              deps              (zipmap component-symbols
+                                        (repeat :required))]
+          (reify p/Factory
+            (dependencies [_this]
+              deps)
+            (build [_this deps]
+              (update-keys deps #(-> % name keyword)))))
+        (registry key)))))
