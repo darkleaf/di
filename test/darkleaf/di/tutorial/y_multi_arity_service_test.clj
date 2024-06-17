@@ -23,3 +23,50 @@
     (t/is (= [::result {`a :a, `b :b} :a1   :a2]   (s)))
     (t/is (= [::result {`a :a, `b :b} :arg1 :a2]   (s :arg1)))
     (t/is (= [::result {`a :a, `b :b} :arg1 :arg2] (s :arg1 :arg2)))))
+
+;; other
+
+
+(comment
+  (defn ^::di/service xxx-service-0 []
+    (gensym))
+
+  ;; or?
+  (defn xxx-service-0
+    {::di/kind :service}
+    []
+    (gensym))
+
+  ,,,)
+
+
+(defn ^::di/service xxx-service-0 []
+  (gensym))
+
+(t/deftest xxx-service-0-test
+  (with-open [s (di/start `xxx-service-0)]
+    (t/is (not= (s) (s))))
+
+  ,,)
+
+
+(defn ^::di/service xxx-service-1 [-deps]
+  (gensym))
+
+(t/deftest xxx-service-1-test
+  (with-open [s (di/start `xxx-service-1)]
+    (t/is (not= (s) (s))))
+
+  ,,)
+
+
+(defn ^::di/service xxx-service-0-1
+  ([]
+   0)
+  ([-deps]
+   1))
+
+(t/deftest xxx-service-0-1-test
+  (with-open [s (di/start `xxx-service-0-1)]
+    (t/is (= 1 (s))))
+  ,,)

@@ -555,15 +555,28 @@
     obj))
 
 (defn- build-fn [variable deps]
-  (let [max-arity (->> variable
+  (let [service?  (-> variable meta ::service)
+        max-arity (->> variable
                        arglists
                        (map count)
-                       (reduce max 0) long)]
-    (case max-arity
-      0 (-> (variable)
-            (wrap-stop variable))
-      1 (-> (variable deps)
-            (wrap-stop variable))
+                       (reduce max 0)
+                       long)]
+    (cond
+      (and service? (= 0 max-arity))
+      variable
+
+      (and service? (= 1 max-arity))
+      (partial variable deps)
+
+      (= 0 max-arity)
+      (-> (variable)
+          (wrap-stop variable))
+
+      (= 1 max-arity)
+      (-> (variable deps)
+          (wrap-stop variable))
+
+      :else
       (partial variable deps))))
 
 (defn- var->factory-defn [variable]
