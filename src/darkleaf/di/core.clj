@@ -555,16 +555,23 @@
     obj))
 
 (defn- build-fn [variable deps]
-  (let [max-arity (->> variable
-                       arglists
-                       (map count)
-                       (reduce max 0) long)]
-    (case max-arity
-      0 (-> (variable)
-            (wrap-stop variable))
-      1 (-> (variable deps)
-            (wrap-stop variable))
-      (partial variable deps))))
+  (let [kind    (->> variable meta ::kind)
+        arities (->> variable
+                     arglists
+                     (map count))]
+    (case kind
+      :component (condp = arities
+                   [0] (-> (variable)
+                           (wrap-stop variable))
+                   [1] (-> (variable deps)
+                           (wrap-stop variable))
+                   (throw (ex-info
+                           "The component must only have 0 or 1 arity"
+                           {:variable variable
+                            :arities  arities})))
+      #_service  (condp = arities
+                   [0] variable
+                   (partial variable deps)))))
 
 (defn- var->factory-defn [variable]
   (when (defn? variable)

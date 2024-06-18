@@ -12,7 +12,8 @@
 ;; Use `::di/stop` to define a stop function.
 
 (defn root
-  {::di/stop #(reset! % true)}
+  {::di/stop #(reset! % true)
+   ::di/kind :component}
   [{::keys [*stopped?]}]
   *stopped?)
 
@@ -35,6 +36,7 @@
 ;; You can also manually implement `dip/Stoppable` via `reify`, `extend-protocol`, etc.
 
 (defn root-explicit
+  {::di/kind :component}
   [{::keys [*stopped?]}]
   (reify dip/Stoppable
     (unwrap [_]

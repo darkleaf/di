@@ -11,25 +11,29 @@
 ;;   c
 
 (defn root
-  {::di/stop #(swap! % conj [`root :stopped])}
+  {::di/stop #(swap! % conj [`root :stopped])
+   ::di/kind :component}
   [{a `a, b `b, log ::log}]
   (swap! log conj [`root :built])
   log)
 
 (defn a
-  {::di/stop #(swap! % conj [`a :stopped])}
+  {::di/stop #(swap! % conj [`a :stopped])
+   ::di/kind :component}
   [{c `c, log ::log}]
   (swap! log conj [`a :built])
   log)
 
 (defn b
-  {::di/stop #(swap! % conj [`b :stopped])}
+  {::di/stop #(swap! % conj [`b :stopped])
+   ::di/kind :component}
   [{c `c, log ::log}]
   (swap! log conj [`b :built])
   log)
 
 (defn c
-  {::di/stop #(swap! % conj [`c :stopped])}
+  {::di/stop #(swap! % conj [`c :stopped])
+   ::di/kind :component}
   [{log ::log}]
   (swap! log conj [`c :built])
   log)

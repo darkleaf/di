@@ -14,7 +14,9 @@
 
 ;; The hard way
 
-(defn port [{port "PORT"}]
+(defn port
+  {::di/kind :component}
+  [{port "PORT"}]
   (parse-long port))
 
 (t/deftest port-test

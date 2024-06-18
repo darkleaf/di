@@ -24,39 +24,57 @@
                    :h 8
                    :i 9}))))
 
-(defn- a [{log ::log}]
+(defn- a
+  {::di/kind :component}
+  [{log ::log}]
   (swap! log conj :a)
   :a)
 
-(defn- b [{log ::log}]
+(defn- b
+  {::di/kind :component}
+  [{log ::log}]
   (swap! log conj :b)
   :b)
 
-(defn- c [{log ::log}]
+(defn- c
+  {::di/kind :component}
+  [{log ::log}]
   (swap! log conj :c)
   :c)
 
-(defn- d [{log ::log}]
+(defn- d
+  {::di/kind :component}
+  [{log ::log}]
   (swap! log conj :d)
   :d)
 
-(defn- e [{log ::log}]
+(defn- e
+  {::di/kind :component}
+  [{log ::log}]
   (swap! log conj :e)
   :e)
 
-(defn- f [{log ::log}]
+(defn- f
+  {::di/kind :component}
+  [{log ::log}]
   (swap! log conj :f)
   :f)
 
-(defn- g [{log ::log}]
+(defn- g
+  {::di/kind :component}
+  [{log ::log}]
   (swap! log conj :g)
   :g)
 
-(defn- h [{log ::log}]
+(defn- h
+  {::di/kind :component}
+  [{log ::log}]
   (swap! log conj :h)
   :h)
 
-(defn- side-dep [{log ::log}]
+(defn- side-dep
+  {::di/kind :component}
+  [{log ::log}]
   (swap! log conj :side-dep))
 
 (t/deftest bug-array-map->hash-map
@@ -83,7 +101,9 @@
                 :g :g
                 :h :h} @root)))))
 
-(defn- side-dep2 [{log ::log}]
+(defn- side-dep2
+  {::di/kind :component}
+  [{log ::log}]
   (swap! log conj :side-dep2))
 
 (t/deftest bug-array-map->hash-map-2

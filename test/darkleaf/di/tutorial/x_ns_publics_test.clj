@@ -9,7 +9,9 @@
 ;; excluded
 (def unbound-component)
 
-(defn component []
+(defn component
+  {::di/kind :component}
+  []
   :component)
 
 (defn service [{component `component} arg]

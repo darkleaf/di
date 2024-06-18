@@ -14,11 +14,15 @@
 ;; It throws with original exception.
 ;; All other possible exceptions are added as suppressed.
 
-(defn root [{dep              `dep
-             on-start-root-ex ::on-start-root-ex}]
+(defn root
+  {::di/kind :component}
+  [{dep              `dep
+    on-start-root-ex ::on-start-root-ex}]
   (throw on-start-root-ex))
 
-(defn dep [{on-stop-dep-ex ::on-stop-dep-ex}]
+(defn dep
+  {::di/kind :component}
+  [{on-stop-dep-ex ::on-stop-dep-ex}]
   (reify p/Stoppable
     (unwrap [_]
       ::obj)

@@ -12,10 +12,14 @@
 
 (def route-data [])
 
-(defn subsystem-a-route-data [-deps]
+(defn subsystem-a-route-data
+  {::di/kind :component}
+  [-deps]
   ["/a"])
 
-(defn subsystem-b-route-data [-deps]
+(defn subsystem-b-route-data
+  {::di/kind :component}
+  [-deps]
   ["/b"])
 
 (t/deftest update-key-test

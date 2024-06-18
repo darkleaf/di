@@ -13,10 +13,14 @@
 
 ;; In this test I'll show you how to perform a side effect like a database migration.
 
-(defn root []
+(defn root
+  {::di/kind :component}
+  []
   'root)
 
-(defn migrations [{::keys [*migrated?]}]
+(defn migrations
+  {::di/kind :component}
+  [{::keys [*migrated?]}]
   (reset! *migrated? true))
 
 (t/deftest add-side-dependency-test

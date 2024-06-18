@@ -31,8 +31,10 @@
 (def db-a (db-factory :a))
 (def db-b (db-factory :b))
 
-(defn root [{db-a `db-a
-             db-b `db-b}]
+(defn root
+  {::di/kind :component}
+  [{db-a `db-a
+    db-b `db-b}]
   [db-a db-b])
 
 (t/deftest root-test
