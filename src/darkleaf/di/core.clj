@@ -455,49 +455,45 @@
   "A registry middleware for updating built objects.
 
   target is a key to update.
-  f and args are keys.
-  Also f can be a function in term of `ifn?`.
-  f should not return a non-trivial instance of `p/Stoppable`.
+  f and args are intances of `p/Factory`.
+  For example, a factory can be a regular object or `(di/ref key)`.
 
   ```clojure
   (def routes [])
   (def subsystem-routes (di/template [[\"/posts\" (di/ref `handler)]]))
 
-  (di/start ::root (di/update-key `routes conj `subsystem-routes))
-  ```
-
-  If you don't want to resolve keys like :some-name, you should use them in a in-place fn:
-
-  ```clojure
-  (di/update-key `key #(assoc %1 :some-name %2) `some-value)
+  (di/start ::root (di/update-key `routes conj (di/ref `subsystem-routes)))
   ```
 
   See `update`, `start`, `instrument`, `fmap`."
   [target f & args]
-  {:pre [(or (key? f)
-             (ifn? f))
-         (every? key? args)]}
-  (let [own-keys (cond-> (set args)
-                   (key? f) (conj f))]
+  {:pre [(key? target)]}
+  (let [new-key      (gensym "darkleaf.di.core/update-key-target#")
+        f-key        (gensym "darkleaf.di.core/update-key-f#")
+        arg-keys     (for [_ args] (gensym "darkleaf.di.core/update-key-arg#"))
+        new-factory  (reify p/Factory
+                       (dependencies [_]
+                         (zipmap (concat [new-key f-key] arg-keys)
+                                 (repeat :optional)))
+                       (build [_ deps]
+                         (let [t    (deps new-key)
+                               f    (deps f-key)
+                               args (map deps arg-keys)]
+                           (apply f t args))))
+        own-registry (zipmap (cons f-key arg-keys)
+                             (cons f     args))]
     (fn [registry]
       (fn [key]
-        (let [factory (registry key)]
-          (if (not= target key)
-            factory
-            (reify p/Factory
-              (dependencies [_]
-                (merge (p/dependencies factory)
-                       (zipmap own-keys (repeat :required))))
-              (build [_ deps]
-                (let [f        (deps f f)
-                      args     (map deps args)
-                      original (p/build factory deps)
-                      obj      (apply f (p/unwrap original) args)]
-                  (reify p/Stoppable
-                    (unwrap [_]
-                      obj)
-                    (stop [_]
-                      (p/stop original))))))))))))
+        (cond
+          (= new-key key)
+          (registry target)
+
+          (= target key)
+          new-factory
+
+          :else
+          (?? (own-registry key)
+              (registry key)))))))
 
 (defn add-side-dependency
   "A registry middleware for adding side dependencies.
