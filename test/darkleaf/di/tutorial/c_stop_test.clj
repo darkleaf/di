@@ -12,8 +12,7 @@
 ;; Use `::di/stop` to define a stop function.
 
 (defn root
-  {::di/stop #(reset! % true)
-   ::di/kind :component}
+  {::di/stop #(reset! % true)}
   [{::keys [*stopped?]}]
   *stopped?)
 

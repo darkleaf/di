@@ -555,7 +555,9 @@
     obj))
 
 (defn- build-fn [variable deps]
-  (let [kind    (->> variable meta ::kind)
+  (let [m       (meta variable)
+        kind    (::kind m (cond
+                            (contains? m ::stop) :component))
         arities (->> variable
                      arglists
                      (map count))]
