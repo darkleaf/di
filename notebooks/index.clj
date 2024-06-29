@@ -120,7 +120,7 @@
 (view-doc #'di/ref)
 (view-doc #'di/opt-ref)
 (view-doc #'di/template)
-(view-doc #'di/fmap)
+(view-doc #'di/derive)
 (view-doc #'di/env-parsing)
 #_(view-doc #'di/instrument)
 (view-doc #'di/update-key)

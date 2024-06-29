@@ -9,8 +9,6 @@
 ;; у нее роли
 ;; 1. в template
 ;; 2.1. в реестрах
-;; 2.2. в значениях var
-;; 3. в fmap
 (defrecord Ref [key type]
   p/Factory
   (dependencies [_]

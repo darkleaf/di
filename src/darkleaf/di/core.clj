@@ -9,7 +9,7 @@
 ;; **********************************************************************/
 
 (ns darkleaf.di.core
-  (:refer-clojure :exclude [ref key ns-publics])
+  (:refer-clojure :exclude [ref key ns-publics derive])
   (:require
    [clojure.core :as c]
    [clojure.set :as set]
@@ -322,6 +322,9 @@
   [root]
   (p/stop root))
 
+
+(def ^:private key? (some-fn symbol? keyword? string?))
+
 (defn ref
   "Returns a factory referencing to a key.
 
@@ -334,7 +337,7 @@
   (di/start `root {::my-abstraction (di/ref `my-implementation)})
   ```
 
-  See `template`, `opt-ref`, `fmap`, `p/build`."
+  See `template`, `opt-ref`, `derive`, `p/build`."
   [key]
   (ref/->Ref key :required))
 
@@ -342,7 +345,7 @@
   "Returns a factory referencing to a possible undefined key.
   Produces nil in that case.
 
-  See `template`, `ref`, `fmap`."
+  See `template`, `ref`, `derive`."
   [key]
   (ref/->Ref key :optional))
 
@@ -367,32 +370,22 @@
     (build [_ deps]
       (w/postwalk #(ref/build % deps) form))))
 
-(defn fmap
-  "Applies f to an object that the factory produces.
-  f accepts a built object and returns updated one.
-
-  f should not return a non-trivial instance of `p/Stoppable`.
+(defn derive
+  "Applies `f` to an object built from `key`.
 
   ```clojure
-  (def port (-> (di/ref \"PORT\")
-                (di/fmap parse-long)))
+  (def port (-> (di/derive \"PORT\" (fnil parse-long \"8080\"))))
   ```
 
   See `ref`, `template`."
-  [factory f & args]
+  [key f & args]
+  {:pre [(key? key)
+         (ifn? f)]}
   (reify p/Factory
     (dependencies [_]
-      (p/dependencies factory))
+      {key :optional})
     (build [_ deps]
-      (let [original (p/build factory deps)
-            obj (apply f (p/unwrap original) args)]
-        (reify p/Stoppable
-          (unwrap [_]
-            obj)
-          (stop [_]
-            (p/stop original)))))))
-
-(def ^:private key? (some-fn symbol? keyword? string?))
+      (apply f (deps key) args))))
 
 ;; We currently don't need this middleware.
 ;; It should be rewritten as `update-key`.
@@ -421,7 +414,7 @@
   (di/start ::root (di/instrument #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
   ```
 
-  See `start`, `update-key`, `fmap`."
+  See `start`, `update-key`."
   [f & args]
   {:pre [(or (key? f)
              (ifn? f))
@@ -476,7 +469,7 @@
   (di/start ::root (di/update-key `routes conj (di/ref `subsystem-routes)))
   ```
 
-  See `start`, `fmap`."
+  See `start`, `derive`."
   [target f & args]
   {:pre [(key? target)]}
   (let [new-key      (gensym "darkleaf.di.core/update-key-target#")
@@ -627,8 +620,8 @@
   (unwrap [this] this)
   (stop [_]))
 
-(derive ::root     ::reified)
-(derive ::template ::reified)
+(c/derive ::root     ::reified)
+(c/derive ::template ::reified)
 
 (defmethod print-method ::reified [o ^Writer w]
   (.write w "#")
