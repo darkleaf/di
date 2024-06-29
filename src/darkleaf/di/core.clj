@@ -200,7 +200,7 @@
 
   Middlewares also allows you to instrument built objects.
   It's useful for logging, schema validation, AOP, etc.
-  See `instrument`, `update-key`.
+  See `update-key`.
 
   ```clojure
   (di/start `root
@@ -227,7 +227,7 @@
   ```
 
   See the tests for use cases.
-  See `instrument`, `update-key`."
+  See `update-key`."
   [key & middlewares]
   (let [[key root-registry] (key->key&registry key)
 
@@ -394,6 +394,11 @@
 
 (def ^:private key? (some-fn symbol? keyword? string?))
 
+;; We currently don't need this middleware.
+;; It should be rewritten as `update-key`.
+;; Also it has a poor documentation and a test coverage.
+;; We might add a new implementation later.
+#_
 (defn instrument
   "A registry middleware for instrumenting or decorating built objects.
   Use it for logging, schema checking, AOP, etc.
@@ -446,6 +451,12 @@
                       original (p/build factory deps)
                       obj      (apply f key (p/unwrap original) args)]
                   (reify p/Stoppable
+                    ;; ???
+                    ;; (unwrap [_]
+                    ;;   (p/unwrap obj))
+                    ;; (stop [_]
+                    ;;   (p/stop original)
+                    ;;   (p/stop obj))
                     (unwrap [_]
                       obj)
                     (stop [_]
@@ -465,7 +476,7 @@
   (di/start ::root (di/update-key `routes conj (di/ref `subsystem-routes)))
   ```
 
-  See `update`, `start`, `instrument`, `fmap`."
+  See `start`, `fmap`."
   [target f & args]
   {:pre [(key? target)]}
   (let [new-key      (gensym "darkleaf.di.core/update-key-target#")
