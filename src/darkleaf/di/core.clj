@@ -82,14 +82,13 @@
 (defn- find-obj [{:keys [*built-map]} key]
   (get @*built-map key))
 
-(defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *stoppable-list]} key]
+(defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *stop-list]} key]
   (let [ctx           (update ctx :under-construction conj key)
         factory       (registry key)
         declared-deps (p/dependencies factory)
         resolved-deps (resolve-deps ctx declared-deps)
-        stoppable     (p/build factory resolved-deps)
-        obj           (p/unwrap stoppable)]
-    (vswap! *stoppable-list conj stoppable)
+        obj           (p/build factory resolved-deps)]
+    (vswap! *stop-list conj #(p/demolish factory obj))
     (vswap! *built-map  assoc key obj)
     obj))
 
@@ -97,16 +96,16 @@
   (?? (find-obj  ctx key)
       (build-obj ctx key)))
 
-(defn- try-run [proc x]
+(defn- try-run [proc]
   (try
-    (proc x)
+    (proc)
     nil
     (catch Throwable ex
       ex)))
 
-(defn- try-run-all [proc coll]
-  (->> coll
-       (map #(try-run proc %))
+(defn- try-run-all [procs]
+  (->> procs
+       (map try-run)
        (filter some?)
        (seq)))
 
@@ -116,13 +115,10 @@
            (reduce combine-throwable)
            (throw)))
 
-(defn- try-stop-objects [objects]
-  (try-run-all p/stop objects))
-
-(defn- try-stop-started [{:keys [*stoppable-list]}]
-  (let [built-list @*stoppable-list]
-    (vswap! *stoppable-list empty)
-    (try-stop-objects built-list)))
+(defn- try-stop-started [{:keys [*stop-list]}]
+  (let [stops @*stop-list]
+    (vswap! *stop-list empty)
+    (try-run-all stops)))
 
 (defn- try-build [ctx key]
   (try
@@ -214,7 +210,7 @@
   ```
 
   Returns a container contains started root of the system.
-  The container implements `AutoCloseable`, `Stoppable`, `IDeref`, `IFn`, `Indexed` and `ILookup`.
+  The container implements `AutoCloseable`, `IDeref`, `IFn`, `Indexed` and `ILookup`.
 
   Use `with-open` in tests to stop the system reliably.
 
@@ -234,22 +230,17 @@
         middlewares (concat [with-env with-ns root-registry] middlewares)
         registry    (apply-middleware nil-registry middlewares)
         ctx         {:*built-map         (volatile! {})
-                     :*stoppable-list    (volatile! '())
+                     :*stop-list         (volatile! '())
                      :under-construction #{}
                      :registry           registry}
         obj         (try-build ctx key)]
     ^{:type   ::root
       ::print obj}
     (reify
-      p/Stoppable
-      (unwrap [_]
-        obj)
-      (stop [_]
+      AutoCloseable
+      (close [_]
         (->> (try-stop-started ctx)
              (throw-many!)))
-      AutoCloseable
-      (close [this]
-        (p/stop this))
       IDeref
       (deref [_]
         obj)
@@ -319,8 +310,8 @@
 
 (defn stop
   "Stops the root of a system"
-  [root]
-  (p/stop root))
+  [^AutoCloseable root]
+  (.close root))
 
 
 (def ^:private key? (some-fn symbol? keyword? string?))
@@ -368,7 +359,8 @@
            (map ref/deps)
            (reduce combine-dependencies)))
     (build [_ deps]
-      (w/postwalk #(ref/build % deps) form))))
+      (w/postwalk #(ref/build % deps) form))
+    (demolish [_ _])))
 
 (defn derive
   "Applies `f` to an object built from `key`.
@@ -385,7 +377,8 @@
     (dependencies [_]
       {key :optional})
     (build [_ deps]
-      (apply f (deps key) args))))
+      (apply f (deps key) args))
+    (demolish [_ _])))
 
 ;; We currently don't need this middleware.
 ;; It should be rewritten as `update-key`.
@@ -483,7 +476,8 @@
                          (let [t    (deps new-key)
                                f    (deps f-key)
                                args (map deps arg-keys)]
-                           (apply f t args))))
+                           (apply f t args)))
+                       (demolish [_ _]))
         own-registry (zipmap (cons f-key arg-keys)
                              (cons f     args))]
     (fn [registry]
@@ -521,7 +515,8 @@
                           {new-key :required
                            dep-key :required})
                         (build [_ deps]
-                          (new-key deps)))]
+                          (new-key deps))
+                        (demolish [_ _]))]
     (fn [registry]
       (fn [key]
         (when (nil? @*orig-key)
@@ -547,56 +542,72 @@
        (map map/dependencies)
        (reduce combine-dependencies)))
 
-(defn- wrap-stop [obj variable]
-  (if-some [stop (-> variable meta ::stop)]
-    (reify p/Stoppable
-      (unwrap [_] obj)
-      (stop [_] (stop obj)))
-    obj))
+(defn- stop-fn [variable]
+  (-> variable meta (::stop (fn no-op [_]))))
 
-(defn- build-fn [variable deps]
-  (let [m       (meta variable)
-        kind    (::kind m (cond
-                            (contains? m ::stop) :component))
-        arities (->> variable
-                     arglists
-                     (map count))]
-    (case kind
-      :component (condp = arities
-                   [0] (-> (variable)
-                           (wrap-stop variable))
-                   [1] (-> (variable deps)
-                           (wrap-stop variable))
-                   (throw (ex-info
-                           "The component must only have 0 or 1 arity"
-                           {:variable variable
-                            :arities  arities})))
-      #_service  (condp = arities
-                   [0] variable
-                   (partial variable deps)))))
+(defn- var->0-component [variable]
+  (let [stop (stop-fn variable)]
+    (reify p/Factory
+      (dependencies [_])
+      (build [_ _]
+        (variable))
+      (demolish [_ obj]
+        (stop obj)))))
+
+(defn- var->1-component [variable]
+  (let [deps (dependencies-fn variable)
+        stop (stop-fn variable)]
+    (reify p/Factory
+      (dependencies [_]
+        deps)
+      (build [_ deps]
+        (variable deps))
+      (demolish [_ obj]
+        (stop obj)))))
+
+(defn- var->0-service [variable]
+  variable)
+
+(defn- var->service [variable]
+  (let [deps (dependencies-fn variable)]
+    (reify p/Factory
+      (dependencies [_]
+         deps)
+      (build [_ deps]
+         (partial variable deps))
+      (demolish [_ _]))))
 
 (defn- var->factory-defn [variable]
   (when (defn? variable)
-    (reify p/Factory
-      (dependencies [_]
-        (dependencies-fn variable))
-      (build [_ deps]
-        (build-fn variable deps)))))
+    (let [m         (meta variable)
+          has-stop? (contains? m ::stop)
+          kind      (::kind m (cond has-stop? :component))
+          arities   (->> variable arglists (map count))]
+      (case kind
+        :component (condp = arities
+                     [0] (var->0-component variable)
+                     [1] (var->1-component variable)
+                     (throw (ex-info
+                             "The component must only have 0 or 1 arity"
+                             {:variable variable
+                              :arities  arities})))
+        #_service  (condp = arities
+                     [0] (var->0-service variable)
+                     (var->service variable))))))
 
-(defn- var->factory-meta-deps [variable]
+(defn- var->factory-meta-deps
+  "for multimethods"
+  [variable]
   (if-some [deps (some-> variable meta ::deps (zipmap (repeat :required)))]
     (reify p/Factory
       (dependencies [_]
         deps)
       (build [_ deps]
-        (partial variable deps)))))
+        (partial variable deps))
+      (demolish [_ _]))))
 
 (defn- var->factory-default [variable]
-  (reify p/Factory
-    (dependencies [_]
-      (p/dependencies @variable))
-    (build [_ deps]
-      (p/build @variable deps))))
+  @variable)
 
 (defn- var->factory [variable]
   (?? (var->factory-meta-deps variable)
@@ -607,18 +618,12 @@
   nil
   (dependencies [_] nil)
   (build [_ _] nil)
+  (demolish [_ _] nil)
 
   Object
   (dependencies [_] nil)
-  (build [this _] this))
-
-(extend-protocol p/Stoppable
-  nil
-  (unwrap [_] nil)
-  (stop [_])
-  Object
-  (unwrap [this] this)
-  (stop [_]))
+  (build [this _] this)
+  (demolish [_ _] nil))
 
 (c/derive ::root     ::reified)
 (c/derive ::template ::reified)
@@ -665,7 +670,8 @@
              (dependencies [_]
                {key-name :optional})
              (build [_ deps]
-               (some-> key-name deps parser)))
+               (some-> key-name deps parser))
+             (demolish [_ _]))
            (registry key))))))
 
 ;; (defn rename-deps [target rmap]
@@ -707,5 +713,6 @@
             (dependencies [_this]
               deps)
             (build [_this deps]
-              (update-keys deps #(-> % name keyword)))))
+              (update-keys deps #(-> % name keyword)))
+            (demolish [_ _])))
         (registry key)))))

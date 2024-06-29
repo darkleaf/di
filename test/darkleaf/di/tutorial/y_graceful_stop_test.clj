@@ -5,8 +5,7 @@
   {:nextjournal.clerk/visibility {:result :hide}}
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di]
-   [darkleaf.di.protocols :as p]))
+   [darkleaf.di.core :as di]))
 
 ;; The DI tries to stop components that are already started
 ;; if another component fails while it is starting.
@@ -21,13 +20,10 @@
   (throw on-start-root-ex))
 
 (defn dep
-  {::di/kind :component}
+  {::di/stop (fn [on-stop-dep-ex] (throw on-stop-dep-ex))}
   [{on-stop-dep-ex ::on-stop-dep-ex}]
-  (reify p/Stoppable
-    (unwrap [_]
-      ::obj)
-    (stop [_]
-      (throw on-stop-dep-ex))))
+  on-stop-dep-ex)
+
 
 (t/deftest graceful-start-test
   (let [on-start-root-ex (ex-info "on start root" {})

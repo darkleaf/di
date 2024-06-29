@@ -127,12 +127,10 @@
 (view-doc #'di/add-side-dependency)
 (view-doc #'di/combine-dependencies)
 ;; ### `darkleaf.di.protocols`
-;; `darkleaf.di.protocols/Stoppable`
-(view-doc #'dip/unwrap)
-(view-doc #'dip/stop)
 ;; `darkleaf.di.protocols/Factory`
 (view-doc #'dip/dependencies)
 (view-doc #'dip/build)
+(view-doc #'dip/demolish)
 
 ;; ## License
 ;; Copyright © 2022 Mikhail Kuzmin

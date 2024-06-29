@@ -4,24 +4,19 @@
    [darkleaf.di.core :as di]
    [darkleaf.di.protocols :as p]))
 
+(defn stoppable
+  {::di/stop (fn [*stopped?] (reset! *stopped? true))}
+  [{*stopped? ::*stopped?}]
+  *stopped?)
+
 (t/deftest auto-closeable-test
-  (let [*stopped? (atom false)
-        stoppable (reify p/Stoppable
-                    (unwrap [_]
-                      ::stoppable)
-                    (stop [_]
-                      (reset! *stopped? true)))]
-    (with-open [root (di/start ::root {::root stoppable})])
+  (let [*stopped? (atom false)]
+    (with-open [root (di/start `stoppable {::*stopped? *stopped?})])
     (t/is @*stopped?)))
 
 (t/deftest stoppable-test
-  (let [*stopped? (atom false)
-        stoppable (reify p/Stoppable
-                    (unwrap [_]
-                      ::stoppable)
-                    (stop [_]
-                      (reset! *stopped? true)))]
-    (di/stop (di/start ::root {::root stoppable}))
+  (let [*stopped? (atom false)]
+    (di/stop (di/start `stoppable {::*stopped? *stopped?}))
     (t/is @*stopped?)))
 
 (t/deftest ideref-test
