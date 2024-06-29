@@ -214,7 +214,7 @@
   ```
 
   Returns a container contains started root of the system.
-  The container implements `AutoCloseable`, `Stoppable`, `IDeref`, `IFn` and `Indexed`.
+  The container implements `AutoCloseable`, `Stoppable`, `IDeref`, `IFn`, `Indexed` and `ILookup`.
 
   Use `with-open` in tests to stop the system reliably.
 
