@@ -664,9 +664,16 @@
          (every? ifn? (vals cmap))]}
   (fn [registry]
     (fn [key]
-      (if-some [parser (some-> key try-namespace keyword cmap)]
-        (-> key name opt-ref (fmap #(some-> % parser)))
-        (registry key)))))
+      (let [key-ns   (some-> key try-namespace keyword)
+            key-name (name key)
+            parser   (cmap key-ns)]
+        (if (some? parser)
+           (reify p/Factory
+             (dependencies [_]
+               {key-name :optional})
+             (build [_ deps]
+               (some-> key-name deps parser)))
+           (registry key))))))
 
 ;; (defn rename-deps [target rmap]
 ;;   (let [inverted-rmap (set/map-invert rmap)]
