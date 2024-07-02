@@ -694,7 +694,22 @@
   (and (bound? var)
        (some? @var)))
 
-(defn ns-publics []
+(defn ns-publics
+  "A registry middleware that interprets a whole namespace as a component.
+  A component will be a map of var names to corresponding components.
+
+  The key of a component is a keyword with the namespace `:ns-publics`
+  and a name containing the name of a target ns.
+  For example `:ns-publics/io.gihub.my.ns`.
+
+  This enables access to all public components, which is useful for testing.
+
+  See the test darkleaf.di.tutorial.x-ns-publics-test.
+
+  ```clojure
+  (di/start :ns-publics/io.gihub.my.ns (di/ns-publics))
+  ```"
+  []
   (fn [registry]
     (fn [key]
       (if (and (qualified-keyword? key)
