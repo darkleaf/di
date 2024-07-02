@@ -12,7 +12,7 @@
     ::jetty/handler  (di/ref `reitit/handler)
     ::hikari/options (di/template {:adapter "h2"
                                    :url     (di/ref "H2_URL")})}
-   (di/update-key `reitit/route-data conj `core/route-data)
+   (di/update-key `reitit/route-data conj (di/ref `core/route-data))
    (di/add-side-dependency `flyway/migrate)
    (di/env-parsing :env.long parse-long)
    #_(if some-feature-flag

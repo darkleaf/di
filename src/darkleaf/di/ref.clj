@@ -9,14 +9,13 @@
 ;; у нее роли
 ;; 1. в template
 ;; 2.1. в реестрах
-;; 2.2. в значениях var
-;; 3. в fmap
 (defrecord Ref [key type]
   p/Factory
   (dependencies [_]
     {key type})
   (build [_ deps]
-    (deps key)))
+    (deps key))
+  (demolish [_ _]))
 
 ;; в шаблонах нельзя использовать все фабрики
 ;; если испльзовать var, то будут не уникальные инстансы

@@ -62,9 +62,7 @@
 (defmethod ig/init-key :web/handler [_ {:keys [route-data]}]
    (route-data->handler route-data))
 
-(def web-handler
-  (-> (di/ref `route-data)
-      (di/fmap route-data->handler)))
+(def web-handler (di/derive `route-data route-data->handler))
 
 ;; You can also use these variants as well:
 ;; ```clojure

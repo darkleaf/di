@@ -9,8 +9,10 @@
 
 ;; Here we use undefined dependencies.
 
-(defn value [{dep-a `dep-a
-              dep-b `dep-b}]
+(defn value
+  {::di/kind :component}
+  [{dep-a `dep-a
+    dep-b `dep-b}]
   [:value dep-a dep-b])
 
 ;; To locally define or redefine a dependency we should use registries.

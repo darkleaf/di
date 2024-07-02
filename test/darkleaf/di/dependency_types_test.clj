@@ -11,7 +11,8 @@
     (dependencies [_]
       {dependency-key dependency-type})
     (build [_ deps]
-      [dependency-key (get deps dependency-key)])))
+      [dependency-key (get deps dependency-key)])
+    (demolish [_ _])))
 
 (t/deftest required-present-test
   (with-open [root (di/start ::root

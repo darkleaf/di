@@ -20,7 +20,9 @@
 (s/def root vector?)
 (s/def ::a keyword?)
 
-(defn root [{::keys [a]}]
+(defn root
+  {::di/kind :component}
+  [{::keys [a]}]
   [:root a])
 
 (t/deftest ok-test

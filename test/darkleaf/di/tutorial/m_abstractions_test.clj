@@ -16,8 +16,7 @@
 
 (defn get-current-user [{session  ::session
                          get-user `get-user}]
-  (fn []
-    (-> session :user-id get-user)))
+  (-> session :user-id get-user))
 
 (defn ring-handler [{get-current-user `get-current-user} -req]
   {:status 200 :body (str "Hi, " (get-current-user) "!")})

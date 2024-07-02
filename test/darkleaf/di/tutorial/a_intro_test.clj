@@ -39,12 +39,14 @@
   (with-open [root (di/start `a)]
     (t/is (= ::a @root))))
 
-;; ## Constructor
+;; ## Component
 
-;; If you want to perform some side effect
-;; just define a function, and DI will call it to buils a component.
+;; A component definition is a function of 0 or 1 arity
+;; with `{::di/kind :componnent}` meta.
 
-(defn b []
+(defn b
+  {::di/kind :component}
+  []
   (Instant/now))
 
 (t/deftest b-test
@@ -59,20 +61,21 @@
 ;; We'll condider compoenent dependencies in the next chapter.
 ;; But now we will use placeholder.
 
-(defn c [-deps]
+(defn c
+  {::di/kind :component}
+  [-deps]
   ::c)
 
 (t/deftest c-test
   (with-open [root (di/start `c)]
     (t/is (= ::c @root))))
 
-;; ## Functions
+;; ## Services
 
-;; Functions a first class objects so we can build one.
+;; A service is a function with or without dependencies.
 
-(defn d [-deps]
-  (fn []
-    ::d))
+(defn d []
+  ::d)
 
 ;; `root` is a wrapper, and it implements `clojure.lang.IFn`, just like `clojure.lang.Var`.
 ;; So you can just call `root`.
@@ -81,13 +84,12 @@
   (with-open [root (di/start `d)]
     (t/is (= ::d (@root) (root)))))
 
-;; I will call the components that are functions services.
+(defn d* [-deps]
+  ::d)
 
-;; ## Services
-
-;; DI provides more convenient way to define services.
-;; Instead of using higher order functions
-;; just write a function with deps and its arguments.
+(t/deftest d*-test
+  (with-open [root (di/start `d*)]
+    (t/is (= ::d (@root) (root)))))
 
 (defn e [-deps arg]
   [::e arg])

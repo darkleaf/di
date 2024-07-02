@@ -29,8 +29,7 @@
 (defn- wrap-default [x default]
   (if (some? x) x default))
 
-(def dep (-> (di/opt-ref ::optional)
-             (di/fmap wrap-default :default-value)))
+(def dep (di/derive ::optional wrap-default :default-value))
 
 (t/deftest optional-dep-test
   (with-open [root (di/start `service {::x (di/ref `dep), ::optional :value})]

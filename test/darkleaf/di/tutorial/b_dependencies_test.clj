@@ -22,10 +22,12 @@
 ;; the `a` and `b` and the `b` is optional.
 ;; You also can get all component dependencies by the `deps` binding.
 
-(defn root [{a      `a
-             ::syms [b]
-             :or    {b ::default}
-             :as    deps}]
+(defn root
+  {::di/kind :component}
+  [{a      `a
+    ::syms [b]
+    :or    {b ::default}
+    :as    deps}]
   [:root a b deps])
 
 (def a ::a)
@@ -46,7 +48,9 @@
 ;; Dependencies are required by default.
 ;; There is no defenition of `a'` so DI will throw an exception.
 
-(defn root' [{a `a'}]
+(defn root'
+  {::di/kind :component}
+  [{a `a'}]
   [::root a])
 
 (t/deftest root'-test
