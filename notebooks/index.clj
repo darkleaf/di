@@ -88,7 +88,7 @@
 (clerk/html
  [:ul
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_add_side_dependency_test.clj")} "Add a side dependency"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_instrument_test.clj")} "Instrument"]]
+  #_[:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_instrument_test.clj")} "Instrument"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_update_key_test.clj")} "Update key"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/y_graceful_stop_test.clj")} "Graceful stop"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/y_multi_arity_service_test.clj")} "Multi arity service"]]
@@ -120,19 +120,18 @@
 (view-doc #'di/ref)
 (view-doc #'di/opt-ref)
 (view-doc #'di/template)
-(view-doc #'di/fmap)
+(view-doc #'di/derive)
 (view-doc #'di/env-parsing)
-(view-doc #'di/instrument)
+#_(view-doc #'di/instrument)
 (view-doc #'di/update-key)
 (view-doc #'di/add-side-dependency)
+(view-doc #'di/ns-publics)
 (view-doc #'di/combine-dependencies)
 ;; ### `darkleaf.di.protocols`
-;; `darkleaf.di.protocols/Stoppable`
-(view-doc #'dip/unwrap)
-(view-doc #'dip/stop)
 ;; `darkleaf.di.protocols/Factory`
 (view-doc #'dip/dependencies)
 (view-doc #'dip/build)
+(view-doc #'dip/demolish)
 
 ;; ## License
 ;; Copyright © 2022 Mikhail Kuzmin

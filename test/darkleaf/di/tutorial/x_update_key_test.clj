@@ -8,19 +8,19 @@
    [darkleaf.di.core :as di]))
 
 ;; In most cases you just want to instrument or update one dependency.
-;; Use `di/update-key` instead of `di/instrument` in this case.
 
 (def route-data [])
 
-(defn subsystem-a-route-data [-deps]
+(defn subsystem-a-route-data
+  {::di/kind :component}
+  [-deps]
   ["/a"])
-
-(defn subsystem-b-route-data [-deps]
-  ["/b"])
 
 (t/deftest update-key-test
   (with-open [root (di/start `route-data
                              (di/update-key `route-data conj
-                                            `subsystem-a-route-data
-                                            `subsystem-b-route-data))]
-    (t/is (= [["/a"] ["/b"]] @root))))
+                                            (di/ref `subsystem-a-route-data)
+                                            ["/b"]
+                                            nil)
+                             {})]
+    (t/is (= [["/a"] ["/b"] nil] @root))))

@@ -10,7 +10,9 @@
 ;; Like symbols and keywords, you can also use strings for keys.
 ;; String keys are resolved into values of  environment variables.
 
-(defn root [{path "PATH"}]
+(defn root
+  {::di/kind :component}
+  [{path "PATH"}]
   [:root path])
 
 (def PATH (System/getenv "PATH"))
@@ -26,8 +28,10 @@
 ;; With this middleware, you can define it as a qualified keyword like :env.long/PORT,
 ;; and its value will be a number.
 
-(defn jetty [{port :env.long/PORT
-              :or  {port 8080}}]
+(defn jetty
+  {::di/kind :component}
+  [{port :env.long/PORT
+    :or  {port 8080}}]
   [:jetty port])
 
 (t/deftest jetty-test

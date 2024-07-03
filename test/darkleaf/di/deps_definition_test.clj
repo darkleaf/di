@@ -3,12 +3,14 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-(defn binding-destructuring [{skey  :param
-                              qkey  ::param
-                              ssym  'param
-                              qsym  `param
-                              qsym* 'undefined-ns/param
-                              str   "param"}]
+(defn binding-destructuring
+  {::di/kind :component}
+  [{skey  :param
+    qkey  ::param
+    ssym  'param
+    qsym  `param
+    qsym* 'undefined-ns/param
+    str   "param"}]
   [skey qkey qsym qsym* ssym str])
 
 (t/deftest binding-destructuring-test
@@ -22,18 +24,20 @@
     (t/is (= [:skey :qkey :qsym :qsym* :ssym :str] @root))))
 
 
-(defn defaults [{skey  :param
-                 qkey  ::param
-                 ssym  'param
-                 qsym  `param
-                 qsym* 'undefined-ns/param
-                 str   "param"
-                 :or   {skey  :skey
-                        qkey  :qkey
-                        ssym  :ssym
-                        qsym  :qsym
-                        qsym* :qsym*
-                        str   :str}}]
+(defn defaults
+  {::di/kind :component}
+  [{skey  :param
+    qkey  ::param
+    ssym  'param
+    qsym  `param
+    qsym* 'undefined-ns/param
+    str   "param"
+    :or   {skey  :skey
+           qkey  :qkey
+           ssym  :ssym
+           qsym  :qsym
+           qsym* :qsym*
+           str   :str}}]
   [skey qkey qsym qsym* ssym str])
 
 (t/deftest defaults-test
@@ -41,12 +45,14 @@
     (t/is (= [:skey :qkey :qsym :qsym* :ssym :str] @root))))
 
 
-(defn keys-destructuring [{:keys              [skey]
-                           ::keys             [qkey]
-                           :syms              [ssym]
-                           ::syms             [qsym]
-                           :undefined-ns/syms [qsym*]
-                           :strs              [str]}]
+(defn keys-destructuring
+  {::di/kind :component}
+  [{:keys              [skey]
+    ::keys             [qkey]
+    :syms              [ssym]
+    ::syms             [qsym]
+    :undefined-ns/syms [qsym*]
+    :strs              [str]}]
   [skey qkey qsym qsym* ssym str])
 
 (t/deftest keys-destructuring-test

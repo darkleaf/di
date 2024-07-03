@@ -9,7 +9,7 @@
 ;; **********************************************************************/
 
 (ns darkleaf.di.core
-  (:refer-clojure :exclude [ref key ns-publics])
+  (:refer-clojure :exclude [ref key ns-publics derive])
   (:require
    [clojure.core :as c]
    [clojure.set :as set]
@@ -82,14 +82,13 @@
 (defn- find-obj [{:keys [*built-map]} key]
   (get @*built-map key))
 
-(defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *stoppable-list]} key]
+(defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *stop-list]} key]
   (let [ctx           (update ctx :under-construction conj key)
         factory       (registry key)
         declared-deps (p/dependencies factory)
         resolved-deps (resolve-deps ctx declared-deps)
-        stoppable     (p/build factory resolved-deps)
-        obj           (p/unwrap stoppable)]
-    (vswap! *stoppable-list conj stoppable)
+        obj           (p/build factory resolved-deps)]
+    (vswap! *stop-list conj #(p/demolish factory obj))
     (vswap! *built-map  assoc key obj)
     obj))
 
@@ -97,16 +96,16 @@
   (?? (find-obj  ctx key)
       (build-obj ctx key)))
 
-(defn- try-run [proc x]
+(defn- try-run [proc]
   (try
-    (proc x)
+    (proc)
     nil
     (catch Throwable ex
       ex)))
 
-(defn- try-run-all [proc coll]
-  (->> coll
-       (map #(try-run proc %))
+(defn- try-run-all [procs]
+  (->> procs
+       (map try-run)
        (filter some?)
        (seq)))
 
@@ -116,13 +115,10 @@
            (reduce combine-throwable)
            (throw)))
 
-(defn- try-stop-objects [objects]
-  (try-run-all p/stop objects))
-
-(defn- try-stop-started [{:keys [*stoppable-list]}]
-  (let [built-list @*stoppable-list]
-    (vswap! *stoppable-list empty)
-    (try-stop-objects built-list)))
+(defn- try-stop-started [{:keys [*stop-list]}]
+  (let [stops @*stop-list]
+    (vswap! *stop-list empty)
+    (try-run-all stops)))
 
 (defn- try-build [ctx key]
   (try
@@ -200,7 +196,7 @@
 
   Middlewares also allows you to instrument built objects.
   It's useful for logging, schema validation, AOP, etc.
-  See `instrument`, `update-key`.
+  See `update-key`.
 
   ```clojure
   (di/start `root
@@ -214,7 +210,7 @@
   ```
 
   Returns a container contains started root of the system.
-  The container implements `AutoCloseable`, `Stoppable`, `IDeref`, `IFn` and `Indexed`.
+  The container implements `AutoCloseable`, `IDeref`, `IFn`, `Indexed` and `ILookup`.
 
   Use `with-open` in tests to stop the system reliably.
 
@@ -227,29 +223,24 @@
   ```
 
   See the tests for use cases.
-  See `instrument`, `update-key`."
+  See `update-key`."
   [key & middlewares]
   (let [[key root-registry] (key->key&registry key)
 
         middlewares (concat [with-env with-ns root-registry] middlewares)
         registry    (apply-middleware nil-registry middlewares)
         ctx         {:*built-map         (volatile! {})
-                     :*stoppable-list    (volatile! '())
+                     :*stop-list         (volatile! '())
                      :under-construction #{}
                      :registry           registry}
         obj         (try-build ctx key)]
     ^{:type   ::root
       ::print obj}
     (reify
-      p/Stoppable
-      (unwrap [_]
-        obj)
-      (stop [_]
+      AutoCloseable
+      (close [_]
         (->> (try-stop-started ctx)
              (throw-many!)))
-      AutoCloseable
-      (close [this]
-        (p/stop this))
       IDeref
       (deref [_]
         obj)
@@ -319,8 +310,11 @@
 
 (defn stop
   "Stops the root of a system"
-  [root]
-  (p/stop root))
+  [^AutoCloseable root]
+  (.close root))
+
+
+(def ^:private key? (some-fn symbol? keyword? string?))
 
 (defn ref
   "Returns a factory referencing to a key.
@@ -334,7 +328,7 @@
   (di/start `root {::my-abstraction (di/ref `my-implementation)})
   ```
 
-  See `template`, `opt-ref`, `fmap`, `p/build`."
+  See `template`, `opt-ref`, `derive`, `p/build`."
   [key]
   (ref/->Ref key :required))
 
@@ -342,7 +336,7 @@
   "Returns a factory referencing to a possible undefined key.
   Produces nil in that case.
 
-  See `template`, `ref`, `fmap`."
+  See `template`, `ref`, `derive`."
   [key]
   (ref/->Ref key :optional))
 
@@ -365,35 +359,32 @@
            (map ref/deps)
            (reduce combine-dependencies)))
     (build [_ deps]
-      (w/postwalk #(ref/build % deps) form))))
+      (w/postwalk #(ref/build % deps) form))
+    (demolish [_ _])))
 
-(defn fmap
-  "Applies f to an object that the factory produces.
-  f accepts a built object and returns updated one.
-
-  f should not return a non-trivial instance of `p/Stoppable`.
+(defn derive
+  "Applies `f` to an object built from `key`.
 
   ```clojure
-  (def port (-> (di/ref \"PORT\")
-                (di/fmap parse-long)))
+  (def port (-> (di/derive \"PORT\" (fnil parse-long \"8080\"))))
   ```
 
   See `ref`, `template`."
-  [factory f & args]
+  [key f & args]
+  {:pre [(key? key)
+         (ifn? f)]}
   (reify p/Factory
     (dependencies [_]
-      (p/dependencies factory))
+      {key :optional})
     (build [_ deps]
-      (let [original (p/build factory deps)
-            obj (apply f (p/unwrap original) args)]
-        (reify p/Stoppable
-          (unwrap [_]
-            obj)
-          (stop [_]
-            (p/stop original)))))))
+      (apply f (deps key) args))
+    (demolish [_ _])))
 
-(def ^:private key? (some-fn symbol? keyword? string?))
-
+;; We currently don't need this middleware.
+;; It should be rewritten as `update-key`.
+;; Also it has a poor documentation and a test coverage.
+;; We might add a new implementation later.
+#_
 (defn instrument
   "A registry middleware for instrumenting or decorating built objects.
   Use it for logging, schema checking, AOP, etc.
@@ -416,7 +407,7 @@
   (di/start ::root (di/instrument #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
   ```
 
-  See `start`, `update-key`, `fmap`."
+  See `start`, `update-key`."
   [f & args]
   {:pre [(or (key? f)
              (ifn? f))
@@ -446,6 +437,12 @@
                       original (p/build factory deps)
                       obj      (apply f key (p/unwrap original) args)]
                   (reify p/Stoppable
+                    ;; ???
+                    ;; (unwrap [_]
+                    ;;   (p/unwrap obj))
+                    ;; (stop [_]
+                    ;;   (p/stop original)
+                    ;;   (p/stop obj))
                     (unwrap [_]
                       obj)
                     (stop [_]
@@ -455,49 +452,46 @@
   "A registry middleware for updating built objects.
 
   target is a key to update.
-  f and args are keys.
-  Also f can be a function in term of `ifn?`.
-  f should not return a non-trivial instance of `p/Stoppable`.
+  f and args are intances of `p/Factory`.
+  For example, a factory can be a regular object or `(di/ref key)`.
 
   ```clojure
   (def routes [])
   (def subsystem-routes (di/template [[\"/posts\" (di/ref `handler)]]))
 
-  (di/start ::root (di/update-key `routes conj `subsystem-routes))
+  (di/start ::root (di/update-key `routes conj (di/ref `subsystem-routes)))
   ```
 
-  If you don't want to resolve keys like :some-name, you should use them in a in-place fn:
-
-  ```clojure
-  (di/update-key `key #(assoc %1 :some-name %2) `some-value)
-  ```
-
-  See `update`, `start`, `instrument`, `fmap`."
+  See `start`, `derive`."
   [target f & args]
-  {:pre [(or (key? f)
-             (ifn? f))
-         (every? key? args)]}
-  (let [own-keys (cond-> (set args)
-                   (key? f) (conj f))]
+  {:pre [(key? target)]}
+  (let [new-key      (gensym "darkleaf.di.core/update-key-target#")
+        f-key        (gensym "darkleaf.di.core/update-key-f#")
+        arg-keys     (for [_ args] (gensym "darkleaf.di.core/update-key-arg#"))
+        new-factory  (reify p/Factory
+                       (dependencies [_]
+                         (zipmap (concat [new-key f-key] arg-keys)
+                                 (repeat :optional)))
+                       (build [_ deps]
+                         (let [t    (deps new-key)
+                               f    (deps f-key)
+                               args (map deps arg-keys)]
+                           (apply f t args)))
+                       (demolish [_ _]))
+        own-registry (zipmap (cons f-key arg-keys)
+                             (cons f     args))]
     (fn [registry]
       (fn [key]
-        (let [factory (registry key)]
-          (if (not= target key)
-            factory
-            (reify p/Factory
-              (dependencies [_]
-                (merge (p/dependencies factory)
-                       (zipmap own-keys (repeat :required))))
-              (build [_ deps]
-                (let [f        (deps f f)
-                      args     (map deps args)
-                      original (p/build factory deps)
-                      obj      (apply f (p/unwrap original) args)]
-                  (reify p/Stoppable
-                    (unwrap [_]
-                      obj)
-                    (stop [_]
-                      (p/stop original))))))))))))
+        (cond
+          (= new-key key)
+          (registry target)
+
+          (= target key)
+          new-factory
+
+          :else
+          (?? (own-registry key)
+              (registry key)))))))
 
 (defn add-side-dependency
   "A registry middleware for adding side dependencies.
@@ -521,7 +515,8 @@
                           {new-key :required
                            dep-key :required})
                         (build [_ deps]
-                          (new-key deps)))]
+                          (new-key deps))
+                        (demolish [_ _]))]
     (fn [registry]
       (fn [key]
         (when (nil? @*orig-key)
@@ -547,47 +542,72 @@
        (map map/dependencies)
        (reduce combine-dependencies)))
 
-(defn- wrap-stop [obj variable]
-  (if-some [stop (-> variable meta ::stop)]
-    (reify p/Stoppable
-      (unwrap [_] obj)
-      (stop [_] (stop obj)))
-    obj))
+(defn- stop-fn [variable]
+  (-> variable meta (::stop (fn no-op [_]))))
 
-(defn- build-fn [variable deps]
-  (let [max-arity (->> variable
-                       arglists
-                       (map count)
-                       (reduce max 0) long)]
-    (case max-arity
-      0 (-> (variable)
-            (wrap-stop variable))
-      1 (-> (variable deps)
-            (wrap-stop variable))
-      (partial variable deps))))
+(defn- var->0-component [variable]
+  (let [stop (stop-fn variable)]
+    (reify p/Factory
+      (dependencies [_])
+      (build [_ _]
+        (variable))
+      (demolish [_ obj]
+        (stop obj)))))
+
+(defn- var->1-component [variable]
+  (let [deps (dependencies-fn variable)
+        stop (stop-fn variable)]
+    (reify p/Factory
+      (dependencies [_]
+        deps)
+      (build [_ deps]
+        (variable deps))
+      (demolish [_ obj]
+        (stop obj)))))
+
+(defn- var->0-service [variable]
+  variable)
+
+(defn- var->service [variable]
+  (let [deps (dependencies-fn variable)]
+    (reify p/Factory
+      (dependencies [_]
+         deps)
+      (build [_ deps]
+         (partial variable deps))
+      (demolish [_ _]))))
 
 (defn- var->factory-defn [variable]
   (when (defn? variable)
-    (reify p/Factory
-      (dependencies [_]
-        (dependencies-fn variable))
-      (build [_ deps]
-        (build-fn variable deps)))))
+    (let [m         (meta variable)
+          has-stop? (contains? m ::stop)
+          kind      (::kind m (cond has-stop? :component))
+          arities   (->> variable arglists (map count))]
+      (case kind
+        :component (condp = arities
+                     [0] (var->0-component variable)
+                     [1] (var->1-component variable)
+                     (throw (ex-info
+                             "The component must only have 0 or 1 arity"
+                             {:variable variable
+                              :arities  arities})))
+        #_service  (condp = arities
+                     [0] (var->0-service variable)
+                     (var->service variable))))))
 
-(defn- var->factory-meta-deps [variable]
+(defn- var->factory-meta-deps
+  "for multimethods"
+  [variable]
   (if-some [deps (some-> variable meta ::deps (zipmap (repeat :required)))]
     (reify p/Factory
       (dependencies [_]
         deps)
       (build [_ deps]
-        (partial variable deps)))))
+        (partial variable deps))
+      (demolish [_ _]))))
 
 (defn- var->factory-default [variable]
-  (reify p/Factory
-    (dependencies [_]
-      (p/dependencies @variable))
-    (build [_ deps]
-      (p/build @variable deps))))
+  @variable)
 
 (defn- var->factory [variable]
   (?? (var->factory-meta-deps variable)
@@ -598,21 +618,15 @@
   nil
   (dependencies [_] nil)
   (build [_ _] nil)
+  (demolish [_ _] nil)
 
   Object
   (dependencies [_] nil)
-  (build [this _] this))
+  (build [this _] this)
+  (demolish [_ _] nil))
 
-(extend-protocol p/Stoppable
-  nil
-  (unwrap [_] nil)
-  (stop [_])
-  Object
-  (unwrap [this] this)
-  (stop [_]))
-
-(derive ::root     ::reified)
-(derive ::template ::reified)
+(c/derive ::root     ::reified)
+(c/derive ::template ::reified)
 
 (defmethod print-method ::reified [o ^Writer w]
   (.write w "#")
@@ -648,9 +662,17 @@
          (every? ifn? (vals cmap))]}
   (fn [registry]
     (fn [key]
-      (if-some [parser (some-> key try-namespace keyword cmap)]
-        (-> key name opt-ref (fmap #(some-> % parser)))
-        (registry key)))))
+      (let [key-ns   (some-> key try-namespace keyword)
+            key-name (name key)
+            parser   (cmap key-ns)]
+        (if (some? parser)
+           (reify p/Factory
+             (dependencies [_]
+               {key-name :optional})
+             (build [_ deps]
+               (some-> key-name deps parser))
+             (demolish [_ _]))
+           (registry key))))))
 
 ;; (defn rename-deps [target rmap]
 ;;   (let [inverted-rmap (set/map-invert rmap)]
@@ -672,7 +694,22 @@
   (and (bound? var)
        (some? @var)))
 
-(defn ns-publics []
+(defn ns-publics
+  "A registry middleware that interprets a whole namespace as a component.
+  A component will be a map of var names to corresponding components.
+
+  The key of a component is a keyword with the namespace `:ns-publics`
+  and a name containing the name of a target ns.
+  For example `:ns-publics/io.gihub.my.ns`.
+
+  This enables access to all public components, which is useful for testing.
+
+  See the test darkleaf.di.tutorial.x-ns-publics-test.
+
+  ```clojure
+  (di/start :ns-publics/io.gihub.my.ns (di/ns-publics))
+  ```"
+  []
   (fn [registry]
     (fn [key]
       (if (and (qualified-keyword? key)
@@ -691,5 +728,6 @@
             (dependencies [_this]
               deps)
             (build [_this deps]
-              (update-keys deps #(-> % name keyword)))))
+              (update-keys deps #(-> % name keyword)))
+            (demolish [_ _])))
         (registry key)))))

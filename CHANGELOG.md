@@ -1,3 +1,77 @@
+# 3.0.0
+
+## New features
+
+* `di/ns-publics` registry middleware
+
+## Breaking changes
+
+### Explicit separation of components and services
+
+Use `{::di/kind :component}` to mark a component.
+
+A zero arity service are not a component of zero arity function now.
+
+
+```clojure
+;; v2
+(defn schema-component
+  [{ddl `clickhouse/ddl
+    ttl "TTL_DAY"
+    :or {ttl "30"}}]
+  (ddl ...))
+
+;; v3
+(defn schema-component
+  {::di/kind :component}
+  [{ddl `clickhouse/ddl
+    ttl "TTL_DAY"
+    :or {ttl "30"}}]
+  (ddl ...))
+```
+
+```clojure
+;; v2
+(defn my-service []
+  (fn []
+    ...))
+
+;; v3
+(defn my-service []
+   ...)
+```
+
+### Explicit separation of keys in `di/update-key`
+
+Explicitly use `(di/ref)` or other factory to refer to a component.
+
+
+```clojure
+;; v2
+(di/update-key `reitit/route-data conj `raw-method/route-data)
+
+;; v3
+(di/update-key `reitit/route-data conj (di/ref `raw-method/route-data))
+```
+
+```clojure
+;; v2
+(di/update-key `raw-method/methods #(assoc %1 param-name %2) method)))
+
+;; v3
+(di/update-key `raw-method/methods assoc param-name (di/ref method))))
+```
+
+### `di/derive` instead of `di/fmap`
+
+The `di/fmap` factory constructor was removed.
+
+Use `di/derive` instead.
+
+### `di/instument` removing
+
+The `di/instument` registry middleware was removed. Maybe there will be a rewrited version.
+
 # 2.4.2
 
 ## Fixing `di/add-side-dependency`

@@ -12,11 +12,15 @@
 ;; To get a value of the subsystem, you should `deref` it as you would for a regular system root.
 ;; Also you should manually stop systems in reverse order.
 
-(defn shared []
+(defn shared
+  {::di/kind :component}
+  []
   (Object.))
 
-(defn server [{name   ::name
-               shared `shared}]
+(defn server
+  {::di/kind :component}
+  [{name   ::name
+    shared `shared}]
   [name shared])
 
 (t/deftest multi-system-test

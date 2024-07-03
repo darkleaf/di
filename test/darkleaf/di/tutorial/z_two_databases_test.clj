@@ -23,16 +23,16 @@
          user-key     :required
          password-key :required})
       (build [_ deps]
-        (reify p/Stoppable
-          (unwrap [_]
-            [::db (deps url-key) (deps user-key) (deps password-key)])
-          (stop [_]))))))
+        [::db (deps url-key) (deps user-key) (deps password-key)])
+      (demolish [_ _obj]))))
 
 (def db-a (db-factory :a))
 (def db-b (db-factory :b))
 
-(defn root [{db-a `db-a
-             db-b `db-b}]
+(defn root
+  {::di/kind :component}
+  [{db-a `db-a
+    db-b `db-b}]
   [db-a db-b])
 
 (t/deftest root-test
