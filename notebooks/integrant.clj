@@ -3,7 +3,6 @@
 ;; This article compares two approaches to dependency injection in Clojure: [Integrant](https://github.com/weavejester/integrant) and [DI](https://github.com/darkleaf/di).
 ;; We'll explore their differences through code examples and discuss the pros and cons of each approach.
 
-```clojure
 (ns integrant
   {:nextjournal.clerk/toc true}
   (:require
