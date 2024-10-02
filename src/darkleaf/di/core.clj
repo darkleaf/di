@@ -55,10 +55,11 @@
 
 (declare find-or-build)
 
-(defn- missing-dependency! [key]
+(defn- missing-dependency! [{:as ctx :keys [*current-key]} key]
   (throw (ex-info (str "Missing dependency " key)
-                  {:type ::missing-dependency
-                   :key  key})))
+                  {:type   ::missing-dependency
+                   :key    key
+                   :parent *current-key})))
 
 (defn- circular-dependency! [key]
   (throw (ex-info (str "Circular dependency " key)
@@ -72,7 +73,7 @@
       (assoc acc key obj)
       (if (= :optional dep-type)
         acc
-        (missing-dependency! key)))))
+        (missing-dependency! ctx key)))))
 
 (defn- resolve-deps [ctx deps]
   (reduce-kv (partial resolve-dep ctx)
@@ -86,7 +87,7 @@
   (let [ctx           (update ctx :under-construction conj key)
         factory       (registry key)
         declared-deps (p/dependencies factory)
-        resolved-deps (resolve-deps ctx declared-deps)
+        resolved-deps (resolve-deps (assoc ctx :*current-key key) declared-deps)
         obj           (p/build factory resolved-deps)]
     (vswap! *stop-list conj #(p/demolish factory obj))
     (vswap! *built-map  assoc key obj)
