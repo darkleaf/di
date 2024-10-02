@@ -20,8 +20,7 @@
   (:import
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
-   (java.lang AutoCloseable)
-   (java.util List)))
+   (java.lang AutoCloseable)))
 
 (set! *warn-on-reflection* true)
 
@@ -32,16 +31,6 @@
    `(if-some [x# ~x]
       x#
       (?? ~@next))))
-
-(defn- index-of
-  "Returns the index of the first occurrence of `x` in `xs`."
-  [^List xs x]
-  (if (nil? xs)
-    -1
-    (.indexOf xs x)))
-
-(defn- seq-contains? [xs x]
-  (not (neg? (index-of xs x))))
 
 (def ^:private dependency-type-priority
   {:required 1
@@ -63,51 +52,6 @@
   ([^Throwable a b]
    (.addSuppressed a b)
    a))
-
-(declare find-or-build)
-
-(defn- missing-dependency! [ctx key]
-  (throw (ex-info (str "Missing dependency " key)
-                  {:type ::missing-dependency
-                   :path (:under-construction ctx)
-                   :key  key})))
-
-(defn- circular-dependency! [ctx key]
-  (throw (ex-info (str "Circular dependency " key)
-                  {:type ::circular-dependency
-                   :path (:under-construction ctx)
-                   :key  key})))
-
-(defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
-  (if (seq-contains? under-construction key)
-    (circular-dependency! ctx key)
-    (if-some [obj (find-or-build ctx key)]
-      (assoc acc key obj)
-      (if (= :optional dep-type)
-        acc
-        (missing-dependency! ctx key)))))
-
-(defn- resolve-deps [ctx deps]
-  (reduce-kv (partial resolve-dep ctx)
-             {}
-             deps))
-
-(defn- find-obj [{:keys [*built-map]} key]
-  (get @*built-map key))
-
-(defn- build-obj [{:as ctx, :keys [registry *built-map *stop-list]} key]
-  (let [ctx           (update ctx :under-construction conj key)
-        factory       (registry key)
-        declared-deps (p/dependencies factory)
-        resolved-deps (resolve-deps ctx declared-deps)
-        obj           (p/build factory resolved-deps)]
-    (vswap! *stop-list conj #(p/demolish factory obj))
-    (vswap! *built-map  assoc key obj)
-    obj))
-
-(defn- find-or-build [ctx key]
-  (?? (find-obj  ctx key)
-      (build-obj ctx key)))
 
 (defn- try-run [proc]
   (try
@@ -133,10 +77,99 @@
     (vswap! *stop-list empty)
     (try-run-all stops)))
 
+(defn- missing-dependency! [path key]
+  (throw (ex-info (str "Missing dependency " key)
+                  {:type ::missing-dependency
+                   :path path
+                   :key  key})))
+
+(defn- circular-dependency! [path key]
+  (throw (ex-info (str "Circular dependency " key)
+                  {:type ::circular-dependency
+                   :path path
+                   :key  key})))
+
+(defn- maximum-recursion-depth! [{:keys [depth]} key]
+  (throw (ex-info "Exceeded maximum recursion depth"
+                  {:root-key key
+                   :depth    depth})))
+
+(defn- find-obj [{:keys [built-map]} key]
+  (get built-map key))
+
+(defn- obj-built? [{:keys [built-map]} key]
+  (contains? built-map key))
+
+(defn- deps-to-build [{:as ctx :keys [registry]} k]
+  (let [factory (registry k)
+        deps    (p/dependencies factory)]
+    (->> deps
+         (remove (fn [[dep-k dep-type]]
+                   (let [registred? (some? (registry dep-k))
+                         optional?  (= :optional dep-type)]
+                     (or (obj-built? ctx dep-k)
+                         (and (not registred?)
+                              optional?))))))))
+
+(defn- built-deps [{:as ctx :keys [registry]} k]
+  (let [factory (registry k)
+        deps    (p/dependencies factory)]
+    (->> deps
+         (into {}
+               (keep (fn [[dep-k _]]
+                       (when-let [dep-obj (find-obj ctx dep-k)]
+                         [dep-k dep-obj])))))))
+
+(defn- build-obj [{:as ctx :keys [registry *stop-list]} k]
+  (let [factory (registry k)
+        deps    (built-deps ctx k)
+        obj     (p/build factory deps)]
+    (vswap! *stop-list conj #(p/demolish factory obj))
+    obj))
+
+(defn- build-obj&deps [{:as ctx, :keys [registry]} key-to-build]
+  (loop [[{:as cur :keys [k k-type path]} & rest-ks :as ks]
+         [{:k key-to-build, :k-type :required, :path []}]
+
+         ctx ctx]
+    (let [{:as ctx :keys [touched build-depth]}
+          (-> ctx
+              (update :touched conj k)
+              (update :build-depth inc))
+
+          to-build (some->> k (deps-to-build ctx))
+          circular (some->> to-build (some #(touched (c/key %))))]
+      (cond
+        (nil? cur)
+        ctx
+
+        (> build-depth 10000)
+        (maximum-recursion-depth! ctx key-to-build)
+
+        (obj-built? ctx k)
+        (recur rest-ks ctx)
+
+        (and (nil? (registry k)) (= :required k-type))
+        (missing-dependency! path k)
+
+        (some? circular)
+        (circular-dependency! (conj path k) circular)
+
+        (seq to-build)
+        (recur (concat (map (fn [[dep dep-type]]
+                              {:k dep :k-type dep-type :path (conj path k)})
+                            to-build)
+                       ks)
+               ctx)
+
+        :else
+        (recur rest-ks (assoc-in ctx [:built-map k] (build-obj ctx k)))))))
+
 (defn- try-build [ctx key]
   (try
-    (?? (build-obj ctx key)
-        (missing-dependency! ctx key))
+    (-> ctx
+        (build-obj&deps key)
+        (find-obj key))
     (catch Throwable ex
       (let [exs (try-stop-started ctx)
             exs (cons ex exs)]
@@ -242,10 +275,11 @@
 
         middlewares (concat [with-env with-ns root-registry] middlewares)
         registry    (apply-middleware nil-registry middlewares)
-        ctx         {:*built-map         (volatile! {})
-                     :*stop-list         (volatile! '())
-                     :under-construction []
-                     :registry           registry}
+        ctx         {:*stop-list  (volatile! '())
+                     :registry    registry
+                     :built-map   {}
+                     :touched     #{}
+                     :build-depth 0}
         obj         (try-build ctx key)]
     ^{:type   ::root
       ::print obj}
@@ -525,8 +559,8 @@
         new-factory   (reify p/Factory
                         (dependencies [_]
                           ;; array-map preserves order of keys
-                          {new-key :required
-                           dep-key :required})
+                          {dep-key :required
+                           new-key :required})
                         (build [_ deps]
                           (new-key deps))
                         (demolish [_ _]))]
