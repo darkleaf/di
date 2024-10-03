@@ -48,3 +48,24 @@
               [`a :stopped]
               [`c :stopped]]
              @log))))
+
+(defmacro try-ex-data [& body]
+  `(try ~@body
+        (catch clojure.lang.ExceptionInfo e#
+          (ex-data e#))))
+
+(defn parent
+  [{::syms [missing-key]}]
+  :done)
+
+(t/deftest missing-dependency-test
+
+  (t/is (= {:parent nil :key `missing-root}
+           (-> (di/start `missing-root)
+               try-ex-data
+               (select-keys [:parent :key]))))
+
+  (t/is (= {:parent `parent :key `missing-key}
+           (-> (di/start `parent)
+               try-ex-data
+               (select-keys [:parent :key])))))

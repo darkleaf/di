@@ -55,11 +55,11 @@
 
 (declare find-or-build)
 
-(defn- missing-dependency! [{:as ctx :keys [*current-key]} key]
+(defn- missing-dependency! [{:as ctx :keys [current-key]} key]
   (throw (ex-info (str "Missing dependency " key)
                   {:type   ::missing-dependency
                    :key    key
-                   :parent *current-key})))
+                   :parent current-key})))
 
 (defn- circular-dependency! [key]
   (throw (ex-info (str "Circular dependency " key)
@@ -83,11 +83,11 @@
 (defn- find-obj [{:keys [*built-map]} key]
   (get @*built-map key))
 
-(defn- build-obj [{:as ctx, :keys [registry *current-key *built-map *stop-list]} key]
+(defn- build-obj [{:as ctx, :keys [registry *built-map *stop-list]} key]
   (let [ctx           (update ctx :under-construction conj key)
         factory       (registry key)
         declared-deps (p/dependencies factory)
-        resolved-deps (resolve-deps (assoc ctx :*current-key key) declared-deps)
+        resolved-deps (resolve-deps (assoc ctx :current-key key) declared-deps)
         obj           (p/build factory resolved-deps)]
     (vswap! *stop-list conj #(p/demolish factory obj))
     (vswap! *built-map  assoc key obj)
@@ -124,7 +124,7 @@
 (defn- try-build [ctx key]
   (try
     (?? (build-obj ctx key)
-        (missing-dependency! key))
+        (missing-dependency! ctx key))
     (catch Throwable ex
       (let [exs (try-stop-started ctx)
             exs (cons ex exs)]
