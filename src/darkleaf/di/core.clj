@@ -68,7 +68,7 @@
 (defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
   (if (under-construction key)
     (circular-dependency! key)
-    (if-some [obj (find-or-build ctx key)]
+    (if-some [obj (:result (trampoline find-or-build ctx key))]
       (assoc acc key obj)
       (if (= :optional dep-type)
         acc
@@ -93,8 +93,9 @@
     obj))
 
 (defn- find-or-build [ctx key]
-  (?? (find-obj  ctx key)
-      (build-obj ctx key)))
+  (if-some [finded (find-obj  ctx key)]
+    {:result finded}
+    #(array-map :result (build-obj ctx key))))
 
 (defn- try-run [proc]
   (try
