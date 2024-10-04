@@ -20,7 +20,8 @@
   (:import
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
-   (java.lang AutoCloseable)))
+   (java.lang AutoCloseable)
+   (java.util List)))
 
 (set! *warn-on-reflection* true)
 
@@ -31,6 +32,16 @@
    `(if-some [x# ~x]
       x#
       (?? ~@next))))
+
+(defn- index-of
+  "Returns the index of the first occurrence of `x` in `xs`."
+  [^List xs x]
+  (if (nil? xs)
+    -1
+    (.indexOf xs x)))
+
+(defn- seq-contains? [xs x]
+  (not (neg? (index-of xs x))))
 
 (def ^:private dependency-type-priority
   {:required 1
@@ -55,20 +66,21 @@
 
 (declare find-or-build)
 
-(defn- missing-dependency! [{:as ctx :keys [current-key]} key]
+(defn- missing-dependency! [ctx key]
   (throw (ex-info (str "Missing dependency " key)
-                  {:type   ::missing-dependency
-                   :key    key
-                   :parent current-key})))
+                  {:type ::missing-dependency
+                   :path (:under-construction ctx)
+                   :key  key})))
 
-(defn- circular-dependency! [key]
+(defn- circular-dependency! [ctx key]
   (throw (ex-info (str "Circular dependency " key)
                   {:type ::circular-dependency
+                   :path (:under-construction ctx)
                    :key  key})))
 
 (defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
-  (if (under-construction key)
-    (circular-dependency! key)
+  (if (seq-contains? under-construction key)
+    (circular-dependency! ctx key)
     (if-some [obj (find-or-build ctx key)]
       (assoc acc key obj)
       (if (= :optional dep-type)
@@ -87,7 +99,7 @@
   (let [ctx           (update ctx :under-construction conj key)
         factory       (registry key)
         declared-deps (p/dependencies factory)
-        resolved-deps (resolve-deps (assoc ctx :current-key key) declared-deps)
+        resolved-deps (resolve-deps ctx declared-deps)
         obj           (p/build factory resolved-deps)]
     (vswap! *stop-list conj #(p/demolish factory obj))
     (vswap! *built-map  assoc key obj)
@@ -232,7 +244,7 @@
         registry    (apply-middleware nil-registry middlewares)
         ctx         {:*built-map         (volatile! {})
                      :*stop-list         (volatile! '())
-                     :under-construction #{}
+                     :under-construction []
                      :registry           registry}
         obj         (try-build ctx key)]
     ^{:type   ::root

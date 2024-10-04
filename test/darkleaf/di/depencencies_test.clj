@@ -58,14 +58,40 @@
   [{::syms [missing-key]}]
   :done)
 
-(t/deftest missing-dependency-test
 
-  (t/is (= {:parent nil :key `missing-root}
+(t/deftest missing-dependency-test
+  (t/is (= {:path [] :key `missing-root}
            (-> (di/start `missing-root)
                try-ex-data
-               (select-keys [:parent :key]))))
+               (select-keys [:path :key]))))
 
-  (t/is (= {:parent `parent :key `missing-key}
+  (t/is (= {:path [`parent] :key `missing-key}
            (-> (di/start `parent)
                try-ex-data
-               (select-keys [:parent :key])))))
+               (select-keys [:path :key])))))
+
+
+(defn recursion-a
+  [{::syms [recursion-b]}]
+  :done)
+
+(defn recursion-b
+  [{::syms [recursion-a]}]
+  :done)
+
+(defn recursion-c
+  [{::syms [recursion-c]}]
+  :done)
+
+(t/deftest circular-dependency-test
+  (t/is (= {:path [`recursion-a `recursion-b]
+            :key `recursion-a}
+           (-> (di/start `recursion-a)
+               try-ex-data
+               (select-keys [:path :key]))))
+
+  (t/is (= {:path [`recursion-c]
+            :key `recursion-c}
+           (-> (di/start `recursion-c)
+               try-ex-data
+               (select-keys [:path :key])))))
