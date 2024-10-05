@@ -33,6 +33,9 @@
       x#
       (?? ~@next))))
 
+(defmacro ^:private <<- [& body]
+  `(->> ~@(reverse body)))
+
 (defn- index-of
   "Returns the index of the first occurrence of `x` in `xs`."
   [^List xs x]
@@ -95,15 +98,67 @@
 (defn- find-obj [{:keys [*built-map]} key]
   (get @*built-map key))
 
-(defn- build-obj [{:as ctx, :keys [registry *built-map *stop-list]} key]
-  (let [ctx           (update ctx :under-construction conj key)
+
+#_
+([key :required factory]
+ [key :optional factory])
+
+
+;; нужно вернуть контекст и объект
+;; чтобы stop-list получить
+(defn- build-obj [registry key]
+  (loop [stack     (list [key :required (registry key)])
+         ;;under-construction [key] ;; походу уже не нужен, т.к. в стеке
+         built-map {}]
+         ;;stop-list          '()]
+    (<<-
+      (if (empty? stack)
+        (built-map key))
+
+      (if (not= (into [] ;; todo
+                      (map first)
+                      stack)
+                (into []
+                      (comp
+                       (map first)
+                       (distinct))
+                      stack))
+        (throw (ex-info "Circular dependency " {})))
+
+
+
+      (let [head            (peek stack)
+            [key _ factory] head
+            declared-deps   (p/dependencies factory)
+            remaining-deps  (into {}
+                                  (remove (fn [[key dep-type]]
+                                           (contains? built-map key)))
+                                  declared-deps)
+            resolved-deps (into {}
+                                (map (fn [[key dep-type]]
+                                       (if-some [obj (built-map key)]
+                                         [key obj])))
+                                declared-deps)])
+
+      (if (empty? remaining-deps)
+        (recur (pop stack)
+               (assoc built-map key (p/build factory resolved-deps))))
+
+      (recur (into stack
+                   (map (fn [[key dep-type]]
+                          [key dep-type (registry key)]))
+                   remaining-deps)
+             built-map))))
+
+#_(let [ctx           (update ctx :under-construction conj key)
         factory       (registry key)
         declared-deps (p/dependencies factory)
         resolved-deps (resolve-deps ctx declared-deps)
         obj           (p/build factory resolved-deps)]
     (vswap! *stop-list conj #(p/demolish factory obj))
     (vswap! *built-map  assoc key obj)
-    obj))
+    obj)
+
 
 (defn- find-or-build [ctx key]
   (?? (find-obj  ctx key)
@@ -133,14 +188,18 @@
     (vswap! *stop-list empty)
     (try-run-all stops)))
 
-(defn- try-build [ctx key]
-  (try
-    (?? (build-obj ctx key)
-        (missing-dependency! ctx key))
-    (catch Throwable ex
+(defn- try-build [reg key]
+  #_(try)
+  (?? (build-obj reg key)
+      #_(missing-dependency! ctx key))
+
+    ;; нужно получается обработку останова внутрь убирать,
+    ;; где есть ctx
+
+  #_(catch Throwable ex
       (let [exs (try-stop-started ctx)
             exs (cons ex exs)]
-        (throw-many! exs)))))
+        (throw-many! exs))))
 
 (defn- nil-registry [key]
   nil)
@@ -242,18 +301,18 @@
 
         middlewares (concat [with-env with-ns root-registry] middlewares)
         registry    (apply-middleware nil-registry middlewares)
-        ctx         {:*built-map         (volatile! {})
-                     :*stop-list         (volatile! '())
-                     :under-construction []
-                     :registry           registry}
-        obj         (try-build ctx key)]
+        obj         (try-build registry key)
+
+        ctx ::undev]
+       ;; [ctx obj]
+
     ^{:type   ::root
       ::print obj}
     (reify
       AutoCloseable
       (close [_]
-        (->> (try-stop-started ctx)
-             (throw-many!)))
+        #_(->> (try-stop-started ctx)
+               (throw-many!)))
       IDeref
       (deref [_]
         obj)
