@@ -478,7 +478,7 @@
   See `start`, `derive`."
   [target f & args]
   {:pre [(key? target)]}
-  (let [new-key      (gensym "darkleaf.di.core/update-key-target#")
+  (let [new-key      (gensym (str (symbol target) "+di-update-key#"))
         f-key        (gensym "darkleaf.di.core/update-key-f#")
         arg-keys     (for [_ args] (gensym "darkleaf.di.core/update-key-arg#"))
         new-factory  (reify p/Factory
