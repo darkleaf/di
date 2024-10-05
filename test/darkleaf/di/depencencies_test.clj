@@ -48,3 +48,50 @@
               [`a :stopped]
               [`c :stopped]]
              @log))))
+
+(defmacro try-ex-data [& body]
+  `(try ~@body
+        (catch clojure.lang.ExceptionInfo e#
+          (ex-data e#))))
+
+(defn parent
+  [{::syms [missing-key]}]
+  :done)
+
+
+(t/deftest missing-dependency-test
+  (t/is (= {:path [] :key `missing-root}
+           (-> (di/start `missing-root)
+               try-ex-data
+               (select-keys [:path :key]))))
+
+  (t/is (= {:path [`parent] :key `missing-key}
+           (-> (di/start `parent)
+               try-ex-data
+               (select-keys [:path :key])))))
+
+
+(defn recursion-a
+  [{::syms [recursion-b]}]
+  :done)
+
+(defn recursion-b
+  [{::syms [recursion-a]}]
+  :done)
+
+(defn recursion-c
+  [{::syms [recursion-c]}]
+  :done)
+
+(t/deftest circular-dependency-test
+  (t/is (= {:path [`recursion-a `recursion-b]
+            :key `recursion-a}
+           (-> (di/start `recursion-a)
+               try-ex-data
+               (select-keys [:path :key]))))
+
+  (t/is (= {:path [`recursion-c]
+            :key `recursion-c}
+           (-> (di/start `recursion-c)
+               try-ex-data
+               (select-keys [:path :key])))))
