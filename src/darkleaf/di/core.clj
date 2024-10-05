@@ -14,6 +14,7 @@
    [clojure.core :as c]
    [clojure.set :as set]
    [clojure.walk :as w]
+   [clojure.zip :as z]
    [darkleaf.di.destructuring-map :as map]
    [darkleaf.di.protocols :as p]
    [darkleaf.di.ref :as ref])
@@ -64,8 +65,6 @@
    (.addSuppressed a b)
    a))
 
-(declare find-or-build)
-
 (defn- missing-dependency! [ctx key]
   (throw (ex-info (str "Missing dependency " key)
                   {:type ::missing-dependency
@@ -77,6 +76,8 @@
                   {:type ::circular-dependency
                    :path (:under-construction ctx)
                    :key  key})))
+
+(declare find-or-build)
 
 (defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
   (if (seq-contains? under-construction key)
@@ -109,6 +110,71 @@
   (?? (find-obj  ctx key)
       (build-obj ctx key)))
 
+(defn- has-deps? [[_ _ factory]]
+   (boolean (seq (p/dependencies factory))))
+
+(defn- build-obj-z [{:as ctx, :keys [registry *built-map *stop-list]} key]
+  (loop [ctx (update ctx :under-construction conj key)
+         z   (z/zipper has-deps?
+                       (fn [[key dep-type factory]]
+                         (for [[k t] (p/dependencies factory)]
+                           ;; todo type
+                           [k t (?? (find-obj ctx k)
+                                    (registry k))]))
+                       (fn [[key dep-type factory] children]
+                         [key
+                          dep-type
+                          ;; wtf?
+                          (reify p/Factory
+                            (dependencies [_]
+                              (apply dissoc
+                                     (p/dependencies factory)
+                                     (map first children)))
+                            (build [_ deps]
+                              (p/build factory
+                                       (merge deps
+                                              (map (fn [[k _ obj]]
+                                                     [k obj])
+                                                   children))))
+                            (demolish [_ obj]
+                              (p/demolish factory obj)))])
+                       [key :required (registry key)])]
+
+    (prn (z/node z))
+
+    (cond
+      ;; хз правильно ли
+      (z/end? z)
+      (last (z/node z))
+
+      (and (z/branch? z)
+           (every? (complement has-deps?)
+                   (z/children z)))
+      (recur ctx (z/replace z [(first (z/node z))
+                               #_:required
+                               :TEST+++++++
+                               (p/build (last (z/node z))
+                                        (into {}
+                                              (map (fn [[k type obj]]
+                                                     ;; todo
+                                                     (if (some? obj)
+                                                       [k obj])))
+                                              (z/children z)))]))
+      :else (recur ctx (z/next z)))))
+
+
+
+
+
+    ;;     declared-deps (p/dependencies factory)
+    ;;     resolved-deps (resolve-deps ctx declared-deps)
+    ;;     obj           (p/build factory resolved-deps)
+    ;; (vswap! *stop-list conj #(p/demolish factory obj))
+    ;; (vswap! *built-map  assoc key obj)
+    ;; obj))
+
+
+
 (defn- try-run [proc]
   (try
     (proc)
@@ -135,7 +201,7 @@
 
 (defn- try-build [ctx key]
   (try
-    (?? (build-obj ctx key)
+    (?? (build-obj-z ctx key)
         (missing-dependency! ctx key))
     (catch Throwable ex
       (let [exs (try-stop-started ctx)
