@@ -54,7 +54,6 @@
   [::root a])
 
 (t/deftest root'-test
-  #_
   (t/is (thrown-with-msg? ExceptionInfo
                           #"Missing dependency darkleaf.di.tutorial.b-dependencies-test/a'"
                           (di/start `root'))))
