@@ -104,12 +104,12 @@
   (let [factory (registry k)
         deps    (p/dependencies factory)]
     (->> deps
-         (remove (fn [[dep-k dep-type]]
+         (filter (fn [[dep-k dep-type]]
                    (let [registred? (some? (registry dep-k))
-                         optional?  (= :optional dep-type)]
-                     (or (obj-built? ctx dep-k)
-                         (and (not registred?)
-                              optional?))))))))
+                         required?  (= :required dep-type)]
+                     (and (not (obj-built? ctx dep-k))
+                          (or required?
+                              registred?))))))))
 
 (defn- built-deps [{:as ctx :keys [registry]} k]
   (let [factory (registry k)
@@ -128,17 +128,12 @@
     obj))
 
 (defn- build-obj&deps [{:as ctx, :keys [registry]} key-to-build]
-  (loop [[{:as cur :keys [k k-type path]} & rest-ks :as ks]
+  (loop [[{:as cur :keys [k k-type path]} & rest-ks]
          [{:k key-to-build, :k-type :required, :path []}]
 
-         ctx ctx]
-    (let [{:as ctx :keys [touched build-depth]}
-          (-> ctx
-              (update :touched conj k)
-              (update :build-depth inc))
-
-          to-build (some->> k (deps-to-build ctx))
-          circular (some->> to-build (some #(touched (c/key %))))]
+         {:as ctx :keys [deferred build-depth]} ctx]
+    (let [ctx      (update ctx :build-depth inc)
+          to-build (some->> k (deps-to-build ctx))]
       (cond
         (nil? cur)
         ctx
@@ -146,24 +141,25 @@
         (> build-depth 10000)
         (maximum-recursion-depth! ctx key-to-build)
 
-        (obj-built? ctx k)
-        (recur rest-ks ctx)
-
         (and (nil? (registry k)) (= :required k-type))
         (missing-dependency! path k)
 
-        (some? circular)
-        (circular-dependency! (conj path k) circular)
+        (obj-built? ctx k)
+        (recur rest-ks ctx)
 
-        (seq to-build)
+        (empty? to-build)
+        (recur rest-ks (assoc-in ctx [:built-map k] (build-obj ctx k)))
+
+        (deferred k)
+        (circular-dependency! path k)
+
+        :else
         (recur (concat (map (fn [[dep dep-type]]
                               {:k dep :k-type dep-type :path (conj path k)})
                             to-build)
-                       ks)
-               ctx)
-
-        :else
-        (recur rest-ks (assoc-in ctx [:built-map k] (build-obj ctx k)))))))
+                       [cur] #_"defer"
+                       rest-ks)
+               (update ctx :deferred conj k))))))
 
 (defn- try-build [ctx key]
   (try
@@ -278,7 +274,7 @@
         ctx         {:*stop-list  (volatile! '())
                      :registry    registry
                      :built-map   {}
-                     :touched     #{}
+                     :deferred    #{}
                      :build-depth 0}
         obj         (try-build ctx key)]
     ^{:type   ::root
