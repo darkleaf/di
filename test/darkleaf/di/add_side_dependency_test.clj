@@ -91,7 +91,7 @@
                                          :g (di/ref `g)
                                          :h (di/ref `h)})}
                                (di/add-side-dependency `side-dep))]
-      (t/is (= [:side-dep :h :g :f :e :d :c :b :a] @log))
+      (t/is (= [:a :b :c :d :e :f :g :h :side-dep] @log))
       (t/is (= {:a :a
                 :b :b
                 :c :c
@@ -121,7 +121,7 @@
                                          :g (di/ref `g)
                                          :h (di/ref `h)})}
                                (di/add-side-dependency `side-dep2))]
-      (t/is (= [:side-dep :side-dep2 :h :g :f :e :d :c :b :a] @log))
+      (t/is (= [:a :side-dep :b :c :d :e :f :g :h :side-dep2] @log))
       (t/is (= {:a :a
                 :b :b
                 :c :c

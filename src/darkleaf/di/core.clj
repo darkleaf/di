@@ -117,6 +117,12 @@
          ;;under-construction [key] ;; походу уже не нужен, т.к. в стеке
          built-map {}
          stop-list '()]
+
+    (println :>>>>>)
+    (doseq [f stack]
+      (println (:key f)))
+
+
     (<<-
       (if (empty? stack)
         (?? [stop-list (built-map key)]
@@ -158,7 +164,7 @@
                           {:key      key
                            :dep-type dep-type
                            :factory  (registry key)}))
-                   remaining-deps)
+                   (reverse remaining-deps))
              built-map
              stop-list))))
 
