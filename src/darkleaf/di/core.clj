@@ -95,9 +95,6 @@
                    :path  (take-last 20 path)
                    :key   k})))
 
-(defn- registred? [{:keys [registry]} key]
-  (some? (registry key)))
-
 (defn- find-obj [{:keys [built-map]} key]
   (get built-map key))
 
@@ -105,15 +102,10 @@
   (contains? built-map key))
 
 (defn- deps [{:as ctx :keys [registry]} {:keys [k]}]
-  (let [{:keys [built to-build _missing-optional]}
+  (let [{built true, to-build false}
         (->> (registry k)
              p/dependencies
-             (group-by (fn [[dep-k dep-type]]
-                         (cond
-                           (obj-built? ctx dep-k)      :built
-                           (or (= :required dep-type)
-                               (registred? ctx dep-k)) :to-build
-                           :else                       :missing-optional))))]
+             (group-by (fn [[dep-k _]] (obj-built? ctx dep-k))))]
     {:deps-to-build to-build
      :built-deps    (into {}
                           (keep (fn [[dep-k _dep-type]]
@@ -136,7 +128,7 @@
           stack))
 
 (defn- build-obj&deps [ctx key-to-build]
-  (loop [[{:as cur :keys [k k-type path]} & next-stack :as stack]
+  (loop [[{:as cur :keys [k path]} & next-stack :as stack]
          (push-to-build-stack [] [] [key-to-build :required])
 
          {:as ctx :keys [deferred]} ctx]
@@ -149,9 +141,6 @@
 
         (> build-depth 100)
         (maximum-recursion-depth! ctx cur)
-
-        (and (not (registred? ctx k)) (= :required k-type))
-        (missing-dependency! cur)
 
         (obj-built? ctx k)
         (recur next-stack ctx)
