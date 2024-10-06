@@ -549,8 +549,8 @@
         new-factory   (reify p/Factory
                         (dependencies [_]
                           ;; array-map preserves order of keys
-                          {dep-key :required
-                           new-key :required})
+                          {new-key :required
+                           dep-key :required})
                         (build [_ deps]
                           (new-key deps))
                         (demolish [_ _]))]
