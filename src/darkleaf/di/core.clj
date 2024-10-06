@@ -67,15 +67,6 @@
    (.addSuppressed a b)
    a))
 
-(declare find-or-build)
-
-(defn- missing-dependency! [ctx key]
-  (throw (ex-info (str "Missing dependency " key)
-                  {:type ::missing-dependency
-                   :path (:under-construction ctx)
-                   :key  key})))
-
-
 
 (defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
   (if (seq-contains? under-construction key)
@@ -95,6 +86,12 @@
   (get @*built-map key))
 
 
+
+(defn- missing-dependency! [#_stack key]
+  (throw (ex-info (str "Missing dependency " key)
+                  {:type ::missing-dependency
+                   ;;:path (:under-construction ctx)
+                   :key  key})))
 
 (defn- circular-dependency! [stack]
   (let [key (-> stack peek :key)]
@@ -122,7 +119,8 @@
          ;;stop-list          '()]
     (<<-
       (if (empty? stack)
-        (built-map key))
+        (?? (built-map key)
+            (missing-dependency! key)))
 
       (let [head           (peek stack)
             tail           (pop stack)
@@ -143,6 +141,10 @@
 
       (if (seq-contains? (map :key tail) key)
           (circular-dependency! stack))
+
+      (if (and (nil? factory)
+               (= :required dep-type))
+        (missing-dependency! key))
 
       (if (empty? remaining-deps)
         (recur tail
