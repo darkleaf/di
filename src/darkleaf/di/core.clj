@@ -101,9 +101,9 @@
 (defn- obj-built? [{:keys [built-map]} key]
   (contains? built-map key))
 
-(defn- deps [{:as ctx :keys [registry]} {:keys [k]}]
+(defn- deps [{:as ctx :keys [registry]} {parent-k :k}]
   (let [{built true, to-build false}
-        (->> (registry k)
+        (->> (registry parent-k)
              p/dependencies
              (group-by (fn [[dep-k _]] (obj-built? ctx dep-k))))]
     {:deps-to-build to-build
