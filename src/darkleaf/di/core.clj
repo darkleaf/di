@@ -139,7 +139,7 @@
         (nil? cur)
         ctx
 
-        (> build-depth 100)
+        (> build-depth 10000)
         (maximum-recursion-depth! ctx cur)
 
         (obj-built? ctx k)
