@@ -94,22 +94,23 @@
                   {:root-key key
                    :depth    depth})))
 
+(defn- registred? [{:keys [registry]} key]
+  (some? (registry key)))
+
 (defn- find-obj [{:keys [built-map]} key]
   (get built-map key))
 
 (defn- obj-built? [{:keys [built-map]} key]
   (contains? built-map key))
 
-(defn- deps-to-build [{:as ctx :keys [registry]} k]
+(defn- collect-deps-to-build [{:as ctx :keys [registry]} k]
   (let [factory (registry k)
         deps    (p/dependencies factory)]
     (->> deps
          (filter (fn [[dep-k dep-type]]
-                   (let [registred? (some? (registry dep-k))
-                         required?  (= :required dep-type)]
-                     (and (not (obj-built? ctx dep-k))
-                          (or required?
-                              registred?))))))))
+                   (and (not (obj-built? ctx dep-k))
+                             (or (= :required dep-type)
+                                 (registred? ctx dep-k))))))))
 
 (defn- built-deps [{:as ctx :keys [registry]} k]
   (let [factory (registry k)
@@ -125,15 +126,22 @@
         deps    (built-deps ctx k)
         obj     (p/build factory deps)]
     (vswap! *stop-list conj #(p/demolish factory obj))
-    obj))
+    (assoc-in ctx [:built-map k] obj)))
 
-(defn- build-obj&deps [{:as ctx, :keys [registry]} key-to-build]
-  (loop [[{:as cur :keys [k k-type path]} & rest-ks]
-         [{:k key-to-build, :k-type :required, :path []}]
+(defn- push-to-build-stack [stack path & deps]
+  (concat (map (fn [[dep dep-type]]
+                 {:k dep :k-type dep-type :path path})
+               deps)
+          stack))
+
+(defn- build-obj&deps [ctx key-to-build]
+  (loop [[{:as cur :keys [k k-type path]} & next-stack :as stack]
+         (push-to-build-stack [] [] [key-to-build :required])
 
          {:as ctx :keys [deferred build-depth]} ctx]
-    (let [ctx      (update ctx :build-depth inc)
-          to-build (some->> k (deps-to-build ctx))]
+    (let [ctx             (update ctx :build-depth inc)
+          deps-to-build   (some->> k (collect-deps-to-build ctx))
+          ready-to-build? (empty? deps-to-build)]
       (cond
         (nil? cur)
         ctx
@@ -141,24 +149,20 @@
         (> build-depth 10000)
         (maximum-recursion-depth! ctx key-to-build)
 
-        (and (nil? (registry k)) (= :required k-type))
+        (and (not (registred? ctx k)) (= :required k-type))
         (missing-dependency! path k)
 
         (obj-built? ctx k)
-        (recur rest-ks ctx)
+        (recur next-stack ctx)
 
-        (empty? to-build)
-        (recur rest-ks (assoc-in ctx [:built-map k] (build-obj ctx k)))
+        ready-to-build?
+        (recur next-stack (build-obj ctx k))
 
         (deferred k)
         (circular-dependency! path k)
 
         :else
-        (recur (concat (map (fn [[dep dep-type]]
-                              {:k dep :k-type dep-type :path (conj path k)})
-                            to-build)
-                       [cur] #_"defer"
-                       rest-ks)
+        (recur (apply push-to-build-stack stack (conj path k) deps-to-build)
                (update ctx :deferred conj k))))))
 
 (defn- try-build [ctx key]
