@@ -89,11 +89,11 @@
                    :path path
                    :key  k})))
 
-(defn- maximum-recursion-depth! [{:keys [build-depth]} {:keys [k path]}]
-  (throw (ex-info "Exceeded maximum recursion depth"
-                  {:depth build-depth
-                   :path  (take-last 20 path)
-                   :key   k})))
+(defn- maximum-recursion-depth! [{:keys [build-iteration]} {:keys [k path]}]
+  (throw (ex-info "Exceeded maximum build iterations"
+                  {:iterations build-iteration
+                   :path       (take-last 20 path)
+                   :key        k})))
 
 (defn- find-obj [{:keys [built-map]} key]
   (get built-map key))
@@ -132,14 +132,14 @@
          (push-to-build-stack [] [] [key-to-build :required])
 
          {:as ctx :keys [deferred]} ctx]
-    (let [{:as ctx :keys [build-depth]}      (update ctx :build-depth inc)
+    (let [{:as ctx :keys [build-iteration]}  (update ctx :build-iteration inc)
           {:keys [deps-to-build built-deps]} (some->> cur (deps ctx))
           ready-to-build?                    (empty? deps-to-build)]
       (cond
         (nil? cur)
         ctx
 
-        (> build-depth 10000)
+        (> build-iteration 1000000)
         (maximum-recursion-depth! ctx cur)
 
         (obj-built? ctx k)
@@ -265,11 +265,11 @@
 
         middlewares (concat [with-env with-ns root-registry] middlewares)
         registry    (apply-middleware nil-registry middlewares)
-        ctx         {:*stop-list  (volatile! '())
-                     :registry    registry
-                     :built-map   {}
-                     :deferred    #{}
-                     :build-depth 0}
+        ctx         {:*stop-list      (volatile! '())
+                     :registry        registry
+                     :built-map       {}
+                     :deferred        #{}
+                     :build-iteration 0}
         obj         (try-build ctx key)]
     ^{:type   ::root
       ::print obj}
