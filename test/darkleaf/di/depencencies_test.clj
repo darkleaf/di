@@ -30,15 +30,16 @@
 
 (defn c
   {::di/stop #(swap! % conj [`c :stopped])}
-  [{log ::log}]
-  (swap! log conj [`c :built])
+  [{log ::log optional-false ::missing
+    :or {optional-false false}}]
+  (swap! log conj [`c :built optional-false])
   log)
 
 (t/deftest order-test
   (let [log (atom [])]
     (-> (di/start `root {::log log})
         (di/stop))
-    (t/is (= [[`c :built]
+    (t/is (= [[`c :built false]
               [`a :built]
               [`b :built]
               [`root :built]
