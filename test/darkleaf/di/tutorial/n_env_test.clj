@@ -42,3 +42,33 @@
                               (di/env-parsing :env.long parse-long)
                               {"PORT" "8081"})]
     (t/is (= [:jetty 8081] @jetty))))
+
+(defn required-env
+  {::di/kind :component}
+  [{enabled :env.bool/ENABLED}]
+  [:enabled enabled])
+
+(defn optional-env
+  {::di/kind :component}
+  [{enabled :env.bool/ENABLED
+    :or {enabled true}}]
+  [:enabled enabled])
+
+(t/deftest env-test
+  (t/is (thrown? clojure.lang.ExceptionInfo
+                 (di/start `required-env
+                           (di/env-parsing {:env.bool #(= "true" %)}))))
+
+  (with-open [sys (di/start `required-env
+                            (di/env-parsing {:env.bool #(= "true" %)})
+                            {"ENABLED" "false"})]
+    (t/is (= [:enabled false] @sys)))
+
+  (with-open [sys (di/start `optional-env
+                            (di/env-parsing {:env.bool #(= "true" %)}))]
+    (t/is (= [:enabled true] @sys)))
+
+  (with-open [sys (di/start `optional-env
+                            (di/env-parsing {:env.bool #(= "true" %)})
+                            {"ENABLED" "false"})]
+    (t/is (= [:enabled false] @sys))))
