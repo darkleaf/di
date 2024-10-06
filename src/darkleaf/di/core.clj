@@ -115,11 +115,11 @@
                           :dep-type :required
                           :factory  (registry key)})
          ;;under-construction [key] ;; походу уже не нужен, т.к. в стеке
-         built-map {}]
-         ;;stop-list          '()]
+         built-map {}
+         stop-list '()]
     (<<-
       (if (empty? stack)
-        (?? (built-map key)
+        (?? [stop-list (built-map key)]
             (missing-dependency! key)))
 
       (let [head           (peek stack)
@@ -147,8 +147,11 @@
         (missing-dependency! key))
 
       (if (empty? remaining-deps)
-        (recur tail
-               (assoc built-map key (p/build factory resolved-deps))))
+        (let [obj       (p/build factory resolved-deps)
+              built-map (assoc built-map key obj)
+              stop-list (conj stop-list #(p/demolish factory obj))]
+          (recur tail built-map stop-list)))
+
 
       (recur (into stack
                    (map (fn [[key dep-type]]
@@ -156,17 +159,8 @@
                            :dep-type dep-type
                            :factory  (registry key)}))
                    remaining-deps)
-             built-map))))
-
-#_(let [ctx           (update ctx :under-construction conj key)
-        factory       (registry key)
-        declared-deps (p/dependencies factory)
-        resolved-deps (resolve-deps ctx declared-deps)
-        obj           (p/build factory resolved-deps)]
-    (vswap! *stop-list conj #(p/demolish factory obj))
-    (vswap! *built-map  assoc key obj)
-    obj)
-
+             built-map
+             stop-list))))
 
 (defn- find-or-build [ctx key]
   (?? (find-obj  ctx key)
@@ -191,19 +185,13 @@
            (reduce combine-throwable)
            (throw)))
 
-(defn- try-stop-started [{:keys [*stop-list]}]
-  (let [stops @*stop-list]
-    (vswap! *stop-list empty)
-    (try-run-all stops)))
+;; тут убрал идемпотентность, может быть стоит вернуть?
+(defn- try-stop-started [stop-list]
+  (try-run-all stop-list))
 
 (defn- try-build [reg key]
   #_(try)
-  (?? (build-obj reg key)
-      #_(missing-dependency! ctx key))
-
-    ;; нужно получается обработку останова внутрь убирать,
-    ;; где есть ctx
-
+  (build-obj reg key)
   #_(catch Throwable ex
       (let [exs (try-stop-started ctx)
             exs (cons ex exs)]
@@ -307,20 +295,18 @@
   [key & middlewares]
   (let [[key root-registry] (key->key&registry key)
 
-        middlewares (concat [with-env with-ns root-registry] middlewares)
-        registry    (apply-middleware nil-registry middlewares)
-        obj         (try-build registry key)
-
+        middlewares     (concat [with-env with-ns root-registry] middlewares)
+        registry        (apply-middleware nil-registry middlewares)
+        [stop-list obj] (try-build registry key)
         ctx ::undev]
-       ;; [ctx obj]
 
     ^{:type   ::root
       ::print obj}
     (reify
       AutoCloseable
       (close [_]
-        #_(->> (try-stop-started ctx)
-               (throw-many!)))
+        (->> (try-stop-started stop-list)
+             (throw-many!)))
       IDeref
       (deref [_]
         obj)
