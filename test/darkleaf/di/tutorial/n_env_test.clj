@@ -34,6 +34,11 @@
     :or  {port 8080}}]
   [:jetty port])
 
+(defn jetty-required-port
+  {::di/kind :component}
+  [{port :env.long/PORT}]
+  [:jetty port])
+
 (t/deftest jetty-test
   (with-open [jetty (di/start `jetty
                               (di/env-parsing {:env.long parse-long}))]
@@ -41,4 +46,6 @@
   (with-open [jetty (di/start `jetty
                               (di/env-parsing :env.long parse-long)
                               {"PORT" "8081"})]
-    (t/is (= [:jetty 8081] @jetty))))
+    (t/is (= [:jetty 8081] @jetty)))
+  (t/is (thrown? clojure.lang.ExceptionInfo
+                 (di/start `jetty-required-port (di/env-parsing {:env.long parse-long})))))
