@@ -75,11 +75,7 @@
                    :path (:under-construction ctx)
                    :key  key})))
 
-(defn- circular-dependency! [ctx key]
-  (throw (ex-info (str "Circular dependency " key)
-                  {:type ::circular-dependency
-                   :path (:under-construction ctx)
-                   :key  key})))
+
 
 (defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
   (if (seq-contains? under-construction key)
@@ -99,6 +95,12 @@
   (get @*built-map key))
 
 
+
+(defn- circular-dependency! [stack]
+  (let [key (-> stack peek :key)]
+    (throw (ex-info (str "Circular dependency " key)
+                    {:type  ::circular-dependency
+                     :stack (map :key stack)}))))
 
 #_
 (defn frame [...]  ???
@@ -122,20 +124,12 @@
       (if (empty? stack)
         (built-map key))
 
-      (if (not= (into [] ;; todo
-                      (map :key)
-                      stack)
-                (into []
-                      (comp
-                       (map :key)
-                       (distinct))
-                      stack))
-        (throw (ex-info "Circular dependency " {})))
-
-
-      (let [{:keys [key dep-type factory]}
-            (peek stack)
-
+      (let [head           (peek stack)
+            tail           (pop stack)
+            {:keys
+             [key
+              dep-type
+              factory]}    head
             declared-deps  (p/dependencies factory)
             remaining-deps (into {}
                                  (remove (fn [[key dep-type]]
@@ -147,8 +141,11 @@
                                           [key obj])))
                                  declared-deps)])
 
+      (if (seq-contains? (map :key tail) key)
+          (circular-dependency! stack))
+
       (if (empty? remaining-deps)
-        (recur (pop stack)
+        (recur tail
                (assoc built-map key (p/build factory resolved-deps))))
 
       (recur (into stack
