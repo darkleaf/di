@@ -90,7 +90,7 @@
 
 ;; нужно вернуть контекст и объект
 ;; чтобы stop-list получить
-(defn- build-obj [registry key]
+(defn- build-obj [{:keys [registry *stop-list]} key]
   (println)
   (println)
   (println :======)
@@ -100,8 +100,7 @@
                           :dep-type :required
                           :factory  (delay (registry key))})
          ;;under-construction [key] ;; походу уже не нужен, т.к. в стеке
-         built-map {}
-         stop-list '()]
+         built-map {}]
 
     (println :>>>>>)
     (doseq [f stack]
@@ -109,7 +108,7 @@
 
     (<<-
       (if (empty? stack)
-        (?? [stop-list (built-map key)]
+        (?? (built-map key)
             (missing-dependency! key)))
 
       (let [head     (peek stack)
@@ -118,11 +117,15 @@
             dep-type (:dep-type head)
             factory  @(:factory head)])
 
-      (if (some? (built-map key))
-        (recur tail built-map stop-list))
+      (if (contains? built-map key)
+        (recur tail built-map))
 
       (if (seq-contains? (map :key tail) key)
           (circular-dependency! stack))
+
+      (if (and (nil? factory)
+               (= :optional dep-type))
+        (recur tail (assoc built-map key nil)))
 
       (if (and (nil? factory)
                (= :required dep-type))
@@ -131,12 +134,22 @@
       ;; я тут ушел от разделения на собранные и не собранные зависимости
       ;; и просто выше выкидываю уже собранные фабрики из стека
       (let [declared-deps (p/dependencies factory)])
+
+      ;; нужно упростить
       (if (every? #(contains? built-map %)
                   (map c/key declared-deps))
-        (let [obj       (p/build factory built-map) ;; todo: select-keys
-              built-map (assoc built-map key obj)
-              stop-list (conj stop-list #(p/demolish factory obj))]
-          (recur tail built-map stop-list)))
+        (let [built-deps (into {}
+                               (map (fn [[key dep-type]]
+                                      (if-some [obj (built-map key)]
+                                        [key obj])))
+                               declared-deps)
+              obj       (p/build factory built-deps)
+              built-map (assoc built-map key obj)]
+          (if (and (nil? obj)
+                   (= :required dep-type))
+            (missing-dependency! key))
+          (vswap! *stop-list conj #(p/demolish factory obj))
+          (recur tail built-map)))
 
       (recur (into stack
                    (map (fn [[key dep-type]]
@@ -144,8 +157,7 @@
                            :dep-type dep-type
                            :factory  (delay (registry key))})) ;; !!!
                    (reverse declared-deps))
-             built-map
-             stop-list))))
+             built-map))))
 
 (defn- try-run [proc]
   (try
@@ -166,13 +178,14 @@
            (reduce combine-throwable)
            (throw)))
 
-;; тут убрал идемпотентность, может быть стоит вернуть?
-(defn- try-stop-started [stop-list]
-  (try-run-all stop-list))
+(defn- try-stop-started [{:keys [*stop-list]}]
+  (let [stops @*stop-list]
+    (vswap! *stop-list empty)
+    (try-run-all stops)))
 
-(defn- try-build [reg key]
+(defn- try-build [ctx key]
   #_(try)
-  (build-obj reg key)
+  (build-obj ctx key)
   #_(catch Throwable ex
       (let [exs (try-stop-started ctx)
             exs (cons ex exs)]
@@ -276,17 +289,17 @@
   [key & middlewares]
   (let [[key root-registry] (key->key&registry key)
 
-        middlewares     (concat [with-env with-ns root-registry] middlewares)
-        registry        (apply-middleware nil-registry middlewares)
-        [stop-list obj] (try-build registry key)
-        ctx ::undev]
-
+        middlewares (concat [with-env with-ns root-registry] middlewares)
+        registry    (apply-middleware nil-registry middlewares)
+        ctx         {:registry   registry
+                     :*stop-list (volatile! '())}
+        obj         (try-build ctx key)]
     ^{:type   ::root
       ::print obj}
     (reify
       AutoCloseable
       (close [_]
-        (->> (try-stop-started stop-list)
+        (->> (try-stop-started ctx)
              (throw-many!)))
       IDeref
       (deref [_]
