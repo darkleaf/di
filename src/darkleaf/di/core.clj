@@ -99,6 +99,11 @@
   (get @*built-map key))
 
 
+
+#_
+(defn frame [...]  ???
+  {... ...})
+
 #_
 ([key :required factory]
  [key :optional factory])
@@ -107,7 +112,9 @@
 ;; нужно вернуть контекст и объект
 ;; чтобы stop-list получить
 (defn- build-obj [registry key]
-  (loop [stack     (list [key :required (registry key)])
+  (loop [stack     (list {:key      key
+                          :dep-type :required
+                          :factory  (registry key)})
          ;;under-construction [key] ;; походу уже не нужен, т.к. в стеке
          built-map {}]
          ;;stop-list          '()]
@@ -116,29 +123,29 @@
         (built-map key))
 
       (if (not= (into [] ;; todo
-                      (map first)
+                      (map :key)
                       stack)
                 (into []
                       (comp
-                       (map first)
+                       (map :key)
                        (distinct))
                       stack))
         (throw (ex-info "Circular dependency " {})))
 
 
+      (let [{:keys [key dep-type factory]}
+            (peek stack)
 
-      (let [head            (peek stack)
-            [key _ factory] head
-            declared-deps   (p/dependencies factory)
-            remaining-deps  (into {}
-                                  (remove (fn [[key dep-type]]
+            declared-deps  (p/dependencies factory)
+            remaining-deps (into {}
+                                 (remove (fn [[key dep-type]]
                                            (contains? built-map key)))
-                                  declared-deps)
-            resolved-deps (into {}
-                                (map (fn [[key dep-type]]
-                                       (if-some [obj (built-map key)]
-                                         [key obj])))
-                                declared-deps)])
+                                 declared-deps)
+            resolved-deps  (into {}
+                                 (map (fn [[key dep-type]]
+                                        (if-some [obj (built-map key)]
+                                          [key obj])))
+                                 declared-deps)])
 
       (if (empty? remaining-deps)
         (recur (pop stack)
@@ -146,7 +153,9 @@
 
       (recur (into stack
                    (map (fn [[key dep-type]]
-                          [key dep-type (registry key)]))
+                          {:key      key
+                           :dep-type dep-type
+                           :factory  (registry key)}))
                    remaining-deps)
              built-map))))
 
