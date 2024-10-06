@@ -77,22 +77,23 @@
     (vswap! *stop-list empty)
     (try-run-all stops)))
 
-(defn- missing-dependency! [path key]
-  (throw (ex-info (str "Missing dependency " key)
+(defn- missing-dependency! [{:keys [k path]}]
+  (throw (ex-info (str "Missing dependency " k)
                   {:type ::missing-dependency
                    :path path
-                   :key  key})))
+                   :key  k})))
 
-(defn- circular-dependency! [path key]
-  (throw (ex-info (str "Circular dependency " key)
+(defn- circular-dependency! [{:keys [k path]}]
+  (throw (ex-info (str "Circular dependency " k)
                   {:type ::circular-dependency
                    :path path
-                   :key  key})))
+                   :key  k})))
 
-(defn- maximum-recursion-depth! [{:keys [depth]} key]
+(defn- maximum-recursion-depth! [{:keys [build-depth]} {:keys [k path]}]
   (throw (ex-info "Exceeded maximum recursion depth"
-                  {:root-key key
-                   :depth    depth})))
+                  {:depth build-depth
+                   :path  (take-last 20 path)
+                   :key   k})))
 
 (defn- registred? [{:keys [registry]} key]
   (some? (registry key)))
@@ -103,29 +104,29 @@
 (defn- obj-built? [{:keys [built-map]} key]
   (contains? built-map key))
 
-(defn- collect-deps-to-build [{:as ctx :keys [registry]} k]
-  (let [factory (registry k)
-        deps    (p/dependencies factory)]
-    (->> deps
-         (filter (fn [[dep-k dep-type]]
-                   (and (not (obj-built? ctx dep-k))
-                             (or (= :required dep-type)
-                                 (registred? ctx dep-k))))))))
+(defn- deps [{:as ctx :keys [registry]} {:keys [k]}]
+  (let [{:keys [built to-build _missing-optional]}
+        (->> (registry k)
+             p/dependencies
+             (group-by (fn [[dep-k dep-type]]
+                         (cond
+                           (obj-built? ctx dep-k)      :built
+                           (or (= :required dep-type)
+                               (registred? ctx dep-k)) :to-build
+                           :else                       :missing-optional))))]
+    {:deps-to-build to-build
+     :built-deps    (into {}
+                          (keep (fn [[dep-k _dep-type]]
+                                  (when-let [dep-obj (find-obj ctx dep-k)]
+                                    [dep-k dep-obj])))
+                          built)}))
 
-(defn- built-deps [{:as ctx :keys [registry]} k]
+(defn- build-obj [{:as ctx :keys [registry *stop-list]} {:as cur :keys [k k-type]} deps]
   (let [factory (registry k)
-        deps    (p/dependencies factory)]
-    (->> deps
-         (into {}
-               (keep (fn [[dep-k _]]
-                       (when-let [dep-obj (find-obj ctx dep-k)]
-                         [dep-k dep-obj])))))))
-
-(defn- build-obj [{:as ctx :keys [registry *stop-list]} k]
-  (let [factory (registry k)
-        deps    (built-deps ctx k)
         obj     (p/build factory deps)]
     (vswap! *stop-list conj #(p/demolish factory obj))
+    (when (and (nil? obj) (= :required k-type))
+      (missing-dependency! cur))
     (assoc-in ctx [:built-map k] obj)))
 
 (defn- push-to-build-stack [stack path & deps]
@@ -138,28 +139,28 @@
   (loop [[{:as cur :keys [k k-type path]} & next-stack :as stack]
          (push-to-build-stack [] [] [key-to-build :required])
 
-         {:as ctx :keys [deferred build-depth]} ctx]
-    (let [ctx             (update ctx :build-depth inc)
-          deps-to-build   (some->> k (collect-deps-to-build ctx))
-          ready-to-build? (empty? deps-to-build)]
+         {:as ctx :keys [deferred]} ctx]
+    (let [{:as ctx :keys [build-depth]}      (update ctx :build-depth inc)
+          {:keys [deps-to-build built-deps]} (some->> cur (deps ctx))
+          ready-to-build?                    (empty? deps-to-build)]
       (cond
         (nil? cur)
         ctx
 
-        (> build-depth 10000)
-        (maximum-recursion-depth! ctx key-to-build)
+        (> build-depth 100)
+        (maximum-recursion-depth! ctx cur)
 
         (and (not (registred? ctx k)) (= :required k-type))
-        (missing-dependency! path k)
+        (missing-dependency! cur)
 
         (obj-built? ctx k)
         (recur next-stack ctx)
 
         ready-to-build?
-        (recur next-stack (build-obj ctx k))
+        (recur next-stack (build-obj ctx cur built-deps))
 
         (deferred k)
-        (circular-dependency! path k)
+        (circular-dependency! cur)
 
         :else
         (recur (apply push-to-build-stack stack (conj path k) deps-to-build)
