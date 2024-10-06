@@ -109,7 +109,7 @@
     {:deps-to-build to-build
      :built-deps    (into {}
                           (keep (fn [[dep-k _dep-type]]
-                                  (when-let [dep-obj (find-obj ctx dep-k)]
+                                  (when-some [dep-obj (find-obj ctx dep-k)]
                                     [dep-k dep-obj])))
                           built)}))
 
