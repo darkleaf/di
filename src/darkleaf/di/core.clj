@@ -122,19 +122,18 @@
     (assoc-in ctx [:built-map k] obj)))
 
 (defn- push-to-build-stack [stack path & deps]
-  (concat (map (fn [[dep dep-type]]
-                 {:k dep :k-type dep-type :path path})
-               deps)
-          stack))
+  (into stack
+        (map (fn [[dep dep-type]]
+               {:k dep :k-type dep-type :path path}))
+        (reverse deps)))
 
 (defn- build-obj&deps [ctx key-to-build]
-  (loop [[{:as cur :keys [k path]} & next-stack :as stack]
-         (push-to-build-stack [] [] [key-to-build :required])
-
-         {:as ctx :keys [deferred]} ctx]
-    (let [{:as ctx :keys [build-iteration]}  (update ctx :build-iteration inc)
-          {:keys [deps-to-build built-deps]} (some->> cur (deps ctx))
-          ready-to-build?                    (empty? deps-to-build)]
+  (loop [stack (push-to-build-stack () [] [key-to-build :required])
+         ctx   ctx]
+    (let [{:as cur :keys [k path]}                   (peek stack)
+          {:as ctx :keys [deferred build-iteration]} (update ctx :build-iteration inc)
+          {:keys [deps-to-build built-deps]}         (some->> cur (deps ctx))
+          ready-to-build?                            (empty? deps-to-build)]
       (cond
         (nil? cur)
         ctx
@@ -143,10 +142,10 @@
         (maximum-recursion-depth! ctx cur)
 
         (obj-built? ctx k)
-        (recur next-stack ctx)
+        (recur (pop stack) ctx)
 
         ready-to-build?
-        (recur next-stack (build-obj ctx cur built-deps))
+        (recur (pop stack) (build-obj ctx cur built-deps))
 
         (deferred k)
         (circular-dependency! cur)
