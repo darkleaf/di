@@ -130,10 +130,9 @@
 
       (let [head           (peek stack)
             tail           (pop stack)
-            {:keys
-             [key
-              dep-type
-              factory]}    head
+            key            (:key head)
+            dep-type       (:dep-type head)
+            factory        (:factory head)
             declared-deps  (p/dependencies factory)
             remaining-deps (into {}
                                  (remove (fn [[key dep-type]]
