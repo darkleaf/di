@@ -129,7 +129,10 @@
 
 (defn- build-obj&deps [ctx key-to-build]
   (loop [stack (push-to-build-stack () [] [key-to-build :required])
-         ctx   ctx]
+         ctx   (assoc ctx
+                      :built-map       {}
+                      :deferred        #{}
+                      :build-iteration 0)]
     (let [{:as cur :keys [k path]}                   (peek stack)
           {:as ctx :keys [deferred build-iteration]} (update ctx :build-iteration inc)
           {:keys [deps-to-build built-deps]}         (some->> cur (deps ctx))
@@ -265,10 +268,7 @@
         middlewares (concat [with-env with-ns root-registry] middlewares)
         registry    (apply-middleware nil-registry middlewares)
         ctx         {:*stop-list      (volatile! '())
-                     :registry        registry
-                     :built-map       {}
-                     :deferred        #{}
-                     :build-iteration 0}
+                     :registry        registry}
         obj         (try-build ctx key)]
     ^{:type   ::root
       ::print obj}
