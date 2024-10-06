@@ -184,12 +184,12 @@
     (try-run-all stops)))
 
 (defn- try-build [ctx key]
-  #_(try)
-  (build-obj ctx key)
-  #_(catch Throwable ex
+  (try
+    (build-obj ctx key)
+    (catch Throwable ex
       (let [exs (try-stop-started ctx)
             exs (cons ex exs)]
-        (throw-many! exs))))
+        (throw-many! exs)))))
 
 (defn- nil-registry [key]
   nil)
