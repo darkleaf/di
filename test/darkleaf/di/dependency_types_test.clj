@@ -20,6 +20,11 @@
                               ::dependency 42})]
     (t/is (= [::dependency 42] @root))))
 
+(t/deftest missed-root-test
+  (t/is (thrown-with-msg? ExceptionInfo
+                          #"\AMissing dependency darkleaf.di.dependency-types-test/not-found\z"
+                          (di/start `not-found))))
+
 (t/deftest required-missed-test
   (t/is (thrown-with-msg? ExceptionInfo
                           #"\AMissing dependency :darkleaf.di.dependency-types-test/dependency\z"
