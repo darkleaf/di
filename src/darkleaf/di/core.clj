@@ -95,7 +95,6 @@
 (defn- build-obj [{:keys [registry *stop-list]} key]
   (loop [stack     (list (stack-frame key :required (registry key)))
          built-map {}]
-
     (<<-
       (if (empty? stack)
         (built-map key))
