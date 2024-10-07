@@ -120,6 +120,10 @@
                (= :required dep-type))
         (missing-dependency! stack))
 
+      (if (and (nil? factory)
+               (= :optional dep-type))
+        (recur tail (dissoc built-map key)))
+
       (if (contains? built-map key)
         (recur tail built-map))
 
@@ -132,11 +136,7 @@
                    (conj (stack-frame key dep-type (registry key))))
                built-map))
 
-      (let [built-deps (into {}
-                             (map (fn [[key dep-type]]
-                                    (if-some [obj (built-map key)]
-                                      [key obj])))
-                             (p/dependencies factory))
+      (let [built-deps (select-keys built-map (keys (p/dependencies factory)))
             obj        (p/build factory built-deps)]
         (vswap! *stop-list conj #(p/demolish factory obj))
         (recur (conj tail (stack-frame key dep-type obj))
