@@ -54,6 +54,32 @@
         (catch clojure.lang.ExceptionInfo e#
           (ex-data e#))))
 
+(defn root-path
+  [{::syms [a-path b-path c-path]}]
+  :done)
+
+(defn final-path
+  [{}]
+  :done)
+
+(defn a-path
+  [{::syms [final-path]}]
+  :done)
+
+(defn b-path
+  [{::syms [missing-path]}]
+  :done)
+
+(defn c-path
+  [{::syms [final-path]}]
+  :done)
+
+(t/deftest error-path-test
+  (t/is (= {:path [`root-path `b-path] :key `missing-path}
+           (-> (di/start `root-path)
+               try-ex-data
+               (select-keys [:path :key])))))
+
 (defn parent
   [{::syms [missing-key]}]
   :done)
