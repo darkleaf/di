@@ -71,24 +71,15 @@
   (let [key (-> stack peek :key)]
     (throw (ex-info (str "Missing dependency " key)
                     {:type ::missing-dependency
-                     :path (->> stack
-                                pop ; тут стоит стек печатать как в circular?
-                                (map :key)
-                                reverse)
+                     :path (->> stack pop (map :key) reverse)
                      :key  key}))))
 
 (defn- circular-dependency! [stack]
   (let [key (-> stack peek :key)]
     (throw (ex-info (str "Circular dependency " key)
                     {:type  ::circular-dependency
-                     :path (->> stack
-                                pop ; тут стоит стек печатать как в circular?
-                                (map :key)
-                                reverse) ; подумать
-                     :key  key
-
-                     #_#_
-                     :stack (map :key stack)}))))
+                     :path (->> stack pop (map :key) reverse)
+                     :key  key}))))
 
 (defn- update-head [stack f & args]
  (let [head (peek stack)
