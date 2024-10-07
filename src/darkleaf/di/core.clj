@@ -90,18 +90,10 @@
                      #_#_
                      :stack (map :key stack)}))))
 
-#_
-(defn frame [...]  ???
-  {... ...})
-
-#_
-([key :required factory]
- [key :optional factory])
-
 (defn- update-head [stack f & args]
-  (let [head (peek stack)
-        tail (pop stack)]
-    (conj tail (apply f head args))))
+ (let [head (peek stack)
+       tail (pop stack)]
+   (conj tail (apply f head args))))
 
 (defn- stack-frame [key dep-type factory]
   {:key            key
@@ -109,20 +101,9 @@
    :factory        factory
    :remaining-deps (seq (p/dependencies factory))})
 
-;; нужно вернуть контекст и объект
-;; чтобы stop-list получить
 (defn- build-obj [{:keys [registry *stop-list]} key]
-  (println)
-  (println)
-  (println :======)
-
-
   (loop [stack     (list (stack-frame key :required (registry key)))
          built-map {}]
-
-    (println :>>>>>)
-    (doseq [f stack]
-      (println (:key f)))
 
     (<<-
       (if (empty? stack)
@@ -141,11 +122,6 @@
 
       (if (seq-contains? (map :key tail) key)
           (circular-dependency! stack))
-
-      ;; не нужно похоже
-      ;; (if (and (nil? factory)
-      ;;          (= :optional dep-type))
-      ;;   (recur tail (assoc built-map key nil)))
 
       (if (and (nil? factory)
                (= :required dep-type))
