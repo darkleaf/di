@@ -98,6 +98,16 @@
 ([key :required factory]
  [key :optional factory])
 
+(defn- update-head [stack f & args]
+  (let [head (peek stack)
+        tail (pop stack)]
+    (conj tail (apply f head args))))
+
+(defn- stack-frame [key dep-type factory]
+  {:key            key
+   :dep-type       dep-type
+   :factory        factory
+   :remaining-deps (seq (p/dependencies factory))})
 
 ;; нужно вернуть контекст и объект
 ;; чтобы stop-list получить
@@ -107,10 +117,7 @@
   (println :======)
 
 
-  (loop [stack     (list {:key      key
-                          :dep-type :required
-                          :factory  (registry key)})
-         ;;under-construction [key] ;; походу уже не нужен, т.к. в стеке
+  (loop [stack     (list (stack-frame key :required (registry key)))
          built-map {}]
 
     (println :>>>>>)
@@ -122,15 +129,15 @@
         (?? (built-map key)
             (missing-dependency! (list {:key key})))) ;; хз стоит ли делать такой фейк?
 
-      (let [head     (peek stack)
-            tail     (pop stack)
-            key      (:key head)
-            dep-type (:dep-type head)
-            factory  (:factory head)])
+      (let [head           (peek stack)
+            tail           (pop stack)
+            key            (:key head)
+            dep-type       (:dep-type head)
+            factory        (:factory head)
+            remaining-deps (:remaining-deps head)])
 
-
-      ;; (if (contains? built-map key)
-      ;;   (recur tail built-map))
+      (if (contains? built-map key)
+        (recur tail built-map))
 
       (if (seq-contains? (map :key tail) key)
           (circular-dependency! stack))
@@ -144,34 +151,24 @@
                (= :required dep-type))
         (missing-dependency! stack))
 
-      ;; я тут ушел от разделения на собранные и не собранные зависимости
-      ;; и просто выше выкидываю уже собранные фабрики из стека
-      (let [declared-deps (p/dependencies factory)])
-
-      ;; тут нужно по одной добавлять в стек, а не все разом
-      (if-some [[key dep-type] (->> declared-deps
-                                    (remove (fn [[key _]]
-                                              (contains? built-map key)))
-                                    first)]
-        (recur (conj stack {:key      key
-                            :dep-type dep-type
-                            :factory  (registry key)})
+      (if-some [[[key dep-type] & remaining-deps] remaining-deps]
+        (recur (-> stack
+                   (update-head assoc :remaining-deps remaining-deps)
+                   (conj (stack-frame key dep-type (registry key))))
                built-map))
-
 
       (let [built-deps (into {}
                              (map (fn [[key dep-type]]
                                     (if-some [obj (built-map key)]
                                       [key obj])))
-                             declared-deps)
+                             (p/dependencies factory))
             obj        (p/build factory built-deps)
             built-map  (assoc built-map key obj)]
         (if (and (nil? obj)
-                 (= :required dep-type))  ;; хорошо бы вынести выше в cond/<<-
+                 (= :required dep-type))
           (missing-dependency! stack))
         (vswap! *stop-list conj #(p/demolish factory obj))
         (recur tail built-map)))))
-
 
 (defn- try-run [proc]
   (try
