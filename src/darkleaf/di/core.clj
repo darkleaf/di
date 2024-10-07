@@ -124,7 +124,7 @@
         (recur tail built-map))
 
       (if (seq-contains? (map :key tail) key)
-          (circular-dependency! stack))
+        (circular-dependency! stack))
 
       (if-some [[[key dep-type] & remaining-deps] remaining-deps]
         (recur (-> stack
@@ -137,11 +137,10 @@
                                     (if-some [obj (built-map key)]
                                       [key obj])))
                              (p/dependencies factory))
-            obj        (p/build factory built-deps)
-            built-map  (assoc built-map key obj)]
+            obj        (p/build factory built-deps)]
         (vswap! *stop-list conj #(p/demolish factory obj))
         (recur (conj tail (stack-frame key dep-type obj))
-               built-map)))))
+               (assoc built-map key obj))))))
 
 (defn- try-run [proc]
   (try
