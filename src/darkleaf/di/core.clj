@@ -107,8 +107,7 @@
 
     (<<-
       (if (empty? stack)
-        (?? (built-map key)
-            (missing-dependency! (list {:key key})))) ;; хз стоит ли делать такой фейк?
+        (built-map key))
 
       (let [head           (peek stack)
             tail           (pop stack)
@@ -117,15 +116,15 @@
             factory        (:factory head)
             remaining-deps (:remaining-deps head)])
 
+      (if (and (nil? factory)
+               (= :required dep-type))
+        (missing-dependency! stack))
+
       (if (contains? built-map key)
         (recur tail built-map))
 
       (if (seq-contains? (map :key tail) key)
           (circular-dependency! stack))
-
-      (if (and (nil? factory)
-               (= :required dep-type))
-        (missing-dependency! stack))
 
       (if-some [[[key dep-type] & remaining-deps] remaining-deps]
         (recur (-> stack
@@ -140,11 +139,9 @@
                              (p/dependencies factory))
             obj        (p/build factory built-deps)
             built-map  (assoc built-map key obj)]
-        (if (and (nil? obj)
-                 (= :required dep-type))
-          (missing-dependency! stack))
         (vswap! *stop-list conj #(p/demolish factory obj))
-        (recur tail built-map)))))
+        (recur (conj tail (stack-frame key dep-type obj))
+               built-map)))))
 
 (defn- try-run [proc]
   (try
