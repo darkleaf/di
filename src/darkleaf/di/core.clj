@@ -33,9 +33,6 @@
       x#
       (?? ~@next))))
 
-(defmacro ^:private <<- [& body]
-  `(->> ~@(reverse body)))
-
 (defn- index-of
   "Returns the index of the first occurrence of `x` in `xs`."
   [^List xs x]
@@ -70,16 +67,20 @@
 (defn- missing-dependency! [stack]
   (let [key (-> stack peek :key)]
     (throw (ex-info (str "Missing dependency " key)
-                    {:type ::missing-dependency
-                     :path (->> stack pop (map :key) reverse)
-                     :key  key}))))
+                    {:type  ::missing-dependency
+                     :stack (map :key stack)}))))
 
 (defn- circular-dependency! [stack]
   (let [key (-> stack peek :key)]
     (throw (ex-info (str "Circular dependency " key)
                     {:type  ::circular-dependency
-                     :path (->> stack pop (map :key) reverse)
-                     :key  key}))))
+                     :stack (map :key stack)}))))
+
+(defn- unknown-dep-type! [stack]
+  (let [dep-type (-> stack peek :dep-type)]
+    (throw (ex-info "Unknown dependency type encountered"
+                    {:dep-type dep-type
+                     :stack    (map :key stack)}))))
 
 (defn- update-head [stack f & args]
  (let [head (peek stack)
@@ -95,42 +96,41 @@
 (defn- build-obj [{:keys [registry *stop-list]} key]
   (loop [stack     (list (stack-frame key :required (registry key)))
          built-map {}]
-    (<<-
-      (if (empty? stack)
-        (built-map key))
+    (if (empty? stack)
+      (built-map key)
 
       (let [head           (peek stack)
             tail           (pop stack)
             key            (:key head)
             dep-type       (:dep-type head)
             factory        (:factory head)
-            remaining-deps (:remaining-deps head)])
+            remaining-deps (:remaining-deps head)]
 
-      (if (and (nil? factory)
-               (= :required dep-type))
-        (missing-dependency! stack))
+        (cond
+          (contains? built-map key)
+          (recur tail built-map)
 
-      (if (and (nil? factory)
-               (= :optional dep-type))
-        (recur tail (dissoc built-map key)))
+          (seq-contains? (map :key tail) key)
+          (circular-dependency! stack)
 
-      (if (contains? built-map key)
-        (recur tail built-map))
+          (seq remaining-deps)
+          (let [[key dep-type] (first remaining-deps)]
+            (recur (-> stack
+                       (update-head update :remaining-deps rest)
+                       (conj (stack-frame key dep-type (registry key))))
+                   built-map))
 
-      (if (seq-contains? (map :key tail) key)
-        (circular-dependency! stack))
-
-      (if-some [[[key dep-type] & remaining-deps] remaining-deps]
-        (recur (-> stack
-                   (update-head assoc :remaining-deps remaining-deps)
-                   (conj (stack-frame key dep-type (registry key))))
-               built-map))
-
-      (let [built-deps (select-keys built-map (keys (p/dependencies factory)))
-            obj        (p/build factory built-deps)]
-        (vswap! *stop-list conj #(p/demolish factory obj))
-        (recur (conj tail (stack-frame key dep-type obj))
-               (assoc built-map key obj))))))
+          :build
+          (let [built-deps (select-keys built-map (keys (p/dependencies factory)))
+                obj        (p/build factory built-deps)]
+            (if (nil? obj)
+              (case dep-type
+                :required (missing-dependency! stack)
+                :optional (recur tail built-map)
+                (unknown-dep-type! stack))
+              (do
+                (vswap! *stop-list conj #(p/demolish factory obj))
+                (recur tail (assoc built-map key obj))))))))))
 
 (defn- try-run [proc]
   (try
