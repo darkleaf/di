@@ -101,42 +101,44 @@
 (defn- obj-built? [{:keys [built-map]} key]
   (contains? built-map key))
 
-(defn- deps [{:as ctx :keys [registry]} {parent-k :k}]
-  (let [{built true, to-build false}
-        (->> (registry parent-k)
-             p/dependencies
-             (group-by (fn [[dep-k _]] (obj-built? ctx dep-k))))]
-    {:deps-to-build to-build
-     :built-deps    (into {}
-                          (keep (fn [[dep-k _dep-type]]
-                                  (when-some [dep-obj (find-obj ctx dep-k)]
-                                    [dep-k dep-obj])))
-                          built)}))
+(defn- upd-deps [{:as ctx} {:as cur to-build :to-build}]
+  (let [{built true, to-build false} (group-by (fn [[dep-k _]] (obj-built? ctx dep-k)) to-build)]
+    (assoc cur
+           :to-build   to-build
+           :built-deps (into {}
+                             (keep (fn [[dep-k _dep-type]]
+                                     (when-some [dep-obj (find-obj ctx dep-k)]
+                                       [dep-k dep-obj])))
+                             built))))
 
-(defn- build-obj [{:as ctx :keys [registry *stop-list]} {:as cur :keys [k k-type]} deps]
-  (let [factory (registry k)
-        obj     (p/build factory deps)]
+(defn- build-obj [{:as ctx :keys [*stop-list]} {:as cur :keys [k k-type factory built-deps]}]
+  (let [obj (p/build factory built-deps)]
     (vswap! *stop-list conj #(p/demolish factory obj))
     (when (and (nil? obj) (= :required k-type))
       (missing-dependency! cur))
     (assoc-in ctx [:built-map k] obj)))
 
-(defn- push-to-build-stack [stack path & deps]
+(defn- push-to-build-stack [{:keys [registry]} stack path & deps]
   (into stack
         (map (fn [[dep dep-type]]
-               {:k dep :k-type dep-type :path path}))
+               (let [factory (registry dep)]
+                 {:k        dep
+                  :k-type   dep-type
+                  :path     path
+                  :factory  factory
+                  :to-build (p/dependencies factory)})))
         (reverse deps)))
 
 (defn- build-obj&deps [ctx key-to-build]
   (loop [ctx (assoc ctx
-                    :stack           (push-to-build-stack () [] [key-to-build :required])
+                    :stack           (push-to-build-stack ctx () [] [key-to-build :required])
                     :built-map       {}
                     :deferred        #{}
                     :build-iteration 0)]
     (let [{:as ctx :keys [deferred build-iteration stack]} (update ctx :build-iteration inc)
           {:as cur :keys [k path]}                         (peek stack)
-          {:keys [deps-to-build built-deps]}               (some->> cur (deps ctx))
-          ready-to-build?                                  (empty? deps-to-build)]
+          cur                                              (some->> cur (upd-deps ctx))
+          ready-to-build?                                  (empty? (:to-build cur))]
       (cond
         (nil? cur)
         ctx
@@ -150,7 +152,7 @@
         ready-to-build?
         (recur (-> ctx
                    (update ctx :stack pop)
-                   (build-obj cur built-deps)))
+                   (build-obj cur)))
 
         (deferred k)
         (circular-dependency! cur)
@@ -158,7 +160,7 @@
         :else
         (recur (-> ctx
                    (update :deferred conj k)
-                   (update :stack #(apply push-to-build-stack % (conj path k) deps-to-build))))))))
+                   (update :stack #(apply push-to-build-stack ctx % (conj path k) (:to-build cur)))))))))
 
 (defn- try-build [ctx key]
   (try
