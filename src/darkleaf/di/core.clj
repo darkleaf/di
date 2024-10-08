@@ -76,12 +76,6 @@
                     {:type  ::circular-dependency
                      :stack (map :key stack)}))))
 
-(defn- unknown-dep-type! [stack]
-  (let [dep-type (-> stack peek :dep-type)]
-    (throw (ex-info "Unknown dependency type encountered"
-                    {:dep-type dep-type
-                     :stack    (map :key stack)}))))
-
 (defn- update-head [stack f & args]
  (let [head (peek stack)
        tail (pop stack)]
@@ -125,9 +119,8 @@
                 obj        (p/build factory built-deps)]
             (if (nil? obj)
               (case dep-type
-                :required (missing-dependency! stack)
                 :optional (recur tail built-map)
-                (unknown-dep-type! stack))
+                (missing-dependency! stack))
               (do
                 (vswap! *stop-list conj #(p/demolish factory obj))
                 (recur tail (assoc built-map key obj))))))))))
