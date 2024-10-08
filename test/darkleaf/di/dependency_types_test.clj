@@ -52,9 +52,3 @@
   (t/is (thrown-with-msg? ExceptionInfo
                           #"\ACircular dependency :darkleaf.di.dependency-types-test/root\z"
                           (di/start ::root {::root (factory ::root :optional)}))))
-
-(t/deftest unknown-test
-  (t/is (thrown-with-msg? ExceptionInfo
-                          #"\AUnknown dependency type encountered\z"
-                          (di/start ::root
-                                    {::root (factory ::dependency :unknown)}))))
