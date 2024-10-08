@@ -77,9 +77,8 @@
 (t/deftest error-path-test
   (t/is (= {:type ::di/missing-dependency
             :stack [`missing-path `b-path `root-path]}
-           (-> (di/start `root-path)
-               try-ex-data
-               (select-keys [:type :stack])))))
+           (try-ex-data (di/start `root-path)))))
+
 
 (defn parent
   [{::syms [missing-key]}]
@@ -89,15 +88,11 @@
 (t/deftest missing-dependency-test
   (t/is (= {:type  ::di/missing-dependency
             :stack [`missing-root]}
-           (-> (di/start `missing-root)
-               try-ex-data
-               (select-keys [:type :stack]))))
+           (try-ex-data (di/start `missing-root))))
 
-  (t/is (= {:type ::di/missing-dependency
+  (t/is (= {:type  ::di/missing-dependency
             :stack [`missing-key `parent]}
-           (-> (di/start `parent)
-               try-ex-data
-               (select-keys [:type :stack])))))
+           (try-ex-data (di/start `parent)))))
 
 
 (defn recursion-a
@@ -115,12 +110,9 @@
 (t/deftest circular-dependency-test
   (t/is (= {:type ::di/circular-dependency
             :stack [`recursion-a `recursion-b `recursion-a]}
-           (-> (di/start `recursion-a)
-               try-ex-data
-               (select-keys [:type :stack]))))
+           (try-ex-data (di/start `recursion-a))))
+
 
   (t/is (= {:type ::di/circular-dependency
             :stack [`recursion-c `recursion-c]}
-           (-> (di/start `recursion-c)
-               try-ex-data
-               (select-keys [:type :stack])))))
+           (try-ex-data (di/start `recursion-c)))))
