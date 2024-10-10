@@ -87,7 +87,12 @@
    :factory        factory
    :remaining-deps (seq (p/dependencies factory))})
 
-(defn- build-obj [{:keys [registry *stop-list]} key]
+(defn- build-obj [built-map factory]
+  (let [declared-deps (p/dependencies factory)
+        built-deps    (select-keys built-map (keys declared-deps))]
+    (p/build factory built-deps)))
+
+(defn- build [{:keys [registry *stop-list]} key]
   (loop [stack     (list (stack-frame key :required (registry key)))
          built-map {}]
     (if (empty? stack)
@@ -114,16 +119,13 @@
                        (conj (stack-frame key dep-type (registry key))))
                    built-map))
 
-          :build
-          (let [built-deps (select-keys built-map (keys (p/dependencies factory)))
-                obj        (p/build factory built-deps)]
-            (if (nil? obj)
-              (case dep-type
-                :optional (recur tail built-map)
-                (missing-dependency! stack))
-              (do
-                (vswap! *stop-list conj #(p/demolish factory obj))
-                (recur tail (assoc built-map key obj))))))))))
+          :else
+          (let [obj (build-obj built-map factory)]
+            (vswap! *stop-list conj #(p/demolish factory obj))
+            (case [obj dep-type]
+              [nil :optional] (recur tail built-map)
+              [nil :required] (missing-dependency! stack)
+              (recur tail (assoc built-map key obj)))))))))
 
 (defn- try-run [proc]
   (try
@@ -151,7 +153,7 @@
 
 (defn- try-build [ctx key]
   (try
-    (build-obj ctx key)
+    (build ctx key)
     (catch Throwable ex
       (let [exs (try-stop-started ctx)
             exs (cons ex exs)]
