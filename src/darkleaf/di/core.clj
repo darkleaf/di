@@ -64,50 +64,68 @@
    (.addSuppressed a b)
    a))
 
-(declare find-or-build)
+(defn- missing-dependency! [stack]
+  (let [key (-> stack peek :key)]
+    (throw (ex-info (str "Missing dependency " key)
+                    {:type  ::missing-dependency
+                     :stack (map :key stack)}))))
 
-(defn- missing-dependency! [ctx key]
-  (throw (ex-info (str "Missing dependency " key)
-                  {:type ::missing-dependency
-                   :path (:under-construction ctx)
-                   :key  key})))
+(defn- circular-dependency! [stack]
+  (let [key (-> stack peek :key)]
+    (throw (ex-info (str "Circular dependency " key)
+                    {:type  ::circular-dependency
+                     :stack (map :key stack)}))))
 
-(defn- circular-dependency! [ctx key]
-  (throw (ex-info (str "Circular dependency " key)
-                  {:type ::circular-dependency
-                   :path (:under-construction ctx)
-                   :key  key})))
+(defn- update-head [stack f & args]
+ (let [head (peek stack)
+       tail (pop stack)]
+   (conj tail (apply f head args))))
 
-(defn- resolve-dep [{:as ctx, :keys [under-construction]} acc key dep-type]
-  (if (seq-contains? under-construction key)
-    (circular-dependency! ctx key)
-    (if-some [obj (find-or-build ctx key)]
-      (assoc acc key obj)
-      (if (= :optional dep-type)
-        acc
-        (missing-dependency! ctx key)))))
+(defn- stack-frame [key dep-type factory]
+  {:key            key
+   :dep-type       dep-type
+   :factory        factory
+   :remaining-deps (seq (p/dependencies factory))})
 
-(defn- resolve-deps [ctx deps]
-  (reduce-kv (partial resolve-dep ctx)
-             {}
-             deps))
+(defn- build-obj [built-map factory]
+  (let [declared-deps (p/dependencies factory)
+        built-deps    (select-keys built-map (keys declared-deps))]
+    (p/build factory built-deps)))
 
-(defn- find-obj [{:keys [*built-map]} key]
-  (get @*built-map key))
+(defn- build [{:keys [registry *stop-list]} key]
+  (loop [stack     (list (stack-frame key :required (registry key)))
+         built-map {}]
+    (if (empty? stack)
+      (built-map key)
 
-(defn- build-obj [{:as ctx, :keys [registry *built-map *stop-list]} key]
-  (let [ctx           (update ctx :under-construction conj key)
-        factory       (registry key)
-        declared-deps (p/dependencies factory)
-        resolved-deps (resolve-deps ctx declared-deps)
-        obj           (p/build factory resolved-deps)]
-    (vswap! *stop-list conj #(p/demolish factory obj))
-    (vswap! *built-map  assoc key obj)
-    obj))
+      (let [head           (peek stack)
+            tail           (pop stack)
+            key            (:key head)
+            dep-type       (:dep-type head)
+            factory        (:factory head)
+            remaining-deps (:remaining-deps head)]
 
-(defn- find-or-build [ctx key]
-  (?? (find-obj  ctx key)
-      (build-obj ctx key)))
+        (cond
+          (contains? built-map key)
+          (recur tail built-map)
+
+          (seq-contains? (map :key tail) key)
+          (circular-dependency! stack)
+
+          (seq remaining-deps)
+          (let [[key dep-type] (first remaining-deps)]
+            (recur (-> stack
+                       (update-head update :remaining-deps rest)
+                       (conj (stack-frame key dep-type (registry key))))
+                   built-map))
+
+          :else
+          (let [obj (build-obj built-map factory)]
+            (vswap! *stop-list conj #(p/demolish factory obj))
+            (case [obj dep-type]
+              [nil :optional] (recur tail built-map)
+              [nil :required] (missing-dependency! stack)
+              (recur tail (assoc built-map key obj)))))))))
 
 (defn- try-run [proc]
   (try
@@ -135,8 +153,7 @@
 
 (defn- try-build [ctx key]
   (try
-    (?? (build-obj ctx key)
-        (missing-dependency! ctx key))
+    (build ctx key)
     (catch Throwable ex
       (let [exs (try-stop-started ctx)
             exs (cons ex exs)]
@@ -242,10 +259,8 @@
 
         middlewares (concat [with-env with-ns root-registry] middlewares)
         registry    (apply-middleware nil-registry middlewares)
-        ctx         {:*built-map         (volatile! {})
-                     :*stop-list         (volatile! '())
-                     :under-construction []
-                     :registry           registry}
+        ctx         {:registry   registry
+                     :*stop-list (volatile! '())}
         obj         (try-build ctx key)]
     ^{:type   ::root
       ::print obj}
