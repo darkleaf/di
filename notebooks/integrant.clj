@@ -78,7 +78,7 @@
   ;; (-> route-data
   ;;     (ring/router)
   ;;     (ring/ring-handler))
-  :ring-handler)
+  [:ring-handler route-data])
 
 ;; #### Using Integrant
 
@@ -195,7 +195,7 @@
   [["/subsystem-a/" '...]])
 
 (defn subsystem-a []
-  (di/update-key `route-data concat `subsystem-a-route-data))
+  (di/update-key `route-data concat (di/ref `subsystem-a-route-data)))
 
 ;; Starting the system:
 
@@ -212,7 +212,7 @@
 
 (defn subsystem-a* [{:keys [subsystem-a-enabled]}]
   (when subsystem-a-enabled
-    (di/update-key `route-data concat `subsystem-a-route-data)))
+    (di/update-key `route-data concat (di/ref `subsystem-a-route-data))))
 
 (defn registry [flags]
   [{"PORT"         8080
