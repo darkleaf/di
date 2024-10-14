@@ -1,3 +1,11 @@
+# 3.1.0
+
++ Internal refactoring: switched from recursive functions to loop/recur to minimize stack traces in exceptions.
++ Missing and circular dependency exceptions now include a stack of keys inside `ex-info` for easier debugging.
++ Improved key generation: better naming of generated keys in `update-key`.
++ Increased test coverage to ensure better reliability.
++ Updated comparison with Integrant.
+
 # 3.0.0
 
 ## New features
