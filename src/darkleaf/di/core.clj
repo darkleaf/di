@@ -596,13 +596,51 @@
 (defn- var->0-service [variable]
   variable)
 
+
+
+(comment
+
+  (let [f (with-meta
+            (fn
+              ([] 0)
+              ([a b c d] 4)
+              ([a b c d & _] :n))
+            {:foo :bar})]
+    [(f)
+     (f 1 2 3 4)
+     (f 1 2 3 4 5)])
+
+
+
+  ,,,)
+
+
 (defn- var->service [variable]
-  (let [deps (dependencies-fn variable)]
+  (let [deps (dependencies-fn variable)
+        name (str "#di/service[" variable "]")]
+    ;; => #di/service[#'darkleaf.di.service-name-test/service]
     (reify p/Factory
       (dependencies [_]
-         deps)
+        deps)
       (build [_ deps]
-         (partial variable deps))
+        (-> variable
+            (partial deps)
+
+            ;; with-meta медленнее partial, т.к. фактически делает (apply f args)
+            ;; https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/AFunction.java#L31
+            ;; и все равно в сообщении об ошибке будет имя класса, а не print-method
+
+            ;; Можно сделать свой (deftype Service [variable deps] IFn ...)
+            ;; defrecord тут нельзя
+            ;; Так в ошибках будет
+            ;; class darkleaf.di.service.Service cannot be cast to class
+            ;; вместо
+            ;; partial:   class clojure.core$partial$fn__5908 cannot be cast to class
+            ;; with-meta: class clojure.lang.AFunction$1 cannot be cast to class
+
+            (with-meta
+              {:type ::service
+               :name name})))
       (demolish [_ _]))))
 
 (defn- var->factory-defn [variable]
@@ -662,6 +700,9 @@
   (.write w " ")
   (binding [*out* w]
     (pr (-> o meta ::print))))
+
+(defmethod print-method ::service [o ^Writer w]
+  (.write w (-> o meta :name str)))
 
 (defn- try-namespace [x]
   (when (ident? x)
