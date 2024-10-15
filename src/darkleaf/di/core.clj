@@ -9,7 +9,7 @@
 ;; **********************************************************************/
 
 (ns darkleaf.di.core
-  (:refer-clojure :exclude [ref key ns-publics derive])
+  (:refer-clojure :exclude [ref key ns-publics derive with-open])
   (:require
    [clojure.core :as c]
    [clojure.set :as set]
@@ -759,3 +759,24 @@
               (update-keys deps #(-> % name keyword)))
             (demolish [_ _])))
         (registry key)))))
+
+(defmacro with-open
+  "A `c/with-open` variant that supports destructuring in bindings.
+
+  bindings => [name init ...]
+  Evaluates body in a try expression with names bound to the values
+  of the inits, and a finally clause that calls (.close name) on each
+  name in reverse order."
+  [bindings & body]
+  {:pre [(vector? bindings)
+         (even? (count bindings))]}
+  (if (zero? (count bindings))
+    `(do ~@body)
+    (let [[binding-form init-expr] (subvec bindings 0 2)]
+      `(let [resource# ~init-expr]
+         (try
+           (let [~binding-form resource#]
+             (with-open ~(subvec bindings 2)
+               ~@body))
+           (finally
+             (.close resource#)))))))
