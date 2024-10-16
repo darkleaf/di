@@ -797,3 +797,19 @@
                ~@body))
            (finally
              (.close resource#)))))))
+
+(defn log [built-cb demolished-cb]
+  (fn [registry]
+    (fn [key]
+      (let [factory (registry key)]
+        (reify p/Factory
+          (dependencies [_]
+            (p/dependencies factory))
+          (build [_ deps]
+            (let [obj (p/build factory deps)]
+              (built-cb key deps obj)
+              obj))
+          (demolish [_ obj]
+            (p/demolish factory obj)
+            (demolished-cb key obj)
+            nil))))))
