@@ -773,7 +773,7 @@
   (if (zero? (count bindings))
     `(do ~@body)
     (let [[binding-form init-expr] (subvec bindings 0 2)]
-      `(let [resource#     ~init-expr]
+      `(let [resource# ~init-expr]
          (try
            (let [~binding-form resource#]
              (with-open ~(subvec bindings 2)
