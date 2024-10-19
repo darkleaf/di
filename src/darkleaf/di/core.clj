@@ -593,17 +593,23 @@
       (demolish [_ obj]
         (stop obj)))))
 
+(defn- service-factory [variable declared-deps]
+  (reify p/Factory
+    (dependencies [_]
+      declared-deps)
+    (build [_ deps]
+      (-> variable
+          (partial deps)
+          (with-meta {:type   ::service
+                      ::print variable})))
+    (demolish [_ _])))
+
 (defn- var->0-service [variable]
   variable)
 
 (defn- var->service [variable]
   (let [deps (dependencies-fn variable)]
-    (reify p/Factory
-      (dependencies [_]
-         deps)
-      (build [_ deps]
-         (partial variable deps))
-      (demolish [_ _]))))
+    (service-factory variable deps)))
 
 (defn- var->factory-defn [variable]
   (when (defn? variable)
@@ -627,12 +633,7 @@
   "for multimethods"
   [variable]
   (if-some [deps (some-> variable meta ::deps (zipmap (repeat :required)))]
-    (reify p/Factory
-      (dependencies [_]
-        deps)
-      (build [_ deps]
-        (partial variable deps))
-      (demolish [_ _]))))
+    (service-factory variable deps)))
 
 (defn- var->factory-default [variable]
   @variable)
@@ -655,6 +656,7 @@
 
 (c/derive ::root     ::reified)
 (c/derive ::template ::reified)
+(c/derive ::service  ::reified)
 
 (defmethod print-method ::reified [o ^Writer w]
   (.write w "#")
