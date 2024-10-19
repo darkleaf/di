@@ -476,6 +476,12 @@
                     (stop [_]
                       (p/stop original))))))))))))
 
+(defn- vreset-once! [vol newval]
+  (if (some? @vol)
+    (throw (ex-info "Could not reset twice" {:vol    vol
+                                             :newval newval}))
+    (vreset! vol newval)))
+
 (defn update-key
   "A registry middleware for updating built objects.
 
@@ -493,31 +499,31 @@
   See `start`, `derive`."
   [target f & args]
   {:pre [(key? target)]}
-  (let [new-key      (gensym (str (symbol target) "+di-update-key#"))
-        f-key        (gensym "darkleaf.di.core/update-key-f#")
-        arg-keys     (for [_ args] (gensym "darkleaf.di.core/update-key-arg#"))
-        new-factory  (reify p/Factory
-                       (dependencies [_]
-                         (zipmap (concat [new-key f-key] arg-keys)
-                                 (repeat :optional)))
-                       (build [_ deps]
-                         (let [t    (deps new-key)
-                               f    (deps f-key)
-                               args (map deps arg-keys)]
-                           (apply f t args)))
-                       (demolish [_ _]))
-        own-registry (zipmap (cons f-key arg-keys)
-                             (cons f     args))]
+  (let [f-key         (gensym "darkleaf.di.core/update-key-f#")
+        arg-keys      (for [_ args] (gensym "darkleaf.di.core/update-key-arg#"))
+        own-keys      (cons f-key arg-keys)
+        own-factories (cons f args)
+        own-registry  (zipmap own-keys own-factories)]
     (fn [registry]
       (fn [key]
-        (cond
-          (= new-key key)
-          (registry target)
-
-          (= target key)
-          new-factory
-
-          :else
+        (if (= target key)
+          (let [factory (registry key)
+                *obj    (volatile! nil)]
+            (reify p/Factory
+              (dependencies [_]
+                (merge (p/dependencies factory)
+                       (zipmap own-keys (repeat :optional))))
+              (build [_ deps]
+                (let [f    (deps f-key)
+                      args (map deps arg-keys)
+                      ;; todo?: add `remove-keys` like `select-keys`
+                      ;; (select-keys deps (keys (p/dependencies factory))) ???
+                      deps (apply dissoc deps own-keys)
+                      obj  (p/build factory deps)]
+                  (vreset-once! *obj obj)
+                  (apply f obj args)))
+              (demolish [_ _]
+                (p/demolish factory @*obj))))
           (?? (own-registry key)
               (registry key)))))))
 
