@@ -633,14 +633,14 @@
           kind      (::kind m (cond has-stop? :component))
           arities   (->> variable arglists (map count))]
       (case kind
-        :component (condp = arities
+        :component (case arities
                      [0] (var->0-component variable)
                      [1] (var->1-component variable)
                      (throw (ex-info
                              "The component must only have 0 or 1 arity"
                              {:variable variable
                               :arities  arities})))
-        #_service  (condp = arities
+        #_service  (case arities
                      [0] (var->0-service variable)
                      (var->service variable))))))
 
