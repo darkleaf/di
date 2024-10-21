@@ -1,7 +1,8 @@
 (ns darkleaf.di.registries-test
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]
+   [darkleaf.di.protocols :as p]))
 
 (def root 'root)
 
@@ -32,4 +33,23 @@
 
 (t/deftest nil-registry-test
   (with-open [root (di/start `root nil)]
+    (t/is (= 'root @root))))
+
+
+(defn null-registry-middleware
+  "It is an identity-like middleware. It does nothing."
+  []
+  (fn [registry]
+    (fn [key]
+      (let [factory (registry key)]
+        (reify p/Factory
+          (dependencies [_]
+            (p/dependencies factory))
+          (build [_ deps]
+            (p/build factory deps))
+          (demolish [_ obj]
+            (p/build factory obj)))))))
+
+(t/deftest null-registry-middleware-test
+  (with-open [root (di/start `root (null-registry-middleware))]
     (t/is (= 'root @root))))
