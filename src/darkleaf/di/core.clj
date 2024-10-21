@@ -669,11 +669,11 @@
   (build [this _] this)
   (demolish [_ _] nil))
 
-(c/derive ::root     ::reified)
-(c/derive ::template ::reified)
-(c/derive ::service  ::reified)
+(c/derive ::root     ::instance)
+(c/derive ::template ::instance)
+(c/derive ::service  ::instance)
 
-(defmethod print-method ::reified [o ^Writer w]
+(defmethod print-method ::instance [o ^Writer w]
   (.write w "#")
   (.write w (-> o type symbol str))
   (.write w " ")
