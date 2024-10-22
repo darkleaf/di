@@ -21,7 +21,8 @@
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
    (java.lang AutoCloseable)
-   (java.util List)))
+   (java.util List)
+   (java.util.concurrent.atomic AtomicInteger)))
 
 (set! *warn-on-reflection* true)
 
@@ -42,6 +43,10 @@
 
 (defn- seq-contains? [xs x]
   (not (neg? (index-of xs x))))
+
+(defn- try-namespace [x]
+  (when (ident? x)
+    (namespace x)))
 
 (def ^:private dependency-type-priority
   {:required 1
@@ -197,6 +202,16 @@
           (System/getenv key))
         (registry key))))
 
+(defn- with-per-system-objects
+  ""
+  [registry]
+  (let [id      (AtomicInteger.)
+        next-id (fn next-id [] (.incrementAndGet id))]
+    (fn [key]
+      (case key
+        ::next-id next-id
+        (registry key)))))
+
 (declare ref template)
 
 (defn- key->key&registry [key]
@@ -257,7 +272,11 @@
   [key & middlewares]
   (let [[key root-registry] (key->key&registry key)
 
-        middlewares (concat [with-env with-ns root-registry] middlewares)
+        middlewares (concat [with-per-system-objects
+                             with-env
+                             with-ns
+                             root-registry]
+                            middlewares)
         registry    (apply-middleware nil-registry middlewares)
         ctx         {:registry   registry
                      :*stop-list (volatile! '())}
@@ -493,24 +512,25 @@
   See `start`, `derive`."
   [target f & args]
   {:pre [(key? target)]}
-  (let [prefix       (gensym (str (symbol target) "+di-update-key#"))
-        new-key      (symbol (str prefix "-target"))
-        f-key        (symbol (str prefix "-f"))
-        arg-keys     (for [i (-> args count range)]
-                       (symbol (str prefix "-arg#" i)))
-        new-factory  (reify p/Factory
-                       (dependencies [_]
-                         (zipmap (concat [new-key f-key] arg-keys)
-                                 (repeat :optional)))
-                       (build [_ deps]
-                         (let [t    (deps new-key)
-                               f    (deps f-key)
-                               args (map deps arg-keys)]
-                           (apply f t args)))
-                       (demolish [_ _]))
-        own-registry (zipmap (cons f-key arg-keys)
-                             (cons f     args))]
-    (fn [registry]
+  (fn [registry]
+    (let [next-id      (registry ::next-id)
+          prefix       (str (symbol target) "+di-update-key#" (next-id))
+          new-key      (symbol (str prefix "-target"))
+          f-key        (symbol (str prefix "-f"))
+          arg-keys     (for [i (-> args count range)]
+                         (symbol (str prefix "-arg#" i)))
+          new-factory  (reify p/Factory
+                         (dependencies [_]
+                           (zipmap (concat [new-key f-key] arg-keys)
+                                   (repeat :optional)))
+                         (build [_ deps]
+                           (let [t    (deps new-key)
+                                 f    (deps f-key)
+                                 args (map deps arg-keys)]
+                             (apply f t args)))
+                         (demolish [_ _]))
+          own-registry (zipmap (cons f-key arg-keys)
+                               (cons f     args))]
       (fn [key]
         (cond
           (= new-key key)
@@ -536,27 +556,35 @@
   (di/start ::root (di/add-side-dependency `flyway))
   ```"
   [dep-key]
-  (let [*orig-key     (volatile! nil)
-        *orig-factory (volatile! nil)
-        new-key       (gensym "darkleaf.di.core/new-key#")
-        new-factory   (reify p/Factory
-                        (dependencies [_]
-                          ;; array-map preserves order of keys
-                          {new-key :required
-                           dep-key :required})
-                        (build [_ deps]
-                          (new-key deps))
-                        (demolish [_ _]))]
-    (fn [registry]
+  (fn [registry]
+    (let [next-id       (registry ::next-id)
+          *orig-key     (volatile! nil)
+          *orig-factory (volatile! nil)
+          new-key       (symbol (str "darkleaf.di.generated/new-key#" (next-id)))
+          new-factory   (reify p/Factory
+                          (dependencies [_]
+                            ;; array-map preserves order of keys
+                            {new-key :required
+                             dep-key :required})
+                          (build [_ deps]
+                            (new-key deps))
+                          (demolish [_ _]))]
       (fn [key]
-        (when (nil? @*orig-key)
-          (vreset! *orig-key key))
-        (when (nil? @*orig-factory)
-          (vreset! *orig-factory (registry key)))
-        (cond
-          (= @*orig-key key) new-factory
-          (= new-key key)    @*orig-factory
-          :else              (registry key))))))
+        ;;
+        ;; ну такое
+        ;; в update-key тоже самое же нужно делать?
+        ;;
+        (if (= "darkleaf.di.core" (try-namespace key))
+          (registry key)
+          (do
+           (when (nil? @*orig-key)
+             (vreset! *orig-key key))
+           (when (nil? @*orig-factory)
+             (vreset! *orig-factory (registry key)))
+           (cond
+             (= @*orig-key key) new-factory
+             (= new-key key)    @*orig-factory
+             :else              (registry key))))))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))
@@ -666,10 +694,6 @@
   (.write w " ")
   (binding [*out* w]
     (pr (-> o meta ::print))))
-
-(defn- try-namespace [x]
-  (when (ident? x)
-    (namespace x)))
 
 (defn env-parsing
   "A registry middleware for parsing environment variables.
