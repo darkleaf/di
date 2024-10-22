@@ -807,7 +807,7 @@
             (p/dependencies factory))
           (build [_ deps]
             (let [obj (p/build factory deps)]
-              (built-cb key deps obj)
+              (built-cb key obj)
               obj))
           (demolish [_ obj]
             (p/demolish factory obj)

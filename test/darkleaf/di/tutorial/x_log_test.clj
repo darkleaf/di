@@ -17,21 +17,18 @@
   :c)
 
 (t/deftest log
-  (let [logs         (atom [])
-        built!       (fn [key deps obj]
-                       (swap! logs conj [:built key deps obj]))
-        demolished!  (fn [key obj]
-                       (swap! logs conj [:demolished key obj]))
-        [a b c
-         :as system] (di/start [`a `b `c]
-                               (di/log built! demolished!))]
-    (di/stop system)
-    (t/is (= [[:built `a {} a]
-              [:built `b {`a a} b]
-              [:built `c {`b b} c]
-              [:built ::di/implicit-root {`a a `b b `c c} [a b c]]
-              [:demolished ::di/implicit-root [a b c]]
-              [:demolished `c c]
-              [:demolished `b b]
-              [:demolished `a a]]
+  (let [logs        (atom [])
+        built!      (fn [key obj]
+                      (swap! logs conj [:built      key (pr-str obj)]))
+        demolished! (fn [key obj]
+                      (swap! logs conj [:demolished key (pr-str obj)]))]
+    (with-open [root (di/start `c (di/log built! demolished!))])
+    (t/is (= [[:built `a ":a"]
+              [:built `b
+               "#darkleaf.di.core/service #'darkleaf.di.tutorial.x-log-test/b"]
+              [:built `c ":c"]
+              [:demolished `c ":c"]
+              [:demolished `b
+               "#darkleaf.di.core/service #'darkleaf.di.tutorial.x-log-test/b"]
+              [:demolished `a ":a"]]
              @logs))))
