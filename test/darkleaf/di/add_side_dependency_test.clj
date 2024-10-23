@@ -26,59 +26,54 @@
 
 (defn- a
   {::di/kind :component}
-  [{log ::log}]
-  (swap! log conj :a)
+  []
   :a)
 
 (defn- b
   {::di/kind :component}
-  [{log ::log}]
-  (swap! log conj :b)
+  []
   :b)
 
 (defn- c
   {::di/kind :component}
-  [{log ::log}]
-  (swap! log conj :c)
+  []
   :c)
 
 (defn- d
   {::di/kind :component}
-  [{log ::log}]
-  (swap! log conj :d)
+  []
   :d)
 
 (defn- e
   {::di/kind :component}
-  [{log ::log}]
-  (swap! log conj :e)
+  []
   :e)
 
 (defn- f
   {::di/kind :component}
-  [{log ::log}]
-  (swap! log conj :f)
+  []
   :f)
 
 (defn- g
   {::di/kind :component}
-  [{log ::log}]
-  (swap! log conj :g)
+  []
   :g)
 
 (defn- h
   {::di/kind :component}
-  [{log ::log}]
-  (swap! log conj :h)
+  []
   :h)
 
 (defn- side-dep
   {::di/kind :component}
-  [{log ::log}]
-  (swap! log conj :side-dep))
+  []
+  :side-dep)
 
 (t/deftest bug-array-map->hash-map
-  (let [log (atom [])]
+  (let [log       (atom [])
+        built!    (fn [key obj]
+                    (swap! log conj key))
+        demolish! (fn [key obj])]
     (with-open [root (di/start ::root
                                {::log  log
                                 ::root (di/template
@@ -90,8 +85,9 @@
                                          :f (di/ref `f)
                                          :g (di/ref `g)
                                          :h (di/ref `h)})}
-                               (di/add-side-dependency `side-dep))]
-      (t/is (= [:a :b :c :d :e :f :g :h :side-dep] @log))
+                               (di/add-side-dependency `side-dep)
+                               (di/log built! demolish!))]
+      (t/is (= [`a `b `c `d `e `f `g `h `di/new-key#0 `side-dep ::root] @log))
       (t/is (= {:a :a
                 :b :b
                 :c :c
@@ -103,13 +99,15 @@
 
 (defn- side-dep2
   {::di/kind :component}
-  [{log ::log}]
-  (swap! log conj :side-dep2))
+  []
+  :side-dep2)
 
 (t/deftest bug-array-map->hash-map-2
-  (let [log (atom [])]
+  (let [log       (atom [])
+        built!    (fn [key obj]
+                    (swap! log conj key))
+        demolish! (fn [key obj])]
     (with-open [root (di/start ::root
-                               {::log  log}
                                (di/add-side-dependency `side-dep)
                                {::root (di/template
                                         {:a (di/ref `a)
@@ -120,8 +118,11 @@
                                          :f (di/ref `f)
                                          :g (di/ref `g)
                                          :h (di/ref `h)})}
-                               (di/add-side-dependency `side-dep2))]
-      (t/is (= [:a :side-dep :b :c :d :e :f :g :h :side-dep2] @log))
+                               (di/add-side-dependency `side-dep2)
+                               (di/log built! demolish!))]
+      (t/is (= [`di/new-key#0 `side-dep `a
+                `b `c `d `e `f `g `h
+                `di/new-key#1 `side-dep2 ::root] @log))
       (t/is (= {:a :a
                 :b :b
                 :c :c
