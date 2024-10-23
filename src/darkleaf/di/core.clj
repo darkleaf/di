@@ -797,3 +797,27 @@
                ~@body))
            (finally
              (.close resource#)))))))
+
+(defn log
+  "A logging middleware.
+  Calls `:after-build!` and `:after-demolish!` during `di/start`.
+  Must be the last one in the middleware chain.
+  Both callbacks are expected to accept
+  the following arg `{:keys [key object]}`."
+  [& {:keys [after-build! after-demolish!]
+      :or   {after-build!    (fn no-op [_])
+             after-demolish! (fn no-op [_])}}]
+  (fn [registry]
+    (fn [key]
+      (let [factory (registry key)]
+        (reify p/Factory
+          (dependencies [_]
+            (p/dependencies factory))
+          (build [_ deps]
+            (let [obj (p/build factory deps)]
+              (after-build! {:key key :object obj})
+              obj))
+          (demolish [_ obj]
+            (p/demolish factory obj)
+            (after-demolish! {:key key :object obj})
+            nil))))))
