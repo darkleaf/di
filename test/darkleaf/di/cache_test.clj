@@ -5,105 +5,112 @@
 
 (set! *warn-on-reflection* true)
 
+(t/deftest invalid-cache-test
+  (let [[_ cache :as system] (di/start [::root ::di/cache]
+                                       {::root :root}
+                                       (di/collect-cache))]
+    (di/stop system)
+    (t/is (thrown? IllegalStateException
+                   (di/start ::root (di/use-cache cache))))))
 
-;; мне надоело логгеры писать
-;; может уже написать реестр, который логирует все действия?
-;; только его нужно передавать извне
-;; (atom [ [`key :started] [`key :stopped] ] )
+(t/deftest not-recursive-test
+  (di/with-open [[_ cache] (di/start [::root ::di/cache]
+                                     {::root :root}
+                                     (di/collect-cache))]
+    (t/try-expr "must not be recrusive"
+                (prn-str cache))))
+
+
+(defn- some+identical? [a b]
+  (and (some? a)
+       (some? b)
+       (identical? a b)))
+
+(defn- some+not-identical? [a b]
+  (and (some? a)
+       (some? b)
+       (not (identical? a b))))
+
 (defn a
   {::di/kind :component}
-  ;; {::di/stop #(swap! (:log %))}
+  [{_ ::param}]
+  (Object.))
 
-  []
-  [{log ::log}]
-  {:name :a
-   :obj  (Object.)})
-
-(t/deftest a-test
+(t/deftest ok-test
   (di/with-open [[main cache] (di/start [`a ::di/cache]
+                                        {::param (Object.)}
                                         (di/collect-cache))
                  [secondary]  (di/start [`a]
                                         (di/use-cache cache))]
-    (t/is (not= nil   main secondary))
-    (t/is (identical? main secondary))))
+    (t/is (some+identical? main secondary))))
 
-(defn b
-  {::di/kind :component}
-  [{conf "B_CONF"}]
-  {:name :b
-   :conf conf
-   :obj  (Object.)})
-
-(t/deftest b-test
-  (di/with-open [[main cache] (di/start [`b ::di/cache]
-                                        {"B_CONF" "conf"}
-                                        ;; должен быть последним в цепочке, чтобы закешировать все
+(t/deftest changed-not-identical-test
+  (di/with-open [[main cache] (di/start [`a ::di/cache]
+                                        {::param (Object.)}
                                         (di/collect-cache))
-                 [secondary]  (di/start [`b]
-                                        (di/use-cache cache))]
-    (t/is (not= nil   main secondary))
-    (t/is (identical? main secondary))))
-
-(t/deftest b-changed-test
-  (di/with-open [[main cache] (di/start [`b ::di/cache]
-                                        {"B_CONF" "conf"}
-                                        (di/collect-cache))
-                 [secondary]  (di/start [`b]
-                                        ;; должен быть первым, чтобы его можно было переопределять
+                 [secondary]  (di/start [`a]
                                         (di/use-cache cache)
-                                        {"B_CONF" "changed"})]
-    (t/is (not= nil        main secondary))
-    (t/is (not (identical? main secondary)))))
+                                        {::param (Object.)})]
+    (t/is (some+not-identical? main secondary))))
 
-(defn c
-  {::di/kind :component}
-  [{a `a, b `b}]
-  {:name :c
-   :a    a
-   :b    b
-   :obj  (Object.)})
-
-(t/deftest c-test
-  (di/with-open [[main cache] (di/start [`c ::di/cache]
-                                        {"B_CONF" "conf"}
+(t/deftest changed-equal-and-identical-test
+  (di/with-open [[main cache] (di/start [`a ::di/cache]
+                                        {::param :equal-and-identical}
                                         (di/collect-cache))
-                 [secondary]  (di/start [`c]
-                                        (di/use-cache cache))]
-    (t/is (not= nil   main secondary))
-    (t/is (identical? main secondary))))
-
-(t/deftest c-changed-test
-  (di/with-open [[main cache] (di/start [`c ::di/cache]
-                                        {"B_CONF" "conf"}
-                                        (di/collect-cache))
-                 [secondary]  (di/start [`c]
+                 [secondary]  (di/start [`a]
                                         (di/use-cache cache)
-                                        {"B_CONF" "changed"})]
-    (t/is (not= nil        main secondary))
-    (t/is (not (identical? main secondary)))
-    (t/is (= :c
-             (:name main)
-             (:name secondary)))
-    (t/is (identical? (:a main)
-                      (:a secondary)))
-    (t/is (not (identical? (:b main)
-                           (:b secondary))))
-    ;; надо ли проверять?
-    (t/is (not (identical? (:obj main)
-                           (:obj secondary))))))
+                                        {::param :equal-and-identical})]
+    (t/is (some+identical? main secondary))))
 
-(t/deftest invalid-cache-test
-  (let [[main cache :as system] (di/start [`c ::di/cache]
-                                          {"B_CONF" "conf"}
-                                          (di/collect-cache))
-        _    (di/stop system)]
-    (t/is (thrown? IllegalStateException
-                   (di/start `c
-                             (di/use-cache cache))))))
 
-(t/deftest not-recursive-test
-  (di/with-open [[main cache] (di/start [`c ::di/cache]
-                                        {"B_CONF" "conf"}
-                                        (di/collect-cache))]
-    (t/try-expr "must not be recrusive"
-                (prn-str cache))))
+(t/deftest changed-equal-but-not-identical-test
+  (di/with-open [[main cache] (di/start [`a ::di/cache]
+                                        {::param 'equal-but-not-identical}
+                                        (di/collect-cache))
+                 [secondary]  (di/start [`a]
+                                        (di/use-cache cache)
+                                        {::param 'equal-but-not-identical})]
+    (t/is (some+not-identical? main secondary))))
+
+(t/deftest start-stop-order-test
+  (let [log       (atom [])
+        callbacks (fn [system]
+                    {:after-build!    (fn [{:keys [key]}]
+                                        (swap! log conj [:start system key]))
+                     :after-demolish! (fn [{:keys [key]}]
+                                        (swap! log conj [:stop system key]))})]
+    (di/with-open [[_ cache] (di/start [`a ::di/cache]
+                                       {::param :param}
+                                       (di/collect-cache)
+                                       (di/log (callbacks :main)))
+                   _  (di/start [::x `a]
+                                {::x :x}
+                                (di/log (callbacks :second))
+                                (di/use-cache cache))
+                   _  (di/start [::y `a]
+                                {::y :y}
+                                (di/log (callbacks :third))
+                                (di/use-cache cache))])
+
+    (t/is (= [[:start :main   ::param]
+              [:start :main   `a]
+              [:start :main   ::di/cache]
+              [:start :main   ::di/implicit-root]
+
+              [:start :second ::x]
+              [:start :second ::di/implicit-root]
+
+              [:start :third  ::y]
+              [:start :third  ::di/implicit-root]
+
+              [:stop  :third  ::di/implicit-root]
+              [:stop  :third  ::y]
+
+              [:stop  :second ::di/implicit-root]
+              [:stop  :second ::x]
+
+              [:stop  :main   ::di/implicit-root]
+              [:stop  :main   ::di/cache]
+              [:stop  :main   `a]
+              [:stop  :main   ::param]]
+             @log))))

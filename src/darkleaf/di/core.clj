@@ -825,7 +825,11 @@
 
 ;; может быть сделать 2 арности в одной функции вместо этих 2х функций?
 
-(defn collect-cache []
+(defn collect-cache
+  "
+  ;; должен быть последним в цепочке, чтобы закешировать все
+  "
+  []
   (let [cache (atom {:started? true})]
     (fn [registry]
       (fn [key]
@@ -851,7 +855,18 @@
               (demolish [_ obj]
                 (p/demolish factory obj)))))))))
 
-(defn use-cache [cache]
+(defn- identical-deps? [a b]
+  (and (= a b)
+       (every? true? (map identical? (vals a) (vals b)))))
+
+(defn use-cache
+  "
+  ;; должен быть первым, а после него идти переопределения
+  [(di/use-cache cache)
+   {::param :new-version}]
+
+  "
+  [cache]
   (fn [registry]
     (fn [key]
       (let [factory     (registry key)
@@ -864,11 +879,9 @@
           (dependencies [_]
             (p/dependencies factory))
           (build [_ deps]
-            (if (= cached-deps deps)
-               cached-obj
-               (p/build factory deps)))
+            (if (identical-deps? cached-deps deps)
+              cached-obj
+              (p/build factory deps)))
           (demolish [_ obj]
-            ;;todo: add test
-            #_(if (identical? cached-obj obj)
-                nil
-                (p/demolish factory obj))))))))
+            (when (not (identical? cached-obj obj))
+              (p/demolish factory obj))))))))
