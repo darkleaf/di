@@ -70,13 +70,11 @@
   :side-dep)
 
 (t/deftest bug-array-map->hash-map
-  (let [log       (atom [])
-        built!    (fn [key obj]
-                    (swap! log conj key))
-        demolish! (fn [key obj])]
+  (let [log          (atom [])
+        after-build! (fn [{:keys [key]}]
+                       (swap! log conj key))]
     (with-open [root (di/start ::root
-                               {::log  log
-                                ::root (di/template
+                               {::root (di/template
                                         {:a (di/ref `a)
                                          :b (di/ref `b)
                                          :c (di/ref `c)
@@ -86,7 +84,7 @@
                                          :g (di/ref `g)
                                          :h (di/ref `h)})}
                                (di/add-side-dependency `side-dep)
-                               (di/log built! demolish!))]
+                               (di/log :after-build! after-build!))]
       (t/is (= [`a `b `c `d `e `f `g `h `di/new-key#0 `side-dep ::root] @log))
       (t/is (= {:a :a
                 :b :b
@@ -103,10 +101,9 @@
   :side-dep2)
 
 (t/deftest bug-array-map->hash-map-2
-  (let [log       (atom [])
-        built!    (fn [key obj]
-                    (swap! log conj key))
-        demolish! (fn [key obj])]
+  (let [log          (atom [])
+        after-build! (fn [{:keys [key]}]
+                       (swap! log conj key))]
     (with-open [root (di/start ::root
                                (di/add-side-dependency `side-dep)
                                {::root (di/template
@@ -119,7 +116,7 @@
                                          :g (di/ref `g)
                                          :h (di/ref `h)})}
                                (di/add-side-dependency `side-dep2)
-                               (di/log built! demolish!))]
+                               (di/log :after-build! after-build!))]
       (t/is (= [`di/new-key#0 `side-dep `a
                 `b `c `d `e `f `g `h
                 `di/new-key#1 `side-dep2 ::root] @log))

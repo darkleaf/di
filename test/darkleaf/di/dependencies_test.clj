@@ -31,12 +31,13 @@
   :c)
 
 (t/deftest order-test
-  (let [log       (atom [])
-        built!    (fn [key obj]
-                    (swap! log conj [key :built]))
-        demolish! (fn [key obj]
-                    (swap! log conj [key :stopped]))]
-    (with-open [root (di/start `root (di/log built! demolish!))])
+  (let [log             (atom [])
+        after-build!    (fn [{:keys [key]}]
+                          (swap! log conj [key :built]))
+        after-demolish! (fn [{:keys [key]}]
+                          (swap! log conj [key :stopped]))]
+    (with-open [root (di/start `root (di/log :after-build!    after-build!
+                                             :after-demolish! after-demolish!))])
     (t/is (= [[`c :built]
               [`a :built]
               [`b :built]
