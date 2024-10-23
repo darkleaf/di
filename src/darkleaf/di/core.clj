@@ -43,10 +43,8 @@
 (defn- seq-contains? [xs x]
   (not (neg? (index-of xs x))))
 
-(defn ^:dynamic *next-id*
-  ""
-  []
-  (throw (IllegalStateException. "Unbound")))
+(defn ^:dynamic *next-id* []
+  (throw (IllegalStateException. "Attempting to call unbound `di/*next-id*`")))
 
 (def ^:private dependency-type-priority
   {:required 1
