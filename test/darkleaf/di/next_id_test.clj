@@ -11,4 +11,4 @@
 (t/deftest a-test
   (let [root (di/start `a)]
     (di/stop root)
-    (t/is (= {:start-id 1 :stop-id 2} @@root))))
+    (t/is (= {:start-id 0 :stop-id 1} @@root))))

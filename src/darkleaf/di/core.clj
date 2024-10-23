@@ -21,8 +21,7 @@
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
    (java.lang AutoCloseable)
-   (java.util List)
-   (java.util.concurrent.atomic AtomicInteger)))
+   (java.util List)))
 
 (set! *warn-on-reflection* true)
 
@@ -213,9 +212,9 @@
     true          [key nil]))
 
 (defn- ->next-id []
-  (let [id (AtomicInteger.)]
-    (fn next-id []
-      (.incrementAndGet id))))
+ (let [id (atom -1)]
+   (fn next-id []
+     (swap! id inc))))
 
 (defn ^AutoCloseable start
   "Starts a system of dependent objects.
