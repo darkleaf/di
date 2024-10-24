@@ -821,3 +821,67 @@
             (p/demolish factory obj)
             (after-demolish! {:key key :object obj})
             nil))))))
+
+
+;; может быть сделать 2 арности в одной функции вместо этих 2х функций?
+
+(defn collect-cache
+  "
+  ;; должен быть последним в цепочке, чтобы закешировать все
+  "
+  []
+  (let [cache (atom {:started? true})]
+    (fn [registry]
+      (fn [key]
+        (if (= ::cache key)
+          (reify p/Factory
+            (dependencies [_]
+              nil)
+            (build [_ _]
+              cache)
+            (demolish [_ obj]
+              (reset! cache {:started? false})))
+          (let [factory (registry key)]
+            (reify p/Factory
+              (dependencies [_]
+                (p/dependencies factory))
+              (build [_ deps]
+                (let [obj (p/build factory deps)]
+                  (when-not (contains? deps ::cache)
+                    (swap! cache assoc
+                           [:key->deps key] deps
+                           [:key->obj  key] obj))
+                  obj))
+              (demolish [_ obj]
+                (p/demolish factory obj)))))))))
+
+(defn- identical-deps? [a b]
+  (and (= a b)
+       (every? true? (vals (merge-with identical? a b)))))
+
+(defn use-cache
+  "
+  ;; должен быть первым, а после него идти переопределения
+  [(di/use-cache cache)
+   {::param :new-version}]
+
+  "
+  [cache]
+  (fn [registry]
+    (fn [key]
+      (let [factory     (registry key)
+            cache       @cache
+            cached-deps (cache [:key->deps key])
+            cached-obj  (cache [:key->obj  key])]
+        (when-not (:started? cache)
+          (throw (IllegalStateException. "Invalid cache")))
+        (reify p/Factory
+          (dependencies [_]
+            (p/dependencies factory))
+          (build [_ deps]
+            (if (identical-deps? cached-deps deps)
+              cached-obj
+              (p/build factory deps)))
+          (demolish [_ obj]
+            (when (not (identical? cached-obj obj))
+              (p/demolish factory obj))))))))
