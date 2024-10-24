@@ -899,7 +899,7 @@
 
 (defn- identical-deps? [a b]
   (and (= a b)
-       (every? true? (map identical? (vals a) (vals b)))))
+       (every? true? (vals (merge-with identical? a b)))))
 
 (defn use-cache
   "
