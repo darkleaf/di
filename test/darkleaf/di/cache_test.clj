@@ -13,13 +13,18 @@
     (t/is (thrown? IllegalStateException
                    (di/start ::root (di/use-cache cache))))))
 
+(defn- deep-contains? [coll x]
+  (->> coll
+       (tree-seq coll? seq)
+       (filter #(= x %))
+       (first)
+       (not= nil)))
+
 (t/deftest not-recursive-test
   (di/with-open [[_ cache] (di/start [::root ::di/cache]
                                      {::root :root}
                                      (di/collect-cache))]
-    (t/try-expr "must not be recrusive"
-                (prn-str cache))))
-
+    (t/is (not (deep-contains? @cache cache)))))
 
 (defn- some+identical? [a b]
   (and (some? a)
