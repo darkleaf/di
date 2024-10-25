@@ -4,3 +4,5 @@
 /target
 /.clerk
 /public
+.clj-kondo/
+.lsp/
