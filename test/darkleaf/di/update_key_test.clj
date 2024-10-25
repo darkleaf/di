@@ -6,7 +6,9 @@
    (clojure.lang ExceptionInfo)))
 
 (t/deftest bug--update-non-existent-key-test
-  (t/is (thrown? ExceptionInfo
-                 (di/start ::component
-                           {::component 1}
-                           (di/update-key ::component-with-typo inc)))))
+  (t/is (thrown-with-msg?
+         ExceptionInfo
+         #"\ACan't update non-existent key :darkleaf.di.update-key-test/component-with-typo\z"
+         (di/start ::component
+                   {::component 1}
+                   (di/update-key ::component-with-typo inc)))))
