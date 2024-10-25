@@ -131,12 +131,16 @@
               [nil :required] (missing-dependency! stack)
               (recur tail (assoc built-map key obj)))))))))
 
-(defn- try-run [proc]
+(defn- handle-ex [proc handler]
   (try
     (proc)
-    nil
-    (catch Throwable ex
-      ex)))
+    (catch Exception ex
+      (handler ex))
+    (catch AssertionError ex
+      (handler ex))))
+
+(defn- try-run [proc]
+  (handle-ex #(do (proc) nil) identity))
 
 (defn- try-run-all [procs]
   (->> procs
@@ -155,13 +159,13 @@
     (vswap! *stop-list empty)
     (try-run-all stops)))
 
+(defn- try-build-catch [ex ctx])
+
 (defn- try-build [ctx key]
-  (try
-    (build ctx key)
-    (catch Throwable ex
-      (let [exs (try-stop-started ctx)
-            exs (cons ex exs)]
-        (throw-many! exs)))))
+  (handle-ex #(build ctx key)
+             #(let [exs (try-stop-started ctx)
+                    exs (cons % exs)]
+                (throw-many! exs))))
 
 (defn- nil-registry [key]
   nil)
