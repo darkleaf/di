@@ -7,4 +7,6 @@
 
 (t/deftest bug--update-non-existent-key-test
   (t/is (thrown? ExceptionInfo
-                 (di/start ::a* {::a* 1} (di/update-key ::a inc)))))
+                 (di/start ::component
+                           {::component 1}
+                           (di/update-key ::component-with-typo inc)))))
