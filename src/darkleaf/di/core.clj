@@ -507,27 +507,32 @@
   [target f & args]
   {:pre [(key? target)]}
   (fn [registry]
-    (let [prefix       (str (symbol target) "+di-update-key#" (*next-id*))
-          new-key      (symbol (str prefix "-target"))
-          f-key        (symbol (str prefix "-f"))
-          arg-keys     (for [i (-> args count range)]
-                         (symbol (str prefix "-arg#" i)))
-          new-factory  (reify p/Factory
-                         (dependencies [_]
-                           (zipmap (concat [new-key f-key] arg-keys)
-                                   (repeat :optional)))
-                         (build [_ deps]
-                           (let [t    (deps new-key)
-                                 f    (deps f-key)
-                                 args (map deps arg-keys)]
-                             (apply f t args)))
-                         (demolish [_ _]))
-          own-registry (zipmap (cons f-key arg-keys)
-                               (cons f     args))]
+    (let [prefix         (str (symbol target) "+di-update-key#" (*next-id*))
+          new-key        (symbol (str prefix "-target"))
+          f-key          (symbol (str prefix "-f"))
+          arg-keys       (for [i (-> args count range)]
+                           (symbol (str prefix "-arg#" i)))
+          new-factory    (reify p/Factory
+                           (dependencies [_]
+                             (zipmap (concat [new-key f-key] arg-keys)
+                                     (repeat :optional)))
+                           (build [_ deps]
+                             (let [t    (deps new-key)
+                                   f    (deps f-key)
+                                   args (map deps arg-keys)]
+                               (apply f t args)))
+                           (demolish [_ _]))
+          own-registry   (zipmap (cons f-key arg-keys)
+                                 (cons f     args))
+          target-factory (registry target)]
+      (when (nil? target-factory)
+        (throw (ex-info (str "Can't update non-existent key " target)
+                        {:type ::non-existent-key
+                         :key  target})))
       (fn [key]
         (cond
           (= new-key key)
-          (registry target)
+          target-factory
 
           (= target key)
           new-factory
