@@ -526,7 +526,7 @@
                                  (cons f     args))
           target-factory (registry target)]
       (when (nil? target-factory)
-        (throw (NoSuchElementException. (format "Can't update non-existent key %s" target))))
+        (throw (NoSuchElementException. (str "Can't update non-existent key " target))))
       (fn [key]
         (cond
           (= new-key key)
