@@ -21,7 +21,7 @@
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
    (java.lang AutoCloseable)
-   (java.util List NoSuchElementException)))
+   (java.util List)))
 
 (set! *warn-on-reflection* true)
 
@@ -526,7 +526,9 @@
                                  (cons f     args))
           target-factory (registry target)]
       (when (nil? target-factory)
-        (throw (NoSuchElementException. (str "Can't update non-existent key " target))))
+        (throw (ex-info (str "Can't update non-existent key " target)
+                        {:type ::non-existent-key
+                         :key  target})))
       (fn [key]
         (cond
           (= new-key key)
