@@ -829,3 +829,19 @@
             (p/demolish factory obj)
             (after-demolish! {:key key :object obj})
             nil))))))
+
+(defn inspect []
+ (fn [registry]
+   (fn [key]
+     (let [factory (registry key)]
+       (reify p/Factory
+         (dependencies [_]
+           (p/dependencies factory))
+         (build [_ deps]
+           (into [{:key key :deps (keys deps)}]
+                 (comp
+                  (mapcat val)
+                  (distinct))
+                 deps))
+         (demolish [_ obj]))))))
+
