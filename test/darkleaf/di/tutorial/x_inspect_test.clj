@@ -19,3 +19,8 @@
               {:key `a :deps nil}
               {:key `b :deps [`a]}]
              @info))))
+
+
+(comment
+  (di/render-graphviz `c nil)
+  ,,,)
