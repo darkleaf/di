@@ -85,13 +85,16 @@
    (conj tail (apply f head args))))
 
 (defn- stack-frame [key dep-type factory]
-  {:key            key
-   :dep-type       dep-type
-   :factory        factory
-   :remaining-deps (seq (p/dependencies factory))})
+  (let [deps (p/dependencies factory)]
+    {:key            key
+     :dep-type       dep-type
+     :factory        factory
+     :deps           deps
+     :remaining-deps (seq deps)}))
 
-(defn- build-obj [built-map factory]
-  (let [declared-deps (p/dependencies factory)
+(defn- build-obj [built-map head]
+  (let [factory       (:factory head)
+        declared-deps (:deps head)
         built-deps    (select-keys built-map (keys declared-deps))]
     (p/build factory built-deps)))
 
@@ -123,7 +126,7 @@
                    built-map))
 
           :else
-          (let [obj  (build-obj built-map factory)
+          (let [obj  (build-obj built-map head)
                 stop (bound-fn* #(p/demolish factory obj))]
             (vswap! *stop-list conj stop)
             (case [obj dep-type]
