@@ -16,7 +16,8 @@
    [clojure.walk :as w]
    [darkleaf.di.destructuring-map :as map]
    [darkleaf.di.protocols :as p]
-   [darkleaf.di.ref :as ref])
+   [darkleaf.di.ref :as ref]
+   [darkleaf.di.core :as di])
   (:import
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
@@ -830,7 +831,8 @@
             (after-demolish! {:key key :object obj})
             nil))))))
 
-(defn inspect []
+
+(defn- inspect-middleware []
   (fn [registry]
     (fn [key]
       (let [factory       (registry key)
@@ -848,3 +850,9 @@
                    (distinct))
                   deps))
           (demolish [_ obj]))))))
+
+(defn inspect [key & middlewares]
+  (with-open [components (di/start key
+                                   middlewares
+                                   (inspect-middleware))]
+    @components))
