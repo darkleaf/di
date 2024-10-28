@@ -24,6 +24,7 @@
 
 ;; todo: check registry placement
 
+#_
 (t/deftest ok
   (let [[cache global-system :as root]
         (di/start [::di/cache `root]

@@ -871,39 +871,26 @@
   "
   ;; должен быть последним в цепочке, чтобы закешировать все
   "
-  []
+  [cache]
   (fn [registry]
-    (let [cache (atom (with-meta {:started? true
-                                  :registry registry}
-                        {:type ::cache}))]
-      (fn [key]
-        (if (= ::cache key)
-          (reify p/Factory
-            (dependencies [_]
-              nil)
-            (build [_ _]
-              cache)
-            (demolish [_ obj]
-              (swap! cache #(-> % empty (assoc :started? false)))))
-          (let [factory (registry key)]
-            (reify p/Factory
-              (dependencies [_]
-                (p/dependencies factory))
-              (build [_ deps]
-                (let [obj (p/build factory deps)]
-                  (swap! cache assoc
-                         [:key->deps key] deps
-                         [:key->obj  key] obj)
-                  obj))
-              (demolish [_ obj]
-                (p/demolish factory obj)))))))))
-
-(defmethod print-method ::cache [o ^Writer w]
-  (.write w "#darkleaf.di.core/cache[")
-  (if (:started? o)
-    (.write w "started")
-    (.write w "stopped"))
-  (.write w "]"))
+    (swap! cache assoc :registry registry)
+    (fn [key]
+      (let [factory (registry key)]
+        (reify p/Factory
+          (dependencies [_]
+            (p/dependencies factory))
+          (build [_ deps]
+            (let [obj (p/build factory deps)]
+              (swap! cache assoc
+                     [:key->deps key] deps
+                     [:key->obj  key] obj)
+              obj))
+          (demolish [_ obj]
+            (swap! cache dissoc
+                   :registry
+                   [:key->deps key]
+                   [:key->obj  key])
+            (p/demolish factory obj)))))))
 
 (defn- identical-deps? [a b]
   (and (= a b)
@@ -919,23 +906,24 @@
   [cache]
   (fn [downstream-registry]
     (let [cached-registry (:registry @cache)
-          registry (fn [key]
-                     (?? (downstream-registry key)
-                         (cached-registry key)))]
+          registry        (fn [key]
+                            (?? (downstream-registry key)
+                                (cached-registry key)))]
       (fn [key]
-        (let [cache @cache]
-          (when-not (:started? cache)
-            (throw (IllegalStateException. "Invalid cache")))
-          (let [factory     (registry key)
-                cached-deps (cache [:key->deps key])
-                cached-obj  (cache [:key->obj  key])]
-            (reify p/Factory
-              (dependencies [_]
-                (p/dependencies factory))
-              (build [_ deps]
-                (if (identical-deps? cached-deps deps)
-                  cached-obj
-                  (p/build factory deps)))
-              (demolish [_ obj]
-                (when (not (identical? cached-obj obj))
-                  (p/demolish factory obj))))))))))
+
+        ;; throw on empty cache?
+
+        (let [cache       @cache
+              factory     (registry key)
+              cached-deps (cache [:key->deps key])
+              cached-obj  (cache [:key->obj  key])]
+          (reify p/Factory
+            (dependencies [_]
+              (p/dependencies factory))
+            (build [_ deps]
+              (if (identical-deps? cached-deps deps)
+                cached-obj
+                (p/build factory deps)))
+            (demolish [_ obj]
+              (when (not (identical? cached-obj obj))
+                (p/demolish factory obj)))))))))
