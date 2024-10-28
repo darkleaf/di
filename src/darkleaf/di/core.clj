@@ -831,17 +831,17 @@
             nil))))))
 
 (defn inspect []
- (fn [registry]
-   (fn [key]
-     (let [factory       (registry key)
-           declared-deps (p/dependencies factory)]
-       (reify p/Factory
-         (dependencies [_]
-           declared-deps)
-         (build [_ deps]
-           (into [{:key key :dependencies declared-deps}]
-                 (comp
-                  (mapcat val)
-                  (distinct))
-                 deps))
-         (demolish [_ obj]))))))
+  (fn [registry]
+    (fn [key]
+      (let [factory       (registry key)
+            declared-deps (p/dependencies factory)]
+        (reify p/Factory
+          (dependencies [_]
+            declared-deps)
+          (build [_ deps]
+            (into [{:key key :dependencies declared-deps}]
+                  (comp
+                   (mapcat val)
+                   (distinct))
+                  deps))
+          (demolish [_ obj]))))))
