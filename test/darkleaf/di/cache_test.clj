@@ -119,3 +119,18 @@
               [:stop  :main   `a]
               [:stop  :main   ::param]]
              @log))))
+
+(t/deftest cache-registry-test
+  (di/with-open [[main cache]
+                 (di/start [::root ::di/cache]
+                           {::root (di/template [(di/ref ::a) (di/ref ::b)])
+                            ::a :a
+                            ::b :b}
+                           (di/update-key ::root conj :c)
+                           (di/collect-cache))
+                 [second]
+                 (di/start [::root]
+                           (di/use-cache cache)
+                           {::a "a"})]
+    (t/is (= [:a :b :c] main))
+    (t/is (= ["a" :b :c] second))))

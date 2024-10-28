@@ -872,8 +872,9 @@
   ;; должен быть последним в цепочке, чтобы закешировать все
   "
   []
-  (let [cache (atom {:started? true})]
-    (fn [registry]
+  (fn [registry]
+    (let [cache (atom {:started? true
+                       :registry registry})]
       (fn [key]
         (if (= ::cache key)
           (reify p/Factory
@@ -909,21 +910,25 @@
 
   "
   [cache]
-  (fn [registry]
-    (fn [key]
-      (let [factory     (registry key)
-            cache       @cache
-            cached-deps (cache [:key->deps key])
-            cached-obj  (cache [:key->obj  key])]
-        (when-not (:started? cache)
-          (throw (IllegalStateException. "Invalid cache")))
-        (reify p/Factory
-          (dependencies [_]
-            (p/dependencies factory))
-          (build [_ deps]
-            (if (identical-deps? cached-deps deps)
-              cached-obj
-              (p/build factory deps)))
-          (demolish [_ obj]
-            (when (not (identical? cached-obj obj))
-              (p/demolish factory obj))))))))
+  (fn [downstream-registry]
+    (let [cached-registry (:registry @cache)
+          registry (fn [key]
+                     (?? (downstream-registry key)
+                         (cached-registry key)))]
+      (fn [key]
+        (let [cache @cache]
+          (when-not (:started? cache)
+            (throw (IllegalStateException. "Invalid cache")))
+          (let [factory     (registry key)
+                cached-deps (cache [:key->deps key])
+                cached-obj  (cache [:key->obj  key])]
+            (reify p/Factory
+              (dependencies [_]
+                (p/dependencies factory))
+              (build [_ deps]
+                (if (identical-deps? cached-deps deps)
+                  cached-obj
+                  (p/build factory deps)))
+              (demolish [_ obj]
+                (when (not (identical? cached-obj obj))
+                  (p/demolish factory obj))))))))))
