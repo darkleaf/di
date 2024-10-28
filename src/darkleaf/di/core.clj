@@ -852,7 +852,19 @@
                   deps))
           (demolish [_ obj]))))))
 
-(defn inspect [key & middlewares]
+(defn inspect
+  "Collects and returns a vector of keys along with their dependencies.
+  Useful for inspecting enabled components and services.
+  Evaluates all registries with middlewares applied.
+
+  Expects the same arguments as `start` and returns a vector of keys with dependencies e.g.:
+
+  ```clojure
+  [{:key `root :dependencies {`foo :required `bar :optional}}
+   {:key `foo}
+   {:key `bar}]
+  ```"
+  [key & middlewares]
   (with-open [components (di/start key
                                    middlewares
                                    (inspect-middleware))]
