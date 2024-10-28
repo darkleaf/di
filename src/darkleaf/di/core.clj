@@ -829,3 +829,42 @@
             (p/demolish factory obj)
             (after-demolish! {:key key :object obj})
             nil))))))
+
+
+(defn- inspect-middleware []
+  (fn [registry]
+    (fn [key]
+      (let [factory       (registry key)
+            declared-deps (p/dependencies factory)
+            info          (into {}
+                                (filter (fn [[k v]] (some? v)))
+                                {:key          key
+                                 :dependencies declared-deps})]
+        (reify p/Factory
+          (dependencies [_]
+            declared-deps)
+          (build [_ deps]
+            (into [info]
+                  (comp
+                   (mapcat val)
+                   (distinct))
+                  deps))
+          (demolish [_ obj]))))))
+
+(defn inspect
+  "Collects and returns a vector of keys along with their dependencies.
+  Useful for inspecting enabled components and services.
+  Evaluates all registries with middlewares applied.
+
+  Expects the same arguments as `start` and returns a vector of keys with dependencies e.g.:
+
+  ```clojure
+  [{:key `root :dependencies {`foo :required `bar :optional}}
+   {:key `foo}
+   {:key `bar}]
+  ```"
+  [key & middlewares]
+  (with-open [components (start key
+                                middlewares
+                                (inspect-middleware))]
+    @components))
