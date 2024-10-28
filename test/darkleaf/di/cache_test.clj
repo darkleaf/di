@@ -14,19 +14,6 @@
     (di/stop system)
     (t/is (empty? @cache))))
 
-#_
-(t/deftest print-method-test
-  (let [[_ cache :as system] (di/start [::root ::di/cache]
-                                       {::root :root
-                                        ::foo  :foo}
-                                       (di/collect-cache))]
-    (t/is (= "#darkleaf.di.core/cache[started]"
-             (pr-str @cache)))
-    (di/stop system)
-    (t/is (= "#darkleaf.di.core/cache[stopped]"
-             (pr-str @cache)))))
-
-
 (defn- some+identical? [a b]
   (and (some? a)
        (some? b)
