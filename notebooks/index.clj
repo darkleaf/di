@@ -1,4 +1,4 @@
-^{::clerk/visibility {:code :hide}}
+^{:nextjournal.clerk/visibility {:code :hide}}
 (ns index
   {:nextjournal.clerk/toc true}
   (:require
