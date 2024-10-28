@@ -833,15 +833,15 @@
 (defn inspect []
  (fn [registry]
    (fn [key]
-     (let [factory (registry key)]
+     (let [factory       (registry key)
+           declared-deps (p/dependencies factory)]
        (reify p/Factory
          (dependencies [_]
-           (p/dependencies factory))
+           declared-deps)
          (build [_ deps]
-           (into [{:key key :deps (keys deps)}]
+           (into [{:key key :dependencies declared-deps}]
                  (comp
                   (mapcat val)
                   (distinct))
                  deps))
          (demolish [_ obj]))))))
-

@@ -9,13 +9,14 @@
 (defn b [{a `a}]
   :ok)
 
-(defn c [{a `a
-          b `b}]
+(defn c [{a   `a
+          b   `b
+          :or {b :default}}]
   :ok)
 
 (t/deftest ok
   (with-open [info (di/start `c (di/inspect))]
-    (t/is (= [{:key `c :deps [`a `b]}
-              {:key `a :deps nil}
-              {:key `b :deps [`a]}]
+    (t/is (= [{:key `c :dependencies {`a :required `b :optional}}
+              {:key `a :dependencies nil}
+              {:key `b :dependencies {`a :required}}]
              @info))))
