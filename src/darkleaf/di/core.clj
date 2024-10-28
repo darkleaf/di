@@ -873,8 +873,9 @@
   "
   []
   (fn [registry]
-    (let [cache (atom {:started? true
-                       :registry registry})]
+    (let [cache (atom (with-meta {:started? true
+                                  :registry registry}
+                        {:type ::cache}))]
       (fn [key]
         (if (= ::cache key)
           (reify p/Factory
@@ -883,20 +884,26 @@
             (build [_ _]
               cache)
             (demolish [_ obj]
-              (reset! cache {:started? false})))
+              (swap! cache #(-> % empty (assoc :started? false)))))
           (let [factory (registry key)]
             (reify p/Factory
               (dependencies [_]
                 (p/dependencies factory))
               (build [_ deps]
                 (let [obj (p/build factory deps)]
-                  (when-not (contains? deps ::cache)
-                    (swap! cache assoc
-                           [:key->deps key] deps
-                           [:key->obj  key] obj))
+                  (swap! cache assoc
+                         [:key->deps key] deps
+                         [:key->obj  key] obj)
                   obj))
               (demolish [_ obj]
                 (p/demolish factory obj)))))))))
+
+(defmethod print-method ::cache [o ^Writer w]
+  (.write w "#darkleaf.di.core/cache[")
+  (if (:started? o)
+    (.write w "started")
+    (.write w "stopped"))
+  (.write w "]"))
 
 (defn- identical-deps? [a b]
   (and (= a b)

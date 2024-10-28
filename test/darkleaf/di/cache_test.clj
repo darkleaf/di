@@ -13,18 +13,17 @@
     (t/is (thrown? IllegalStateException
                    (di/start ::root (di/use-cache cache))))))
 
-(defn- deep-contains? [coll x]
-  (->> coll
-       (tree-seq coll? seq)
-       (filter #(= x %))
-       (first)
-       (not= nil)))
+(t/deftest print-method-test
+  (let [[_ cache :as system] (di/start [::root ::di/cache]
+                                       {::root :root
+                                        ::foo  :foo}
+                                       (di/collect-cache))]
+    (t/is (= "#darkleaf.di.core/cache[started]"
+             (pr-str @cache)))
+    (di/stop system)
+    (t/is (= "#darkleaf.di.core/cache[stopped]"
+             (pr-str @cache)))))
 
-(t/deftest not-recursive-test
-  (di/with-open [[_ cache] (di/start [::root ::di/cache]
-                                     {::root :root}
-                                     (di/collect-cache))]
-    (t/is (not (deep-contains? @cache cache)))))
 
 (defn- some+identical? [a b]
   (and (some? a)
