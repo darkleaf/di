@@ -834,12 +834,15 @@
   (fn [registry]
     (fn [key]
       (let [factory       (registry key)
-            declared-deps (p/dependencies factory)]
+            declared-deps (p/dependencies factory)
+            info          (cond-> {:key key}
+                            (seq declared-deps)
+                            (assoc :dependencies declared-deps))]
         (reify p/Factory
           (dependencies [_]
             declared-deps)
           (build [_ deps]
-            (into [{:key key :dependencies declared-deps}]
+            (into [info]
                   (comp
                    (mapcat val)
                    (distinct))
