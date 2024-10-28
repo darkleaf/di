@@ -127,6 +127,7 @@
 (view-doc #'di/update-key)
 (view-doc #'di/add-side-dependency)
 (view-doc #'di/ns-publics)
+(view-doc #'di/log)
 (view-doc #'di/combine-dependencies)
 ;; ### `darkleaf.di.protocols`
 ;; `darkleaf.di.protocols/Factory`
