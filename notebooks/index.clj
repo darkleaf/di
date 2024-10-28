@@ -91,6 +91,7 @@
   #_[:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_instrument_test.clj")} "Instrument"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_update_key_test.clj")} "Update key"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_log_test.clj")} "Log"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_inspect_test.clj")} "Inspect"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/y_graceful_stop_test.clj")} "Graceful stop"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/y_multi_arity_service_test.clj")} "Multi arity service"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/z_multi_system_test.clj")} "Multi system"]]
@@ -118,6 +119,7 @@
 ;; ### `darkleaf.di.core`
 (view-doc #'di/start)
 (view-doc #'di/stop)
+(view-doc #'di/inspect)
 (view-doc #'di/ref)
 (view-doc #'di/opt-ref)
 (view-doc #'di/template)
