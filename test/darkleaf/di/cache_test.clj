@@ -67,7 +67,7 @@
                 secondary (di/start `a
                                     (di/use-cache cache)
                                     {::param 'equal-but-not-identical})]
-      (t/is (some+not-identical? main secondary)))))
+      (t/is (some+not-identical? @main @secondary)))))
 
 (t/deftest start-stop-order-test
   (let [cache     (atom {})
