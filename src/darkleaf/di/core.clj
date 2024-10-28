@@ -837,9 +837,10 @@
     (fn [key]
       (let [factory       (registry key)
             declared-deps (p/dependencies factory)
-            info          (cond-> {:key key}
-                            (seq declared-deps)
-                            (assoc :dependencies declared-deps))]
+            info          (into {}
+                                (filter (fn [[k v]] (some? v)))
+                                {:key          key
+                                 :dependencies declared-deps})]
         (reify p/Factory
           (dependencies [_]
             declared-deps)
