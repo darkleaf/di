@@ -907,8 +907,10 @@
   (fn [downstream-registry]
     (let [cached-registry (:registry @cache)
           registry        (fn [key]
-                            (?? (downstream-registry key)
-                                (cached-registry key)))]
+                            ;; тут бы тест написать на порядок
+                            ;; в gmonit хороший пример с reitit и update-key conj routes
+                            (?? (cached-registry key)
+                                (downstream-registry key)))]
       (fn [key]
 
         ;; throw on empty cache?
