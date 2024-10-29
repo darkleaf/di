@@ -1,3 +1,16 @@
+# 3.2.0
+
++ Improved `di/update-key`. It will throw an exception on a non-existent key (#23)
++ [Added inspect middleware](https://github.com/darkleaf/di/commit/073471c9b3afcbcf52223b4607b9d21aa3865e35)
++ [Added log middleware](https://github.com/darkleaf/di/commit/cd52e5089d791b06004c669e6092eb98b040ef66)
++ [Added `di/with-open`](https://github.com/darkleaf/di/commit/7633474f3a2ed31cd810f73b7e703f7212114dd5)
+
++ [Added `di/*next-id*` to use it instead of `gensym` ](https://github.com/darkleaf/di/commit/b8ec1887fa5cd669af7663d74e03b2cfd2f0c58c)
+
+
++ [Added print-method for services](https://github.com/darkleaf/di/commit/b2868860c9b2a8149903345aebbb404d817c7ce2)
++ Improved naming of generated keys in update-key
+
 # 3.1.0
 
 + Internal refactoring: switched from recursive functions to loop/recur to minimize stack traces in exceptions.

@@ -4,7 +4,7 @@
    [clojure.string :as str]))
 
 (def lib 'org.clojars.darkleaf/di)
-(def version "3.1.0")
+(def version "3.2.0")
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-file (format "target/%s.jar" (name lib)))
