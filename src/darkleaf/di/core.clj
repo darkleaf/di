@@ -127,7 +127,7 @@
 
           :else
           (let [obj  (build-obj built-map head)
-                stop (bound-fn* #(p/demolish factory obj))]
+                stop #(p/demolish factory obj)]
             (vswap! *stop-list conj stop)
             (case [obj dep-type]
               [nil :optional] (recur tail built-map)
@@ -277,14 +277,16 @@
           registry    (apply-middleware nil-registry middlewares)
           ctx         {:registry   registry
                        :*stop-list (volatile! '())}
-          obj         (try-build ctx key)]
+          obj         (try-build ctx key)
+          bindings    (get-thread-bindings)]
       ^{:type   ::root
         ::print obj}
       (reify
         AutoCloseable
         (close [_]
-          (->> (try-stop-started ctx)
-               (throw-many!)))
+          (with-bindings bindings
+            (->> (try-stop-started ctx)
+                 (throw-many!))))
         IDeref
         (deref [_]
           obj)
