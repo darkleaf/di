@@ -66,7 +66,7 @@
   (di/template
    [["/" {:get {:handler (di/ref `root-handler)}}]]))
 
-;; Here, `(di/ref `root-handler)` resolves to the `root-handler` var.
+;; Here, ``(di/ref `root-handler)`` resolves to the `root-handler` var.
 ;; There's no need to define `root-handler` as a component in the system config.
 ;;
 ;; ### Reitit
