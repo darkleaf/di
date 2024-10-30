@@ -870,7 +870,7 @@
 (defn- graphviz-id [x]
   (str "\"" x "\""))
 
-(defn render-graphviz [root middlewares]
+(defn graphviz [root middlewares]
   (let [components (inspect root middlewares)]
     (with-out-str
      (println "digraph {")
