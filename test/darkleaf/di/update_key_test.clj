@@ -12,3 +12,10 @@
          (di/start ::component
                    {::component 1}
                    (di/update-key ::component-with-typo inc)))))
+
+(t/deftest expected--update-not-used-key-test
+  (with-open [system (di/start ::component
+                               {::component          1
+                                ::not-used-component 2}
+                               (di/update-key ::not-used-component inc))]
+    (t/is (= 1 @system))))
