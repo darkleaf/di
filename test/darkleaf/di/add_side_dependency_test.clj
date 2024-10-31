@@ -85,7 +85,8 @@
                                          :h (di/ref `h)})}
                                (di/add-side-dependency `side-dep)
                                (di/log :after-build! after-build!))]
-      (t/is (= [`a `b `c `d `e `f `g `h `di/new-key#0 `side-dep ::root] @log))
+      (t/is (= [`a `b `c `d `e `f `g `h
+                ::root `di/new-key#0 `side-dep ::di/implicit-root] @log))
       (t/is (= {:a :a
                 :b :b
                 :c :c
@@ -117,9 +118,12 @@
                                          :h (di/ref `h)})}
                                (di/add-side-dependency `side-dep2)
                                (di/log :after-build! after-build!))]
-      (t/is (= [`di/new-key#0 `side-dep `a
-                `b `c `d `e `f `g `h
-                `di/new-key#1 `side-dep2 ::root] @log))
+      (t/is (= [`a `b `c `d `e `f `g `h
+                ::root
+                `di/new-key#0 `side-dep
+                `di/new-key#1 `side-dep2
+                ::di/implicit-root]
+               @log))
       (t/is (= {:a :a
                 :b :b
                 :c :c
@@ -128,3 +132,12 @@
                 :f :f
                 :g :g
                 :h :h} @root)))))
+
+(t/deftest bug-with-update-key
+  (let [info (di/inspect ::root
+                         {::root     42
+                          ::unused   0
+                          ::side-dep :side-dep}
+                         (di/add-side-dependency ::side-dep)
+                         (di/update-key ::unused inc))]
+    (t/is (->> info (map :key) (filter #{::side-dep}) first some?))))

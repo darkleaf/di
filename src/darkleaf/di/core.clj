@@ -209,8 +209,8 @@
 (defn- key->key&registry [key]
   (cond
     (vector? key) [::implicit-root {::implicit-root (->> key (map ref) template)}]
-    (map? key)    [::implicit-root {::implicit-root (-> key (update-vals ref) template)}]
-    true          [key nil]))
+    (map? key)    [::implicit-root {::implicit-root (->  key (update-vals ref) template)}]
+    :else         [::implicit-root {::implicit-root (->  key ref)}]))
 
 (defn- ->next-id []
   (let [id (atom -1)]
@@ -560,26 +560,20 @@
   ```"
   [dep-key]
   (fn [registry]
-    (let [*orig-key     (volatile! nil)
-          *orig-factory (volatile! nil)
-          new-key       (symbol (str "darkleaf.di.core/new-key#" (*next-id*)))
-          new-factory   (reify p/Factory
-                          (dependencies [_]
-                            ;; array-map preserves order of keys
-                            {new-key :required
-                             dep-key :required})
-                          (build [_ deps]
-                            (new-key deps))
-                          (demolish [_ _]))]
+    (let [new-key     (symbol (str "darkleaf.di.core/new-key#" (*next-id*)))
+          new-factory (reify p/Factory
+                        (dependencies [_]
+                          ;; array-map preserves order of keys
+                          {new-key :required
+                           dep-key :required})
+                        (build [_ deps]
+                          (new-key deps))
+                        (demolish [_ _]))]
       (fn [key]
-        (when (nil? @*orig-key)
-          (vreset! *orig-key key))
-        (when (nil? @*orig-factory)
-          (vreset! *orig-factory (registry key)))
         (cond
-          (= @*orig-key key) new-factory
-          (= new-key key)    @*orig-factory
-          :else              (registry key))))))
+          (= ::implicit-root key) new-factory
+          (= new-key key)         (registry ::implicit-root)
+          :else                   (registry key))))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))
