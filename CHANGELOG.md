@@ -1,3 +1,7 @@
+# 3.2.1
+
++ Fixed `di/add-side-dependency` bug (#32)
+
 # 3.2.0
 
 + Improved `di/update-key`. It will throw an exception on a non-existent key (#23)
