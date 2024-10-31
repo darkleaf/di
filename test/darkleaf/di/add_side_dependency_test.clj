@@ -139,5 +139,8 @@
                           ::unused   0
                           ::side-dep :side-dep}
                          (di/add-side-dependency ::side-dep)
-                         (di/update-key ::unused inc))]
-    (t/is (->> info (map :key) (filter #{::side-dep}) first some?))))
+                         (di/update-key ::unused inc))
+        keys (into #{}
+                   (map :key)
+                   info)]
+    (t/is (contains? keys ::side-dep))))
