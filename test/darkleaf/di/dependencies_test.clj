@@ -42,7 +42,9 @@
               [`a :built]
               [`b :built]
               [`root :built]
+              [::di/implicit-root :built]
 
+              [::di/implicit-root :stopped]
               [`root :stopped]
               [`b :stopped]
               [`a :stopped]
@@ -76,7 +78,7 @@
 
 (t/deftest error-path-test
   (t/is (= {:type ::di/missing-dependency
-            :stack [`missing-path `b-path `root-path]}
+            :stack [`missing-path `b-path `root-path ::di/implicit-root]}
            (try-ex-data (di/start `root-path)))))
 
 
@@ -87,11 +89,11 @@
 
 (t/deftest missing-dependency-test
   (t/is (= {:type  ::di/missing-dependency
-            :stack [`missing-root]}
+            :stack [`missing-root ::di/implicit-root]}
            (try-ex-data (di/start `missing-root))))
 
   (t/is (= {:type  ::di/missing-dependency
-            :stack [`missing-key `parent]}
+            :stack [`missing-key `parent ::di/implicit-root]}
            (try-ex-data (di/start `parent)))))
 
 
@@ -109,10 +111,10 @@
 
 (t/deftest circular-dependency-test
   (t/is (= {:type ::di/circular-dependency
-            :stack [`recursion-a `recursion-b `recursion-a]}
+            :stack [`recursion-a `recursion-b `recursion-a ::di/implicit-root]}
            (try-ex-data (di/start `recursion-a))))
 
 
   (t/is (= {:type ::di/circular-dependency
-            :stack [`recursion-c `recursion-c]}
+            :stack [`recursion-c `recursion-c ::di/implicit-root]}
            (try-ex-data (di/start `recursion-c)))))
