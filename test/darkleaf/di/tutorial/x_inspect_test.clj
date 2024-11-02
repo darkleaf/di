@@ -16,12 +16,16 @@
 
 (t/deftest ok
   (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`c :required}}
+             :dependencies {`c :required}
+             :meta         {}}
             {:key          `c
-             :dependencies {`a :required `b :optional}}
-            {:key `a}
+             :dependencies {`a :required `b :optional}
+             :meta         {}}
+            {:key  `a
+             :meta {}}
             {:key          `b
-             :dependencies {`a :required}}]
+             :dependencies {`a :required}
+             :meta         {}}]
            (di/inspect `c))))
 
 (t/deftest meta-test
