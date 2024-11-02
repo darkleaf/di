@@ -517,7 +517,8 @@
           f-key          (symbol (str prefix "-f"))
           arg-keys       (for [i (-> args count range)]
                            (symbol (str prefix "-arg#" i)))
-          new-factory    (reify p/Factory
+          new-factory    (reify
+                           p/Factory
                            (dependencies [_]
                              (zipmap (concat [new-key f-key] arg-keys)
                                      (repeat :optional)))
@@ -526,7 +527,12 @@
                                    f    (deps f-key)
                                    args (map deps arg-keys)]
                                (apply f t args)))
-                           (demolish [_ _]))
+                           (demolish [_ _])
+
+                           p/FactoryDescription
+                           (description [_]
+                             {::middleware ::update-key
+                              ::target     target}))
           own-registry   (zipmap (cons f-key arg-keys)
                                  (cons f     args))
           target-factory (registry target)]
@@ -672,6 +678,13 @@
   (dependencies [_] nil)
   (build [this _] this)
   (demolish [_ _] nil))
+
+(extend-protocol p/FactoryDescription
+  nil
+  (description [_] {})
+
+  Object
+  (description [_] {}))
 
 (c/derive ::root     ::instance)
 (c/derive ::template ::instance)
@@ -836,7 +849,8 @@
             info          (into {}
                                 (filter (fn [[k v]] (some? v)))
                                 {:key          key
-                                 :dependencies declared-deps})]
+                                 :dependencies declared-deps
+                                 :meta         (p/description factory)})]
         (reify p/Factory
           (dependencies [_]
             declared-deps)

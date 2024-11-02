@@ -23,3 +23,18 @@
             {:key          `b
              :dependencies {`a :required}}]
            (di/inspect `c))))
+
+(t/deftest meta-test
+  (t/is (= [{:key          ::di/implicit-root,
+             :dependencies {`a :required}
+             :meta         {}}
+            {:key          `a,
+             :dependencies {`a+di-update-key#0-target :optional,
+                            `a+di-update-key#0-f      :optional}
+             :meta         {::di/middleware ::di/update-key
+                            ::di/target     `a}}
+            {:key  `a+di-update-key#0-target
+             :meta {}}
+            {:key  `a+di-update-key#0-f
+             :meta {}}]
+           (di/inspect `a (di/update-key `a str)))))
