@@ -788,6 +788,7 @@
   Evaluates body in a try expression with names bound to the values
   of the inits, and a finally clause that calls (.close name) on each
   name in reverse order."
+  {:clj-kondo/lint-as 'clojure.core/with-open}
   [bindings & body]
   {:pre [(vector? bindings)
          (even? (count bindings))]}
