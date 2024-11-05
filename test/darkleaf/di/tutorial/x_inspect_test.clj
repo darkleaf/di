@@ -15,9 +15,7 @@
   :ok)
 
 (t/deftest ok
-  (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`c :required}}
-            {:key          `c
+  (t/is (= [{:key          `c
              :dependencies {`a :required `b :optional}}
             {:key `a}
             {:key          `b

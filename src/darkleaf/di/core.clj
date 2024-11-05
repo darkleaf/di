@@ -95,7 +95,7 @@
 (defn- build-obj [built-map head]
   (let [factory       (:factory head)
         declared-deps (:declared-deps head)
-        built-deps    (select-keys built-map (keys declared-deps))]
+        built-deps    (select-keys built-map (map first declared-deps))]
     (p/build factory built-deps)))
 
 (defn- build [{:keys [registry *stop-list]} key]
@@ -207,10 +207,19 @@
 (declare ref template)
 
 (defn- key->key&registry [key]
-  (cond
-    (vector? key) [::implicit-root {::implicit-root (->> key (map ref) template)}]
-    (map? key)    [::implicit-root {::implicit-root (->  key (update-vals ref) template)}]
-    :else         [::implicit-root {::implicit-root (->  key ref)}]))
+  (let [factory (cond
+                  (vector? key) (->> key (map ref) template)
+                  (map? key)    (->  key (update-vals ref) template)
+                  :else         (->  key ref))
+        factory (reify p/Factory
+                  (dependencies [_]
+                    (concat (p/dependencies factory)
+                            [[::side-dependency :optional]]))
+                  (build [_ deps]
+                    (p/build factory (dissoc deps ::side-dependency)))
+                  (demolish [_ obj]
+                    (p/demolish factory obj)))]
+    [::implicit-root {::implicit-root factory}]))
 
 (defn- ->next-id []
   (let [id (atom -1)]
@@ -271,9 +280,9 @@
     (let [[key root-registry] (key->key&registry key)
 
           middlewares (concat [with-env
-                               with-ns
-                               root-registry]
-                              middlewares)
+                               with-ns]
+                              middlewares
+                              [root-registry])
           registry    (apply-middleware nil-registry middlewares)
           ctx         {:registry   registry
                        :*stop-list (volatile! '())}
@@ -560,20 +569,19 @@
   ```"
   [dep-key]
   (fn [registry]
-    (let [new-key     (symbol (str "darkleaf.di.core/new-key#" (*next-id*)))
-          new-factory (reify p/Factory
-                        (dependencies [_]
-                          ;; array-map preserves order of keys
-                          {new-key :required
-                           dep-key :required})
-                        (build [_ deps]
-                          (new-key deps))
-                        (demolish [_ _]))]
+    (let [factory (registry ::side-dependency)
+          factory (reify p/Factory
+                    (dependencies [_]
+                      (concat (p/dependencies factory)
+                              [[dep-key :required]]))
+                    (build [_ deps]
+                      (p/build factory (dissoc deps dep-key)))
+                    (demolish [_ obj]
+                      (p/demolish factory obj)))]
       (fn [key]
-        (cond
-          (= ::implicit-root key) new-factory
-          (= new-key key)         (registry ::implicit-root)
-          :else                   (registry key))))))
+        (case key
+          ::side-dependency factory
+          (registry key))))))
 
 (defn- arglists [variable]
   (-> variable meta :arglists))
