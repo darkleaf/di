@@ -92,6 +92,7 @@
 
     (t/is (= [[:start :main   ::param]
               [:start :main   `a]
+              [:start :main   ::di/implicit-root]
 
               [:start :second ::x]
               [:start :second ::di/implicit-root]
@@ -105,6 +106,7 @@
               [:stop  :second ::di/implicit-root]
               [:stop  :second ::x]
 
+              [:stop  :main   ::di/implicit-root]
               [:stop  :main   `a]
               [:stop  :main   ::param]]
              @log))))

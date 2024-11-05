@@ -873,7 +873,10 @@
   "
   [cache]
   (fn [registry]
-    (swap! cache assoc :registry registry)
+    (swap! cache assoc :registry (fn [key]
+                                   (case key
+                                     ::implicit-root nil
+                                     (registry key))))
     (fn [key]
       (let [factory (registry key)]
         (reify p/Factory
