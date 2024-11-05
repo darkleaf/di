@@ -885,14 +885,12 @@
           (build [_ deps]
             (let [obj (p/build factory deps)]
               (swap! cache assoc
-                     [:key->deps key] deps
-                     [:key->obj  key] obj)
+                     key {:dependencies deps :object obj})
               obj))
           (demolish [_ obj]
             (swap! cache dissoc
                    :registry
-                   [:key->deps key]
-                   [:key->obj  key])
+                   key)
             (p/demolish factory obj)))))))
 
 (defn- identical-deps? [a b]
@@ -918,10 +916,10 @@
 
         ;; throw on empty cache?
 
-        (let [cache       @cache
-              factory     (registry key)
-              cached-deps (cache [:key->deps key])
-              cached-obj  (cache [:key->obj  key])]
+        (let [cache                @cache
+              factory              (registry key)
+              {cached-deps :dependencies
+               cached-obj  :object} (cache key)]
           (reify p/Factory
             (dependencies [_]
               (p/dependencies factory))
