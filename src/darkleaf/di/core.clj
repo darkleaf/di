@@ -905,28 +905,25 @@
 
   "
   [cache]
-  (fn [downstream-registry]
-    (let [cached-registry (:registry @cache)
-          registry        (fn [key]
-                            ;; тут бы тест написать на порядок
-                            ;; в gmonit хороший пример с reitit и update-key conj routes
-                            (?? (cached-registry key)
-                                (downstream-registry key)))]
-      (fn [key]
-
-        ;; throw on empty cache?
-
-        (let [cache                @cache
-              factory              (registry key)
-              {cached-deps :dependencies
-               cached-obj  :object} (cache key)]
-          (reify p/Factory
-            (dependencies [_]
-              (p/dependencies factory))
-            (build [_ deps]
-              (if (identical-deps? cached-deps deps)
-                cached-obj
-                (p/build factory deps)))
-            (demolish [_ obj]
-              (when (not (identical? cached-obj obj))
-                (p/demolish factory obj)))))))))
+  (let [cache @cache]
+    (fn [downstream-registry]
+      (let [cached-registry (:registry cache)
+            registry        (fn [key]
+                              ;; тут бы тест написать на порядок
+                              ;; в gmonit хороший пример с reitit и update-key conj routes
+                              (?? (cached-registry key)
+                                  (downstream-registry key)))]
+        (fn [key]
+          (let [factory               (registry key)
+                {cached-deps :dependencies
+                 cached-obj  :object} (cache key)]
+            (reify p/Factory
+              (dependencies [_]
+                (p/dependencies factory))
+              (build [_ deps]
+                (if (identical-deps? cached-deps deps)
+                  cached-obj
+                  (p/build factory deps)))
+              (demolish [_ obj]
+                (when (not (identical? cached-obj obj))
+                  (p/demolish factory obj))))))))))
