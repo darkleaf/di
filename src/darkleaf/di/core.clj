@@ -893,10 +893,6 @@
                    key)
             (p/demolish factory obj)))))))
 
-(defn- identical-deps? [a b]
-  (and (= a b)
-       (every? true? (vals (merge-with identical? a b)))))
-
 (defn use-cache
   "
   ;; должен быть первым, а после него идти переопределения
@@ -921,7 +917,7 @@
               (dependencies [_]
                 (p/dependencies factory))
               (build [_ deps]
-                (if (identical-deps? cached-deps deps)
+                (if (= cached-deps deps)
                   cached-obj
                   (p/build factory deps)))
               (demolish [_ obj]

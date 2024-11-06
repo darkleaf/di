@@ -67,7 +67,18 @@
                 secondary (di/start `a
                                     (di/use-cache cache)
                                     {::param 'equal-but-not-identical})]
-      (t/is (some+not-identical? @main @secondary)))))
+      (t/is (some+identical? @main @secondary)))))
+
+(t/deftest changed-equal-but-different-test
+  (let [cache (atom {})]
+    (with-open [main      (di/start `a
+                                    {::param []}
+                                    (di/collect-cache cache))
+                secondary (di/start `a
+                                    (di/use-cache cache)
+                                    {::param '()})]
+      (t/is (some+identical? @main @secondary)))))
+
 
 (t/deftest start-stop-order-test
   (let [cache     (atom {})
