@@ -5,15 +5,6 @@
 
 (set! *warn-on-reflection* true)
 
-(t/deftest cache-stop-test
-  (let [cache  (atom {})
-        system (di/start ::root
-                         {::root :root}
-                         (di/collect-cache cache))]
-    (t/is (not (empty? @cache)))
-    (di/stop system)
-    (t/is (empty? @cache))))
-
 (defn- some+identical? [a b]
   (and (some? a)
        (some? b)
@@ -29,59 +20,58 @@
   [{_ ::param}]
   (Object.))
 
+
+;; тут получается, что мы реестр идентичный передаем
+;; но у себя мы используем функции, и реестр будет не идентичный
+;; и именно по этому функа и называется `di/->cache`, т.е. новый делается
+;; и ее нельзя использовать как `di/update-key` например.
+;; А нужно сделать `(def cache (di/->cache))` и дальше юзать cache
+;; Может как-то примеры переделать под это?
+
 (t/deftest ok-test
-  (let [cache (atom {})]
-    (with-open [main      (di/start `a
-                                    {::param (Object.)}
-                                    (di/collect-cache cache))
-                secondary (di/start `a
-                                    (di/use-cache cache))]
+  (let [registry [{::param (Object.)}
+                  (di/->cache)]]
+    (with-open [main      (di/start `a registry)
+                secondary (di/start `a registry)]
       (t/is (some+identical? @main @secondary)))))
 
 (t/deftest changed-not-identical-test
-  (let [cache (atom {})]
-    (with-open [main      (di/start `a
-                                    {::param (Object.)}
-                                    (di/collect-cache cache))
-                secondary (di/start `a
-                                    (di/use-cache cache)
+  (let [registry [{::param (Object.)}
+                  (di/->cache)]]
+    (with-open [main      (di/start `a registry)
+                secondary (di/start `a registry
                                     {::param (Object.)})]
       (t/is (some+not-identical? @main @secondary)))))
 
 (t/deftest changed-equal-and-identical-test
-  (let [cache (atom {})]
-    (with-open [main      (di/start `a
-                                    {::param :equal-and-identical}
-                                    (di/collect-cache cache))
-                secondary (di/start `a
-                                    (di/use-cache cache)
+  (let [registry [{::param :equal-and-identical}
+                  (di/->cache)]]
+    (with-open [main (di/start `a registry)
+                secondary (di/start `a registry
                                     {::param :equal-and-identical})]
       (t/is (some+identical? @main @secondary)))))
 
 
 (t/deftest changed-equal-but-not-identical-test
-  (let [cache (atom {})]
-    (with-open [main      (di/start `a
-                                    {::param 'equal-but-not-identical}
-                                    (di/collect-cache cache))
-                secondary (di/start `a
-                                    (di/use-cache cache)
+  (let [registry [{::param 'equal-but-not-identical}
+                  (di/->cache)]]
+    (with-open [main      (di/start `a registry)
+                secondary (di/start `a registry
                                     {::param 'equal-but-not-identical})]
       (t/is (some+identical? @main @secondary)))))
 
 (t/deftest changed-equal-but-different-test
-  (let [cache (atom {})]
-    (with-open [main      (di/start `a
-                                    {::param []}
-                                    (di/collect-cache cache))
-                secondary (di/start `a
-                                    (di/use-cache cache)
+  (let [registry [{::param []}
+                  (di/->cache)]]
+    (with-open [main      (di/start `a registry)
+                secondary (di/start `a registry
                                     {::param '()})]
       (t/is (some+identical? @main @secondary)))))
 
 
 (t/deftest start-stop-order-test
-  (let [cache     (atom {})
+  (let [registry  [{::param :param}
+                   (di/->cache)]
         log       (atom [])
         callbacks (fn [system]
                     {:after-build!    (fn [{:keys [key]}]
@@ -89,17 +79,16 @@
                      :after-demolish! (fn [{:keys [key]}]
                                         (swap! log conj [:stop system key]))})]
     (with-open [_ (di/start `a
-                            {::param :param}
-                            (di/collect-cache cache)
+                            registry
                             (di/log (callbacks :main)))
                 _ (di/start [::x `a]
                             {::x :x}
                             (di/log (callbacks :second))
-                            (di/use-cache cache))
+                            registry)
                 _ (di/start [::y `a]
                             {::y :y}
                             (di/log (callbacks :third))
-                            (di/use-cache cache))])
+                            registry)])
 
     (t/is (= [[:start :main   ::param]
               [:start :main   `a]
@@ -121,17 +110,3 @@
               [:stop  :main   `a]
               [:stop  :main   ::param]]
              @log))))
-
-(t/deftest cache-registry-test
-  (let [cache (atom {})]
-    (with-open [main   (di/start ::root
-                                 {::root (di/template [(di/ref ::a) (di/ref ::b)])
-                                  ::a    :a
-                                  ::b    :b}
-                                 (di/update-key ::root conj :c)
-                                 (di/collect-cache cache))
-                second (di/start ::root
-                                 (di/use-cache cache)
-                                 {::a "a"})]
-      (t/is (= [:a  :b :c] @main))
-      (t/is (= ["a" :b :c] @second)))))

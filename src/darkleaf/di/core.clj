@@ -867,59 +867,26 @@
                                 (inspect-middleware))]
     @components))
 
-(defn collect-cache
-  "
-  ;; должен быть последним в цепочке, чтобы закешировать все
-  "
-  [cache]
-  (fn [registry]
-    (swap! cache assoc :registry (fn [key]
-                                   (case key
-                                     ::implicit-root nil
-                                     (registry key))))
-    (fn [key]
-      (let [factory (registry key)]
-        (reify p/Factory
-          (dependencies [_]
-            (p/dependencies factory))
-          (build [_ deps]
-            (let [obj (p/build factory deps)]
-              (swap! cache assoc
-                     key {:dependencies deps :object obj})
-              obj))
-          (demolish [_ obj]
-            (swap! cache dissoc
-                   :registry
-                   key)
-            (p/demolish factory obj)))))))
-
-(defn use-cache
-  "
-  ;; должен быть первым, а после него идти переопределения
-  [(di/use-cache cache)
-   {::param :new-version}]
-
-  "
-  [cache]
-  (let [cache @cache]
-    (fn [downstream-registry]
-      (let [cached-registry (:registry cache)
-            registry        (fn [key]
-                              ;; тут бы тест написать на порядок
-                              ;; в gmonit хороший пример с reitit и update-key conj routes
-                              (?? (cached-registry key)
-                                  (downstream-registry key)))]
-        (fn [key]
-          (let [factory               (registry key)
-                {cached-deps :dependencies
-                 cached-obj  :object} (cache key)]
-            (reify p/Factory
-              (dependencies [_]
-                (p/dependencies factory))
-              (build [_ deps]
-                (if (= cached-deps deps)
-                  cached-obj
-                  (p/build factory deps)))
-              (demolish [_ obj]
-                (when (not (identical? cached-obj obj))
+(defn ->cache []
+  (let [cache (volatile! {})]
+    (fn [registry]
+      (fn [key]
+        (let [factory (registry key)]
+          (reify p/Factory
+            (dependencies [_]
+              (p/dependencies factory))
+            (build [owner deps]
+              (locking cache
+                (?? (get @cache [key deps])
+                    (let [obj (p/build factory deps)]
+                      (vswap! cache assoc
+                              [key deps]      obj
+                              [key owner obj] deps)
+                      obj))))
+            (demolish [owner obj]
+              (locking cache
+                (when-some [deps (get @cache [key owner obj])]
+                  (vswap! cache dissoc
+                          [key deps]
+                          [key owner obj])
                   (p/demolish factory obj))))))))))
