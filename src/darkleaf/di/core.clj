@@ -190,8 +190,6 @@
 (defn- with-ns
   "Adds support to the registry for looking up vars."
   [registry]
-  ;; possible optimization for di/use-cache:
-  ;; (memoize (fn [key) ....)
   (fn [key]
     (?? (some-> key
                 try-requiring-resolve
