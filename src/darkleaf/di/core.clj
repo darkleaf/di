@@ -879,6 +879,8 @@
                     (let [obj (p/build factory deps)]
                       (vswap! cache assoc
                               [key deps]      obj
+                              ;; NOTE: track which factory creates `obj`
+                              ;; so that only that factory can demolish it later
                               [key owner obj] deps)
                       obj))))
             (demolish [owner obj]
