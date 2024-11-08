@@ -5,6 +5,13 @@
 
 (set! *warn-on-reflection* true)
 
+(t/deftest memoize-test
+  (let [a         'a
+        identity* (memoize identity)]
+    (identity* a)
+    (t/is (not (identical? a  (identity  'a))))
+    (t/is      (identical? a  (identity* 'a)))))
+
 (defn- some+identical? [a b]
   (and (some? a)
        (some? b)
