@@ -865,7 +865,7 @@
                                 (inspect-middleware))]
     @components))
 
-(defn ->cache []
+(defn ->memoize []
   (let [cache (volatile! {})]
     (fn [registry]
       (fn [key]

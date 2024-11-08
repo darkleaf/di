@@ -1,4 +1,4 @@
-(ns darkleaf.di.cache-test
+(ns darkleaf.di.memoize-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
@@ -28,29 +28,29 @@
   (Object.))
 
 (t/deftest ok-test
-  (let [cache    (di/->cache)
+  (let [mem      (di/->memoize)
         registry (fn []
                    [{::param (Object.)}
-                    cache])]
+                    mem])]
     (with-open [main      (di/start `a (registry))
                 secondary (di/start `a (registry))]
       (t/is (some+identical? @main @secondary)))))
 
 (t/deftest changed-not-identical-test
-  (let [cache    (di/->cache)
+  (let [mem      (di/->memoize)
         registry (fn []
                    [{::param (Object.)}
-                    cache])]
+                    mem])]
     (with-open [main      (di/start `a (registry))
                 secondary (di/start `a (registry)
                                     {::param (Object.)})]
       (t/is (some+not-identical? @main @secondary)))))
 
 (t/deftest changed-equal-and-identical-test
-  (let [cache    (di/->cache)
+  (let [mem      (di/->memoize)
         registry (fn []
                    [{::param :equal-and-identical}
-                    cache])]
+                    mem])]
     (with-open [main      (di/start `a (registry))
                 secondary (di/start `a (registry)
                                     {::param :equal-and-identical})]
@@ -58,20 +58,20 @@
 
 
 (t/deftest changed-equal-but-not-identical-test
-  (let [cache    (di/->cache)
+  (let [mem      (di/->memoize)
         registry (fn []
                    [{::param 'equal-but-not-identical}
-                    cache])]
+                    mem])]
     (with-open [main      (di/start `a (registry))
                 secondary (di/start `a (registry)
                                     {::param 'equal-but-not-identical})]
       (t/is (some+identical? @main @secondary)))))
 
 (t/deftest changed-equal-but-different-test
-  (let [cache    (di/->cache)
+  (let [mem      (di/->memoize)
         registry (fn []
                    [{::param []}
-                    cache])]
+                    mem])]
     (with-open [main      (di/start `a (registry))
                 secondary (di/start `a (registry)
                                     {::param '()})]
@@ -79,10 +79,10 @@
 
 
 (t/deftest start-stop-order-test
-  (let [cache     (di/->cache)
+  (let [mem       (di/->memoize)
         registry  (fn []
                     [{::param :param}
-                     cache])
+                     mem])
         log       (atom [])
         callbacks (fn [system]
                     {:after-build!    (fn [{:keys [key]}]
