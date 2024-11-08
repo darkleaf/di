@@ -20,58 +20,62 @@
   [{_ ::param}]
   (Object.))
 
-
-;; тут получается, что мы реестр идентичный передаем
-;; но у себя мы используем функции, и реестр будет не идентичный
-;; и именно по этому функа и называется `di/->cache`, т.е. новый делается
-;; и ее нельзя использовать как `di/update-key` например.
-;; А нужно сделать `(def cache (di/->cache))` и дальше юзать cache
-;; Может как-то примеры переделать под это?
-
 (t/deftest ok-test
-  (let [registry [{::param (Object.)}
-                  (di/->cache)]]
-    (with-open [main      (di/start `a registry)
-                secondary (di/start `a registry)]
+  (let [cache    (di/->cache)
+        registry (fn []
+                   [{::param (Object.)}
+                    cache])]
+    (with-open [main      (di/start `a (registry))
+                secondary (di/start `a (registry))]
       (t/is (some+identical? @main @secondary)))))
 
 (t/deftest changed-not-identical-test
-  (let [registry [{::param (Object.)}
-                  (di/->cache)]]
-    (with-open [main      (di/start `a registry)
-                secondary (di/start `a registry
+  (let [cache    (di/->cache)
+        registry (fn []
+                   [{::param (Object.)}
+                    cache])]
+    (with-open [main      (di/start `a (registry))
+                secondary (di/start `a (registry)
                                     {::param (Object.)})]
       (t/is (some+not-identical? @main @secondary)))))
 
 (t/deftest changed-equal-and-identical-test
-  (let [registry [{::param :equal-and-identical}
-                  (di/->cache)]]
-    (with-open [main (di/start `a registry)
-                secondary (di/start `a registry
+  (let [cache    (di/->cache)
+        registry (fn []
+                   [{::param :equal-and-identical}
+                    cache])]
+    (with-open [main      (di/start `a (registry))
+                secondary (di/start `a (registry)
                                     {::param :equal-and-identical})]
       (t/is (some+identical? @main @secondary)))))
 
 
 (t/deftest changed-equal-but-not-identical-test
-  (let [registry [{::param 'equal-but-not-identical}
-                  (di/->cache)]]
-    (with-open [main      (di/start `a registry)
-                secondary (di/start `a registry
+  (let [cache    (di/->cache)
+        registry (fn []
+                   [{::param 'equal-but-not-identical}
+                    cache])]
+    (with-open [main      (di/start `a (registry))
+                secondary (di/start `a (registry)
                                     {::param 'equal-but-not-identical})]
       (t/is (some+identical? @main @secondary)))))
 
 (t/deftest changed-equal-but-different-test
-  (let [registry [{::param []}
-                  (di/->cache)]]
-    (with-open [main      (di/start `a registry)
-                secondary (di/start `a registry
+  (let [cache    (di/->cache)
+        registry (fn []
+                   [{::param []}
+                    cache])]
+    (with-open [main      (di/start `a (registry))
+                secondary (di/start `a (registry)
                                     {::param '()})]
       (t/is (some+identical? @main @secondary)))))
 
 
 (t/deftest start-stop-order-test
-  (let [registry  [{::param :param}
-                   (di/->cache)]
+  (let [cache     (di/->cache)
+        registry  (fn []
+                    [{::param :param}
+                     cache])
         log       (atom [])
         callbacks (fn [system]
                     {:after-build!    (fn [{:keys [key]}]
@@ -79,16 +83,16 @@
                      :after-demolish! (fn [{:keys [key]}]
                                         (swap! log conj [:stop system key]))})]
     (with-open [_ (di/start `a
-                            registry
+                            (registry)
                             (di/log (callbacks :main)))
                 _ (di/start [::x `a]
                             {::x :x}
                             (di/log (callbacks :second))
-                            registry)
+                            (registry))
                 _ (di/start [::y `a]
                             {::y :y}
                             (di/log (callbacks :third))
-                            registry)])
+                            (registry))])
 
     (t/is (= [[:start :main   ::param]
               [:start :main   `a]
