@@ -517,7 +517,8 @@
           f-key          (symbol (str prefix "-f"))
           arg-keys       (for [i (-> args count range)]
                            (symbol (str prefix "-arg#" i)))
-          new-factory    (reify p/Factory
+          new-factory    (reify
+                           p/Factory
                            (dependencies [_]
                              (zipmap (concat [new-key f-key] arg-keys)
                                      (repeat :optional)))
@@ -526,7 +527,12 @@
                                    f    (deps f-key)
                                    args (map deps arg-keys)]
                                (apply f t args)))
-                           (demolish [_ _]))
+                           (demolish [_ _])
+                           p/FactoryDescription
+                           (description [_]
+                             {:kind       :middleware
+                              :middleware ::update-key
+                              :target     target}))
           own-registry   (zipmap (cons f-key arg-keys)
                                  (cons f     args))
           target-factory (registry target)]
@@ -624,7 +630,18 @@
     (demolish [_ _])))
 
 (defn- var->0-service [variable]
-  variable)
+  ;; todo: meta ::service
+
+  (reify
+    p/Factory
+    (dependencies [_])
+    (build [_ _]
+      variable)
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {:kind :service
+       :var  variable})))
 
 (defn- var->service [variable]
   (let [deps (dependencies-fn variable)]
@@ -672,6 +689,13 @@
   (dependencies [_] nil)
   (build [this _] this)
   (demolish [_ _] nil))
+
+(extend-protocol p/FactoryDescription
+  nil
+  (description [_] {})
+
+  Object
+  (description [_] {}))
 
 (c/derive ::root     ::instance)
 (c/derive ::template ::instance)
@@ -836,7 +860,8 @@
             info          (into {}
                                 (filter (fn [[k v]] (some? v)))
                                 {:key          key
-                                 :dependencies declared-deps})]
+                                 :dependencies (not-empty declared-deps)
+                                 :description  (not-empty (p/description factory))})]
         (reify p/Factory
           (dependencies [_]
             declared-deps)
