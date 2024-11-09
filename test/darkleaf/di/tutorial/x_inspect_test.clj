@@ -14,31 +14,41 @@
           :or {b :default}}]
   :ok)
 
+
+(t/deftest zero-arity-service-test
+  (t/is (= [{:key          ::di/implicit-root
+             :dependencies {`a :required}}
+            {:key         `a
+             :description {:kind :service
+                           :var  #'a}}]
+           (di/inspect `a))))
+
+
+;; todo: name
 (t/deftest ok
   (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`c :required}
-             :meta         {}}
+             :dependencies {`c :required}}
             {:key          `c
-             :dependencies {`a :required `b :optional}
-             :meta         {}}
-            {:key  `a
-             :meta {}}
+             :dependencies {`a :required `b :optional}}
+            {:key         `a
+             :description {:kind :service
+                           :var  #'a}}
             {:key          `b
-             :dependencies {`a :required}
-             :meta         {}}]
+             :dependencies {`a :required}}]
            (di/inspect `c))))
 
-(t/deftest meta-test
+
+(t/deftest update-key-test
   (t/is (= [{:key          ::di/implicit-root,
-             :dependencies {`a :required}
-             :meta         {}}
+             :dependencies {`a :required}}
             {:key          `a,
              :dependencies {`a+di-update-key#0-target :optional,
                             `a+di-update-key#0-f      :optional}
-             :meta         {::di/middleware ::di/update-key
-                            ::di/target     `a}}
-            {:key  `a+di-update-key#0-target
-             :meta {}}
-            {:key  `a+di-update-key#0-f
-             :meta {}}]
+             :description  {:kind       :middleware
+                            :middleware ::di/update-key
+                            :target     `a}}
+            {:key         `a+di-update-key#0-target
+             :description {:kind :service
+                           :var  #'a}}
+            {:key `a+di-update-key#0-f}]
            (di/inspect `a (di/update-key `a str)))))

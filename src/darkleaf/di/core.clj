@@ -528,11 +528,11 @@
                                    args (map deps arg-keys)]
                                (apply f t args)))
                            (demolish [_ _])
-
                            p/FactoryDescription
                            (description [_]
-                             {::middleware ::update-key
-                              ::target     target}))
+                             {:kind       :middleware
+                              :middleware ::update-key
+                              :target     target}))
           own-registry   (zipmap (cons f-key arg-keys)
                                  (cons f     args))
           target-factory (registry target)]
@@ -630,7 +630,18 @@
     (demolish [_ _])))
 
 (defn- var->0-service [variable]
-  variable)
+  ;; todo: meta ::service
+
+  (reify
+    p/Factory
+    (dependencies [_])
+    (build [_ _]
+      variable)
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {:kind :service
+       :var  variable})))
 
 (defn- var->service [variable]
   (let [deps (dependencies-fn variable)]
@@ -849,8 +860,8 @@
             info          (into {}
                                 (filter (fn [[k v]] (some? v)))
                                 {:key          key
-                                 :dependencies declared-deps
-                                 :meta         (p/description factory)})]
+                                 :dependencies (not-empty declared-deps)
+                                 :description  (not-empty (p/description factory))})]
         (reify p/Factory
           (dependencies [_]
             declared-deps)
