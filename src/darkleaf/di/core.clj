@@ -92,11 +92,12 @@
      :declared-deps  deps
      :remaining-deps (seq deps)}))
 
-(defn- build-obj [built-map head]
+(defn- build-obj [built-map head stack]
   (let [factory       (:factory head)
         declared-deps (:declared-deps head)
         built-deps    (select-keys built-map (keys declared-deps))]
-    (p/build factory built-deps)))
+    (p/build factory
+             (with-meta built-deps {::build-stack stack}))))
 
 (defn- build [{:keys [registry *stop-list]} key]
   (loop [stack     (list (stack-frame key :required (registry key)))
@@ -126,7 +127,7 @@
                    built-map))
 
           :else
-          (let [obj  (build-obj built-map head)
+          (let [obj  (build-obj built-map head stack)
                 stop #(p/demolish factory obj)]
             (vswap! *stop-list conj stop)
             (case [obj dep-type]
@@ -592,12 +593,25 @@
 (defn- stop-fn [variable]
   (-> variable meta (::stop (fn no-op [_]))))
 
+(defn- no-value-component! [stack]
+  (let [key (-> stack peek :key)]
+    (throw (ex-info (str "Component returned no value " key)
+                    {:type  ::component-no-value
+                     :stack (map :key stack)}))))
+
+(defn- ensure-component-result! [result stack]
+  (if (nil? result)
+    (no-value-component! stack)
+    result))
+
 (defn- var->0-component [variable]
   (let [stop (stop-fn variable)]
     (reify p/Factory
       (dependencies [_])
-      (build [_ _]
-        (variable))
+      (build [_ empty-deps]
+        (ensure-component-result!
+          (variable)
+          (::build-stack (meta empty-deps))))
       (demolish [_ obj]
         (stop obj)))))
 
@@ -608,7 +622,9 @@
       (dependencies [_]
         deps)
       (build [_ deps]
-        (variable deps))
+        (ensure-component-result!
+          (variable deps)
+          (::build-stack (meta deps))))
       (demolish [_ obj]
         (stop obj)))))
 
