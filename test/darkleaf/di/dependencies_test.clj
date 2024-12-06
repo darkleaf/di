@@ -97,6 +97,21 @@
            (try-ex-data (di/start `parent)))))
 
 
+(defn ^{::di/kind :component} component-no-value
+  [])
+
+
+(defn parent-2
+  [{::syms [component-no-value]}]
+  :done)
+
+
+(t/deftest component-no-value-exception-test
+  (t/is (= {:type  ::di/component-no-value
+            :stack [`component-no-value `parent-2 ::di/implicit-root]}
+           (try-ex-data (di/start `parent-2)))))
+
+
 (defn recursion-a
   [{::syms [recursion-b]}]
   :done)
