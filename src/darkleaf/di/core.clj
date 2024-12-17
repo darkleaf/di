@@ -592,12 +592,18 @@
 (defn- stop-fn [variable]
   (-> variable meta (::stop (fn no-op [_]))))
 
+(defn- check-nil-component! [component var]
+  (if (nil? component)
+    (throw (ex-info (str "nil component " var) {}))
+    component))
+
 (defn- var->0-component [variable]
   (let [stop (stop-fn variable)]
     (reify p/Factory
       (dependencies [_])
       (build [_ _]
-        (variable))
+        (-> (variable)
+            (check-nil-component! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
@@ -608,7 +614,8 @@
       (dependencies [_]
         deps)
       (build [_ deps]
-        (variable deps))
+        (-> (variable deps)
+            (check-nil-component! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
