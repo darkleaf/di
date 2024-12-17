@@ -92,11 +92,18 @@
      :declared-deps  deps
      :remaining-deps (seq deps)}))
 
-(defn- build-obj [built-map head]
-  (let [factory       (:factory head)
+(defn- build-obj [built-map stack]
+  (let [head          (peek stack)
+        factory       (:factory head)
         declared-deps (:declared-deps head)
         built-deps    (select-keys built-map (keys declared-deps))]
-    (p/build factory built-deps)))
+    (try
+      (p/build factory built-deps)
+      (catch RuntimeException ex
+        (throw (ex-info "An error during component start"
+                        {:stack (map :key stack)}
+                        ex))))))
+
 
 (defn- build [{:keys [registry *stop-list]} key]
   (loop [stack     (list (stack-frame key :required (registry key)))
@@ -126,7 +133,7 @@
                    built-map))
 
           :else
-          (let [obj  (build-obj built-map head)
+          (let [obj  (build-obj built-map stack)
                 stop #(p/demolish factory obj)]
             (vswap! *stop-list conj stop)
             (case [obj dep-type]
@@ -592,12 +599,18 @@
 (defn- stop-fn [variable]
   (-> variable meta (::stop (fn no-op [_]))))
 
+(defn- check-nil-component! [component var]
+  (if (nil? component)
+    (throw (ex-info (str "nil component " var) {}))
+    component))
+
 (defn- var->0-component [variable]
   (let [stop (stop-fn variable)]
     (reify p/Factory
       (dependencies [_])
       (build [_ _]
-        (variable))
+        (-> (variable)
+            (check-nil-component! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
@@ -608,7 +621,8 @@
       (dependencies [_]
         deps)
       (build [_ deps]
-        (variable deps))
+        (-> (variable deps)
+            (check-nil-component! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
