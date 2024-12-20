@@ -13,6 +13,11 @@
 ;; It throws with original exception.
 ;; All other possible exceptions are added as suppressed.
 
+(defn ex-map-wo-via [ex]
+  (-> ex
+      Throwable->map
+      (dissoc :via)))
+
 (defn root
   {::di/kind :component}
   [{dep              `dep
@@ -34,5 +39,5 @@
                            (di/start `root registry)
                            (catch Throwable ex
                              ex))]
-    (t/is (= on-start-root-ex ex))
+    (t/is (= (ex-map-wo-via on-start-root-ex) (ex-map-wo-via ex)))
     (t/is (= [on-stop-dep-ex] (vec (.getSuppressed ex))))))

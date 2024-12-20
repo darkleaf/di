@@ -8,7 +8,10 @@
 (defmacro catch-cause-data [& body]
   `(try ~@body
         (catch clojure.lang.ExceptionInfo e#
-          (mapv :data (:via (Throwable->map e#))))))
+          (->> e#
+               Throwable->map
+               :via
+               (mapv :data)))))
 
 (defn nil-component
   {::di/kind :component}
