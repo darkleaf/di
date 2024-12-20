@@ -13,20 +13,22 @@
                :via
                (mapv :data)))))
 
-(defn nil-component
+(defn nil-value-component
   {::di/kind :component}
   []
   nil)
 
-(defn nil-component-1-arity
+(defn nil-value-component-1-arity
   {::di/kind :component}
   [_]
   nil)
 
-(t/deftest nil-component-test
-  (t/is (= [{:stack [`nil-component ::di/implicit-root]}
-            {:type ::di/nil-component}]
-           (catch-cause-data (di/start `nil-component))))
-  (t/is (= [{:stack [`nil-component-1-arity ::di/implicit-root]}
-            {:type ::di/nil-component}]
-           (catch-cause-data (di/start `nil-component-1-arity)))))
+(t/deftest nil-value-component-test
+  (t/is (= [{:type  ::di/build-obj-fail
+             :stack [`nil-value-component ::di/implicit-root]}
+            {:type ::di/nil-value-component}]
+           (catch-cause-data (di/start `nil-value-component))))
+  (t/is (= [{:type  ::di/build-obj-fail
+             :stack [`nil-value-component-1-arity ::di/implicit-root]}
+            {:type ::di/nil-value-component}]
+           (catch-cause-data (di/start `nil-value-component-1-arity)))))

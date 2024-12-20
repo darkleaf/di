@@ -92,18 +92,21 @@
      :declared-deps  deps
      :remaining-deps (seq deps)}))
 
-(defn- build-obj [built-map stack]
+(defn- build-obj* [built-map stack]
   (let [head          (peek stack)
         factory       (:factory head)
         declared-deps (:declared-deps head)
         built-deps    (select-keys built-map (keys declared-deps))]
-    (try
-      (p/build factory built-deps)
-      (catch RuntimeException ex
-        (throw (ex-info "An error during component start"
-                        {:stack (map :key stack)}
-                        ex))))))
+    (p/build factory built-deps)))
 
+(defn- build-obj [built-map stack]
+  (try
+    (build-obj* built-map stack)
+    (catch RuntimeException ex
+      (throw (ex-info "An error during component build"
+                      {:type  ::build-obj-fail
+                       :stack (map :key stack)}
+                      ex)))))
 
 (defn- build [{:keys [registry *stop-list]} key]
   (loop [stack     (list (stack-frame key :required (registry key)))
@@ -599,10 +602,10 @@
 (defn- stop-fn [variable]
   (-> variable meta (::stop (fn no-op [_]))))
 
-(defn- check-nil-component! [component var]
+(defn- check-nil-value-component! [component var]
   (if (nil? component)
-    (throw (ex-info (str "nil component " var)
-                    {:type ::nil-component}))
+    (throw (ex-info (str "Component returned nil value" var)
+                    {:type ::nil-value-component}))
     component))
 
 (defn- var->0-component [variable]
@@ -611,7 +614,7 @@
       (dependencies [_])
       (build [_ _]
         (-> (variable)
-            (check-nil-component! variable)))
+            (check-nil-value-component! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
@@ -623,7 +626,7 @@
         deps)
       (build [_ deps]
         (-> (variable deps)
-            (check-nil-component! variable)))
+            (check-nil-value-component! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
