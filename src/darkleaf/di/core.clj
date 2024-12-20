@@ -601,7 +601,8 @@
 
 (defn- check-nil-component! [component var]
   (if (nil? component)
-    (throw (ex-info (str "nil component " var) {}))
+    (throw (ex-info (str "nil component " var)
+                    {:type ::nil-component}))
     component))
 
 (defn- var->0-component [variable]

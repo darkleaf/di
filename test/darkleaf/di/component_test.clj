@@ -5,13 +5,25 @@
   (:import
    (clojure.lang ExceptionInfo)))
 
+(defmacro catch-cause-data [& body]
+  `(try ~@body
+        (catch clojure.lang.ExceptionInfo e#
+          (mapv :data (:via (Throwable->map e#))))))
+
 (defn nil-component
   {::di/kind :component}
   []
   nil)
 
+(defn nil-component-1-arity
+  {::di/kind :component}
+  [_]
+  nil)
+
 (t/deftest nil-component-test
-  (t/is (thrown-with-msg?
-         ExceptionInfo
-         #"\Anil component #'darkleaf.di.component-test/nil-component\z"
-         (di/start `nil-component))))
+  (t/is (= [{:stack [`nil-component ::di/implicit-root]}
+            {:type ::di/nil-component}]
+           (catch-cause-data (di/start `nil-component))))
+  (t/is (= [{:stack [`nil-component-1-arity ::di/implicit-root]}
+            {:type ::di/nil-component}]
+           (catch-cause-data (di/start `nil-component-1-arity)))))
