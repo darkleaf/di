@@ -12,22 +12,22 @@
      (catch Exception ex#
        ex#)))
 
-(defn nil-value-component-0-arity
+(defn nil-component-0-arity
   {::di/kind :component}
   []
   nil)
 
-(defn nil-value-component-1-arity
+(defn nil-component-1-arity
   {::di/kind :component}
   [-deps]
   nil)
 
-(t/deftest nil-value-component-0-arity-test
-  (let [ex (try-catch (di/start `nil-value-component-0-arity))]
+(t/deftest nil-component-0-arity-test
+  (let [ex (try-catch (di/start `nil-component-0-arity))]
     (t/is (= "An error during component build" (-> ex ex-message)))
     (t/is (= "A component fn can't return nil" (-> ex ex-cause ex-message)))))
 
-(t/deftest nil-value-component-1-arity-test
-  (let [ex (try-catch (di/start `nil-value-component-1-arity))]
+(t/deftest nil-component-1-arity-test
+  (let [ex (try-catch (di/start `nil-component-1-arity))]
     (t/is (= "An error during component build" (-> ex ex-message)))
     (t/is (= "A component fn can't return nil" (-> ex ex-cause ex-message)))))
