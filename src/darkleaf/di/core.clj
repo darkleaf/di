@@ -101,7 +101,7 @@
 (defn- build-obj [built-map stack]
   (try
     (build-obj* built-map (peek stack))
-    (catch RuntimeException ex
+    (catch Exception ex
       (throw (ex-info "An error during component build"
                       {:type  ::build-obj-fail
                        :stack (map :key stack)}
