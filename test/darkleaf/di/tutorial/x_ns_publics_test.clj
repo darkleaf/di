@@ -4,7 +4,7 @@
    [darkleaf.di.core :as di]))
 
 ;; excluded
-(def nil-value-component nil)
+(def nil-component nil)
 
 ;; excluded
 (def unbound-component)
