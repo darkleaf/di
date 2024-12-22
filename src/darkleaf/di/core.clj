@@ -92,16 +92,15 @@
      :declared-deps  deps
      :remaining-deps (seq deps)}))
 
-(defn- build-obj* [built-map stack]
-  (let [head          (peek stack)
-        factory       (:factory head)
+(defn- build-obj* [built-map head]
+  (let [factory       (:factory head)
         declared-deps (:declared-deps head)
         built-deps    (select-keys built-map (keys declared-deps))]
     (p/build factory built-deps)))
 
 (defn- build-obj [built-map stack]
   (try
-    (build-obj* built-map stack)
+    (build-obj* built-map (peek stack))
     (catch RuntimeException ex
       (throw (ex-info "An error during component build"
                       {:type  ::build-obj-fail
