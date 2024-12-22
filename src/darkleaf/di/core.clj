@@ -103,7 +103,7 @@
     (build-obj* built-map (peek stack))
     (catch Exception ex
       (throw (ex-info "An error during component build"
-                      {:type  ::build-obj-fail
+                      {:type  ::build-error
                        :stack (map :key stack)}
                       ex)))))
 
