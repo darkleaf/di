@@ -33,6 +33,42 @@
       x#
       (?? ~@next))))
 
+
+;; https://clojure.atlassian.net/browse/CLJ-2124
+;; https://github.com/Gonzih/feeds2imap.clj/blob/master/src/feeds2imap/macro.clj
+(defmacro ^:pirvate try*
+  "Macro to catch multiple exceptions with one catch body.
+
+   Usage:
+   (try*
+     (println :a)
+     (println :b)
+     (catch* [A B] e (println (class e)))
+     (catch C e (println :C))
+     (finally (println :finally-clause)))
+
+   Will be expanded to:
+   (try
+     (println :a)
+     (println :b)
+     (catch A e (println (class e)))
+     (catch B e (println (class e)))
+     (catch C e (println :C))
+     (finally (println :finally-clause)))
+  "
+  [& body]
+  (letfn [(catch*? [form]
+            (and (seq form)
+                 (= (first form) 'catch*)))
+          (expand [[_catch* classes & catch-tail]]
+            (map #(list* 'catch % catch-tail) classes))
+          (transform [form]
+            (if (catch*? form)
+              (expand form)
+              [form]))]
+    (cons 'try (mapcat transform body))))
+
+
 (defn- index-of
   "Returns the index of the first occurrence of `x` in `xs`."
   [^List xs x]
@@ -144,10 +180,10 @@
               (recur tail (assoc built-map key obj)))))))))
 
 (defn- try-run [proc]
-  (try
+  (try*
     (proc)
     nil
-    (catch Throwable ex
+    (catch* [Exception AssertionError] ex
       ex)))
 
 (defn- try-run-all [procs]
@@ -168,9 +204,9 @@
     (try-run-all stops)))
 
 (defn- try-build [ctx key]
-  (try
+  (try*
     (build ctx key)
-    (catch Throwable ex
+    (catch* [Exception AssertionError] ex
       (let [exs (try-stop-started ctx)
             exs (cons ex exs)]
         (throw-many! exs)))))
