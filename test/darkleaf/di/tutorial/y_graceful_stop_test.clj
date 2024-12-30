@@ -32,7 +32,7 @@
                           ::on-stop-dep-ex   on-stop-dep-ex}
         ex               (try
                            (di/start `root registry)
-                           (catch Throwable ex
+                           (catch Exception ex
                              ex))]
-    (t/is (= on-start-root-ex ex))
+    (t/is (= on-start-root-ex (ex-cause ex)))
     (t/is (= [on-stop-dep-ex] (vec (.getSuppressed ex))))))
