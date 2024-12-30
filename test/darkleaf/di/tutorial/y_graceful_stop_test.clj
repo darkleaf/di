@@ -5,7 +5,8 @@
   {:nextjournal.clerk/visibility {:result :hide}}
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]
+   [darkleaf.di.test-utils :refer [catch-some]]))
 
 ;; The DI tries to stop components that are already started
 ;; if another component fails while it is starting.
@@ -30,9 +31,7 @@
         on-stop-dep-ex   (ex-info "on stop dep" {})
         registry         {::on-start-root-ex on-start-root-ex
                           ::on-stop-dep-ex   on-stop-dep-ex}
-        ex               (try
-                           (di/start `root registry)
-                           (catch Exception ex
-                             ex))]
+        ex               (-> (di/start `root registry)
+                             catch-some)]
     (t/is (= on-start-root-ex (ex-cause ex)))
     (t/is (= [on-stop-dep-ex] (vec (.getSuppressed ex))))))
