@@ -104,8 +104,8 @@
     (catch Exception ex
       (throw (ex-info "A failure occurred during the build process"
                       {:type  ::build-failure
-                       :stack (map :key stack)})
-       ex))))
+                       :stack (map :key stack)}
+                      ex)))))
 
 (defn- build [{:keys [registry *stop-list]} key]
   (loop [stack     (list (stack-frame key :required (registry key)))
