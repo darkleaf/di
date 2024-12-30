@@ -103,8 +103,8 @@
     (build-obj* built-map (peek stack))
     (catch Exception ex
       (throw (ex-info "A failure occurred during the build process"
-                   {:type  ::build-failure
-                    :stack (map :key stack)})
+                      {:type  ::build-failure
+                       :stack (map :key stack)})
        ex))))
 
 (defn- build [{:keys [registry *stop-list]} key]
