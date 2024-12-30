@@ -16,11 +16,11 @@
 
 (t/deftest nil-component-0-arity-test
   (let [ex (catch-some (di/start `nil-component-0-arity))]
-    (t/is (= "A component fn should not return nil" (-> ex ex-cause ex-message)))))
+    (t/is (= ::di/nil-return (-> ex ex-cause ex-data :type)))))
 
 (t/deftest nil-component-1-arity-test
   (let [ex (catch-some (di/start `nil-component-1-arity))]
-    (t/is (= "A component fn should not return nil" (-> ex ex-cause ex-message)))))
+    (t/is (= ::di/nil-return (-> ex ex-cause ex-data :type)))))
 
 
 (defn component-2-arity

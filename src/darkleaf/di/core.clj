@@ -601,19 +601,19 @@
 (defn- stop-fn [variable]
   (-> variable meta (::stop (fn no-op [_]))))
 
-(defn- validate-component-obj! [obj variable]
+(defn- validate-obj! [obj variable]
   (when (nil? obj)
-    (throw (ex-info "A component fn should not return nil"
-                    {:variable variable}))))
+    (throw (ex-info "A component fn must not return nil"
+                    {:type     ::nil-return
+                     :variable variable}))))
 
 (defn- var->0-component [variable]
   (let [stop (stop-fn variable)]
     (reify p/Factory
       (dependencies [_])
       (build [_ _]
-        (let [obj (variable)]
-          (validate-component-obj! obj variable)
-          obj))
+        (doto (variable)
+          (validate-obj! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
@@ -624,9 +624,8 @@
       (dependencies [_]
         deps)
       (build [_ deps]
-        (let [obj (variable deps)]
-          (validate-component-obj! obj variable)
-          obj))
+        (doto (variable deps)
+          (validate-obj! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
