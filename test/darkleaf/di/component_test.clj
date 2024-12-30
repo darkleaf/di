@@ -21,3 +21,13 @@
 (t/deftest nil-component-1-arity-test
   (let [ex (catch-some (di/start `nil-component-1-arity))]
     (t/is (= "A component fn should not return nil" (-> ex ex-cause ex-message)))))
+
+
+(defn component-2-arity
+  {::di/kind :component}
+  [deps extra-arg]
+  :smth)
+
+(t/deftest component-2-arity-test
+  (let [ex (catch-some (di/start `component-2-arity))]
+    (t/is (= ::di/invalid-arity (-> ex ex-data :type)))))

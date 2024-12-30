@@ -660,7 +660,8 @@
                      [1] (var->1-component variable)
                      (throw (ex-info
                              "A component fn must only have 0 or 1 arity"
-                             {:variable variable
+                             {:type     ::invalid-arity
+                              :variable variable
                               :arities  arities})))
         #_service  (case arities
                      [0] (var->0-service variable)
