@@ -17,47 +17,13 @@
    [darkleaf.di.destructuring-map :as map]
    [darkleaf.di.protocols :as p]
    [darkleaf.di.ref :as ref]
-   [darkleaf.di.utils :as u :refer [??]])
+   [darkleaf.di.utils :as u :refer [?? try*]])
   (:import
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
    (java.lang AutoCloseable)))
 
 (set! *warn-on-reflection* true)
-
-;; https://clojure.atlassian.net/browse/CLJ-2124
-;; https://github.com/Gonzih/feeds2imap.clj/blob/master/src/feeds2imap/macro.clj
-(defmacro ^:pirvate try*
-  "Macro to catch multiple exceptions with one catch body.
-
-   Usage:
-   (try*
-     (println :a)
-     (println :b)
-     (catch* [A B] e (println (class e)))
-     (catch C e (println :C))
-     (finally (println :finally-clause)))
-
-   Will be expanded to:
-   (try
-     (println :a)
-     (println :b)
-     (catch A e (println (class e)))
-     (catch B e (println (class e)))
-     (catch C e (println :C))
-     (finally (println :finally-clause)))
-  "
-  [& body]
-  (letfn [(catch*? [form]
-            (and (seq form)
-                 (= (first form) 'catch*)))
-          (expand [[_catch* classes & catch-tail]]
-            (map #(list* 'catch % catch-tail) classes))
-          (transform [form]
-            (if (catch*? form)
-              (expand form)
-              [form]))]
-    (cons 'try (mapcat transform body))))
 
 (defn ^:dynamic *next-id* []
   (throw (IllegalStateException. "Attempting to call unbound `di/*next-id*`")))
