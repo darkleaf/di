@@ -16,23 +16,14 @@
    [clojure.walk :as w]
    [darkleaf.di.destructuring-map :as map]
    [darkleaf.di.protocols :as p]
-   [darkleaf.di.ref :as ref])
+   [darkleaf.di.ref :as ref]
+   [darkleaf.di.utils :as u :refer [??]])
   (:import
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
-   (java.lang AutoCloseable)
-   (java.util List)))
+   (java.lang AutoCloseable)))
 
 (set! *warn-on-reflection* true)
-
-(defmacro ^:private ??
-  ([] nil)
-  ([x] x)
-  ([x & next]
-   `(if-some [x# ~x]
-      x#
-      (?? ~@next))))
-
 
 ;; https://clojure.atlassian.net/browse/CLJ-2124
 ;; https://github.com/Gonzih/feeds2imap.clj/blob/master/src/feeds2imap/macro.clj
@@ -67,17 +58,6 @@
               (expand form)
               [form]))]
     (cons 'try (mapcat transform body))))
-
-
-(defn- index-of
-  "Returns the index of the first occurrence of `x` in `xs`."
-  [^List xs x]
-  (if (nil? xs)
-    -1
-    (.indexOf xs x)))
-
-(defn- seq-contains? [xs x]
-  (not (neg? (index-of xs x))))
 
 (defn ^:dynamic *next-id* []
   (throw (IllegalStateException. "Attempting to call unbound `di/*next-id*`")))
@@ -160,7 +140,7 @@
           (contains? built-map key)
           (recur tail built-map)
 
-          (seq-contains? (map :key tail) key)
+          (u/seq-contains? (map :key tail) key)
           (circular-dependency! stack)
 
           (seq remaining-deps)
