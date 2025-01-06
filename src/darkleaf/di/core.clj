@@ -17,7 +17,7 @@
    [darkleaf.di.destructuring-map :as map]
    [darkleaf.di.protocols :as p]
    [darkleaf.di.ref :as ref]
-   [darkleaf.di.utils :as u :refer [??]])
+   [darkleaf.di.utils :as u :refer [?? try*]])
   (:import
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
@@ -126,10 +126,10 @@
               (recur tail (assoc built-map key obj)))))))))
 
 (defn- try-run [proc]
-  (try
+  (try*
     (proc)
     nil
-    (catch Throwable ex
+    (catch* [Exception AssertionError] ex
       ex)))
 
 (defn- try-run-all [procs]
@@ -150,9 +150,9 @@
     (try-run-all stops)))
 
 (defn- try-build [ctx key]
-  (try
+  (try*
     (build ctx key)
-    (catch Throwable ex
+    (catch* [Exception AssertionError] ex
       (let [exs (try-stop-started ctx)
             exs (cons ex exs)]
         (throw-many! exs)))))
