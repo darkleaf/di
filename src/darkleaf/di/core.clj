@@ -639,8 +639,8 @@
     (demolish [_ _])
     p/FactoryDescription
     (description [_]
-      {:kind :service
-       :var  variable})))
+      {:kind     :service
+       :variable variable})))
 
 (defn- var->service [variable]
   (let [deps (dependencies-fn variable)]

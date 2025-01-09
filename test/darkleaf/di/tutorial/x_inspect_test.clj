@@ -31,8 +31,8 @@
             {:key          `c
              :dependencies {`a :required `b :optional}}
             {:key         `a
-             :description {:kind :service
-                           :var  #'a}}
+             :description {:kind     :service
+                           :variable #'a}}
             {:key          `b
              :dependencies {`a :required}}]
            (di/inspect `c))))
@@ -48,7 +48,7 @@
                             :middleware ::di/update-key
                             :target     `a}}
             {:key         `a+di-update-key#0-target
-             :description {:kind :service
-                           :var  #'a}}
+             :description {:kind     :service
+                           :variable #'a}}
             {:key `a+di-update-key#0-f}]
            (di/inspect `a (di/update-key `a str)))))
