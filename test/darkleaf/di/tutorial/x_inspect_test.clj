@@ -1,7 +1,8 @@
 (ns darkleaf.di.tutorial.x-inspect-test
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di]))
+   [darkleaf.di.core :as di]
+   [darkleaf.di.tutorial.x-ns-publics-test :as-alias x-ns-publics-test]))
 
 (defn implicit-root [key]
   {:key          ::di/implicit-root
@@ -155,7 +156,49 @@
                        {`a :obj}
                        (di/update-key `a str "arg")))))
 
-#_
+
 (t/deftest add-side-dependency-test
-  (t/is (= []
-           (di/inspect `a (di/add-side-dependency)))))
+  (t/is (= [{:key          ::di/implicit-root
+             :dependencies {`di/new-key#0 :required
+                            `side-dep     :required}
+             :description  {::di/kind   :middleware
+                            :middleware ::di/add-side-dependency
+                            :dep-key    `side-dep}}
+            {:key          `di/new-key#0
+             :dependencies {`a :required}
+             :description  {::di/kind :ref
+                            :key      `a
+                            :type     :required}}
+            {:key         `a
+             :description {::di/kind :trivial
+                           :object   :obj}}
+            {:key         `side-dep,
+             :description {::di/kind :trivial
+                           :object   :side-dep}}]
+           (di/inspect `a
+                       {`a        :obj
+                        `side-dep :side-dep}
+                       (di/add-side-dependency `side-dep)))))
+
+
+(t/deftest ns-publics-test
+  (t/is (= [(implicit-root :ns-publics/darkleaf.di.tutorial.x-ns-publics-test)
+            {:key          :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
+             :dependencies {`x-ns-publics-test/service   :required
+                            `x-ns-publics-test/component :required
+                            `x-ns-publics-test/ok-test   :required}
+             :description {::di/kind     :middleware
+                           :middleware   ::di/ns-publics
+                           :component-ns 'darkleaf.di.tutorial.x-ns-publics-test}}
+            {:key          `x-ns-publics-test/service
+             :dependencies {`x-ns-publics-test/component :required}
+             :description {::di/kind :service
+                           :variable #'x-ns-publics-test/service}}
+            {:key `darkleaf.di.tutorial.x-ns-publics-test/component
+             :description {::di/kind :component,
+                           :variable #'x-ns-publics-test/component}}
+            {:key `darkleaf.di.tutorial.x-ns-publics-test/ok-test
+             :description {::di/kind :trivial
+                           :object   x-ns-publics-test/ok-test}}]
+           (di/inspect :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
+                       (di/ns-publics)))))

@@ -572,14 +572,20 @@
   [dep-key]
   (fn [registry]
     (let [new-key     (symbol (str "darkleaf.di.core/new-key#" (*next-id*)))
-          new-factory (reify p/Factory
+          new-factory (reify
+                        p/Factory
                         (dependencies [_]
                           ;; array-map preserves order of keys
                           {new-key :required
                            dep-key :required})
                         (build [_ deps]
                           (new-key deps))
-                        (demolish [_ _]))]
+                        (demolish [_ _])
+                        p/FactoryDescription
+                        (description [_]
+                          {::kind      :middleware
+                           :middleware ::add-side-dependency
+                           :dep-key    dep-key}))]
       (fn [key]
         (cond
           (= ::implicit-root key) new-factory
@@ -835,12 +841,18 @@
                                      (map symbol))
               deps              (zipmap component-symbols
                                         (repeat :required))]
-          (reify p/Factory
+          (reify
+            p/Factory
             (dependencies [_this]
               deps)
             (build [_this deps]
               (update-keys deps #(-> % name keyword)))
-            (demolish [_ _])))
+            (demolish [_ _])
+            p/FactoryDescription
+            (description [_]
+              {::kind        :middleware
+               :middleware   ::ns-publics
+               :component-ns component-ns})))
         (registry key)))))
 
 (defmacro with-open
