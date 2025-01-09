@@ -2,7 +2,7 @@
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]
-   [darkleaf.di.test-utils :refer [catch-some]]))
+   [darkleaf.di.utils :refer [catch-some]]))
 
 (defn nil-component-0-arity
   {::di/kind :component}
