@@ -15,7 +15,12 @@
     {key type})
   (build [_ deps]
     (deps key))
-  (demolish [_ _]))
+  (demolish [_ _])
+  p/FactoryDescription
+  (description [_]
+    {:kind :ref
+     :key  key
+     :type type}))
 
 ;; в шаблонах нельзя использовать все фабрики
 ;; если испльзовать var, то будут не уникальные инстансы

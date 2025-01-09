@@ -618,7 +618,8 @@
         (stop obj)))))
 
 (defn- service-factory [variable declared-deps]
-  (reify p/Factory
+  (reify
+    p/Factory
     (dependencies [_]
       declared-deps)
     (build [_ deps]
@@ -626,7 +627,11 @@
           (partial deps)
           (with-meta {:type   ::service
                       ::print variable})))
-    (demolish [_ _])))
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {:kind     :service
+       :variable variable})))
 
 (defn- var->0-service [variable]
   ;; todo: meta ::service
@@ -692,10 +697,14 @@
 
 (extend-protocol p/FactoryDescription
   nil
-  (description [_] {})
+  (description [this]
+    {:kind   :trivial
+     :object this})
 
   Object
-  (description [_] {}))
+  (description [this]
+    {:kind   :trivial
+     :object this}))
 
 (c/derive ::root     ::instance)
 (c/derive ::template ::instance)
