@@ -62,7 +62,7 @@
 
 
 (t/deftest update-key-test
-  (t/is (= [{:key          ::di/implicit-root,
+  (t/is (= [{:key          ::di/implicit-root
              :dependencies {`a :required}
              :description  {::di/kind :ref
                             :key      `a
@@ -82,7 +82,7 @@
            (di/inspect `a (di/update-key `a str)))))
 
 (t/deftest ref-test
-  (t/is (= [{:key          :darkleaf.di.core/implicit-root,
+  (t/is (= [{:key          ::di/implicit-root
              :dependencies {`foo :required}
              :description  {::di/kind :ref
                             :key      `foo
@@ -99,7 +99,7 @@
 
 
 (t/deftest trivial-nil-test
-  (t/is (= [{:key          :darkleaf.di.core/implicit-root,
+  (t/is (= [{:key          ::di/implicit-root
              :dependencies {`foo :required}
              :description  {::di/kind :ref
                             :key      `foo
@@ -110,7 +110,7 @@
            (di/inspect `foo {`foo nil}))))
 
 (t/deftest trivial-obj-test
-  (t/is (= [{:key          :darkleaf.di.core/implicit-root,
+  (t/is (= [{:key          ::di/implicit-root
              :dependencies {`foo :required}
              :description  {::di/kind :ref
                             :key      `foo
