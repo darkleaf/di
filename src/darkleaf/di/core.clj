@@ -16,32 +16,14 @@
    [clojure.walk :as w]
    [darkleaf.di.destructuring-map :as map]
    [darkleaf.di.protocols :as p]
-   [darkleaf.di.ref :as ref])
+   [darkleaf.di.ref :as ref]
+   [darkleaf.di.utils :as u :refer [?? try*]])
   (:import
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
-   (java.lang AutoCloseable)
-   (java.util List)))
+   (java.lang AutoCloseable)))
 
 (set! *warn-on-reflection* true)
-
-(defmacro ^:private ??
-  ([] nil)
-  ([x] x)
-  ([x & next]
-   `(if-some [x# ~x]
-      x#
-      (?? ~@next))))
-
-(defn- index-of
-  "Returns the index of the first occurrence of `x` in `xs`."
-  [^List xs x]
-  (if (nil? xs)
-    -1
-    (.indexOf xs x)))
-
-(defn- seq-contains? [xs x]
-  (not (neg? (index-of xs x))))
 
 (defn ^:dynamic *next-id* []
   (throw (IllegalStateException. "Attempting to call unbound `di/*next-id*`")))
@@ -92,11 +74,20 @@
      :declared-deps  deps
      :remaining-deps (seq deps)}))
 
-(defn- build-obj [built-map head]
+(defn- build-obj* [built-map head]
   (let [factory       (:factory head)
         declared-deps (:declared-deps head)
         built-deps    (select-keys built-map (keys declared-deps))]
     (p/build factory built-deps)))
+
+(defn- build-obj [built-map stack]
+  (try
+    (build-obj* built-map (peek stack))
+    (catch Exception ex
+      (throw (ex-info "A failure occurred during the build process"
+                      {:type  ::build-failure
+                       :stack (map :key stack)}
+                      ex)))))
 
 (defn- build [{:keys [registry *stop-list]} key]
   (loop [stack     (list (stack-frame key :required (registry key)))
@@ -115,7 +106,7 @@
           (contains? built-map key)
           (recur tail built-map)
 
-          (seq-contains? (map :key tail) key)
+          (u/seq-contains? (map :key tail) key)
           (circular-dependency! stack)
 
           (seq remaining-deps)
@@ -126,7 +117,7 @@
                    built-map))
 
           :else
-          (let [obj  (build-obj built-map head)
+          (let [obj  (build-obj built-map stack)
                 stop #(p/demolish factory obj)]
             (vswap! *stop-list conj stop)
             (case [obj dep-type]
@@ -135,10 +126,10 @@
               (recur tail (assoc built-map key obj)))))))))
 
 (defn- try-run [proc]
-  (try
+  (try*
     (proc)
     nil
-    (catch Throwable ex
+    (catch* [Exception AssertionError] ex
       ex)))
 
 (defn- try-run-all [procs]
@@ -159,9 +150,9 @@
     (try-run-all stops)))
 
 (defn- try-build [ctx key]
-  (try
+  (try*
     (build ctx key)
-    (catch Throwable ex
+    (catch* [Exception AssertionError] ex
       (let [exs (try-stop-started ctx)
             exs (cons ex exs)]
         (throw-many! exs)))))
@@ -598,12 +589,19 @@
 (defn- stop-fn [variable]
   (-> variable meta (::stop (fn no-op [_]))))
 
+(defn- validate-obj! [obj variable]
+  (when (nil? obj)
+    (throw (ex-info "A component fn must not return nil"
+                    {:type     ::nil-return
+                     :variable variable}))))
+
 (defn- var->0-component [variable]
   (let [stop (stop-fn variable)]
     (reify p/Factory
       (dependencies [_])
       (build [_ _]
-        (variable))
+        (doto (variable)
+          (validate-obj! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
@@ -614,7 +612,8 @@
       (dependencies [_]
         deps)
       (build [_ deps]
-        (variable deps))
+        (doto (variable deps)
+          (validate-obj! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
@@ -658,8 +657,9 @@
                      [0] (var->0-component variable)
                      [1] (var->1-component variable)
                      (throw (ex-info
-                             "The component must only have 0 or 1 arity"
-                             {:variable variable
+                             "A component fn must only have 0 or 1 arity"
+                             {:type     ::invalid-arity
+                              :variable variable
                               :arities  arities})))
         #_service  (case arities
                      [0] (var->0-service variable)

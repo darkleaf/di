@@ -2,7 +2,8 @@
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]
-   [darkleaf.di.protocols :as dip]))
+   [darkleaf.di.protocols :as dip]
+   [darkleaf.di.utils :refer [catch-some]]))
 
 ;;   root
 ;;  / \
@@ -51,11 +52,6 @@
               [`c :stopped]]
              @log))))
 
-(defmacro try-ex-data [& body]
-  `(try ~@body
-        (catch clojure.lang.ExceptionInfo e#
-          (ex-data e#))))
-
 (defn root-path
   [{::syms [a-path b-path c-path]}]
   :done)
@@ -79,7 +75,9 @@
 (t/deftest error-path-test
   (t/is (= {:type ::di/missing-dependency
             :stack [`missing-path `b-path `root-path ::di/implicit-root]}
-           (try-ex-data (di/start `root-path)))))
+           (-> (di/start `root-path)
+               catch-some
+               ex-data))))
 
 
 (defn parent
@@ -90,11 +88,15 @@
 (t/deftest missing-dependency-test
   (t/is (= {:type  ::di/missing-dependency
             :stack [`missing-root ::di/implicit-root]}
-           (try-ex-data (di/start `missing-root))))
+           (-> (di/start `missing-root)
+               catch-some
+               ex-data)))
 
   (t/is (= {:type  ::di/missing-dependency
             :stack [`missing-key `parent ::di/implicit-root]}
-           (try-ex-data (di/start `parent)))))
+           (-> (di/start `parent)
+               catch-some
+               ex-data))))
 
 
 (defn recursion-a
@@ -112,9 +114,14 @@
 (t/deftest circular-dependency-test
   (t/is (= {:type ::di/circular-dependency
             :stack [`recursion-a `recursion-b `recursion-a ::di/implicit-root]}
-           (try-ex-data (di/start `recursion-a))))
+           (-> (di/start `recursion-a)
+               catch-some
+               ex-data)))
+
 
 
   (t/is (= {:type ::di/circular-dependency
             :stack [`recursion-c `recursion-c ::di/implicit-root]}
-           (try-ex-data (di/start `recursion-c)))))
+           (-> (di/start `recursion-c)
+               catch-some
+               ex-data))))
