@@ -3,7 +3,7 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]
    [darkleaf.di.protocols :as dip]
-   [darkleaf.di.test-utils :refer [catch-some]]))
+   [darkleaf.di.utils :refer [catch-some]]))
 
 ;;   root
 ;;  / \

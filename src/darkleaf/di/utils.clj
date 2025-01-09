@@ -55,3 +55,10 @@
               (expand form)
               [form]))]
     (cons 'try (mapcat transform body))))
+
+(defmacro catch-some [& body]
+  `(try
+     ~@body
+     nil
+     (catch Exception ex#
+       ex#)))

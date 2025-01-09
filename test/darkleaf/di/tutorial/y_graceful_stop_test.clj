@@ -6,7 +6,7 @@
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]
-   [darkleaf.di.test-utils :refer [catch-some]]))
+   [darkleaf.di.utils :refer [catch-some]]))
 
 ;; The DI tries to stop components that are already started
 ;; if another component fails while it is starting.
