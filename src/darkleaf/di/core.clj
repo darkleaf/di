@@ -415,12 +415,19 @@
   [key f & args]
   {:pre [(key? key)
          (ifn? f)]}
-  (reify p/Factory
+  (reify
+    p/Factory
     (dependencies [_]
       {key :optional})
     (build [_ deps]
       (apply f (deps key) args))
-    (demolish [_ _])))
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {::kind :derive
+       :key   key
+       :f     f
+       :args  args})))
 
 ;; We currently don't need this middleware.
 ;; It should be rewritten as `update-key`.
