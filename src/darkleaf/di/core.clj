@@ -389,7 +389,8 @@
   [form]
   ^{:type   ::template
     ::print form}
-  (reify p/Factory
+  (reify
+    p/Factory
     (dependencies [_]
       (->> form
            (tree-seq coll? seq)
@@ -397,7 +398,11 @@
            (reduce combine-dependencies)))
     (build [_ deps]
       (w/postwalk #(ref/build % deps) form))
-    (demolish [_ _])))
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {::kind    :template
+       :template form})))
 
 (defn derive
   "Applies `f` to an object built from `key`.

@@ -77,6 +77,21 @@
                            :object   nil}}]
            (di/inspect `foo {`foo (di/ref `bar)}))))
 
+(t/deftest template-test
+  (t/is (= [{:key          ::di/implicit-root
+             :dependencies {`foo :required}
+             :description  {::di/kind :ref
+                            :key      `foo
+                            :type     :required}}
+            {:key          `foo
+             :dependencies {`bar :required}
+             :description  {::di/kind :template
+                            :template [42 (di/ref `bar)]}}
+            {:key         `bar
+             :description {::di/kind :trivial
+                           :object   nil}}]
+           (di/inspect `foo {`foo (di/template [42 (di/ref `bar)])}))))
+
 
 (t/deftest trivial-nil-test
   (t/is (= [{:key          ::di/implicit-root
