@@ -1,5 +1,6 @@
 (ns ^:no-doc darkleaf.di.ref
   (:require
+   [darkleaf.di.core :as-alias di]
    [darkleaf.di.protocols :as p])
   (:import
    (java.io Writer)))
@@ -18,9 +19,9 @@
   (demolish [_ _])
   p/FactoryDescription
   (description [_]
-    {:kind :ref
-     :key  key
-     :type type}))
+    {::di/kind :ref
+     :key      key
+     :type     type}))
 
 ;; в шаблонах нельзя использовать все фабрики
 ;; если испльзовать var, то будут не уникальные инстансы

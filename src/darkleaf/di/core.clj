@@ -521,7 +521,7 @@
                            (demolish [_ _])
                            p/FactoryDescription
                            (description [_]
-                             {:kind       :middleware
+                             {::kind      :middleware
                               :middleware ::update-key
                               :target     target}))
           own-registry   (zipmap (cons f-key arg-keys)
@@ -630,7 +630,7 @@
     (demolish [_ _])
     p/FactoryDescription
     (description [_]
-      {:kind     :service
+      {::kind    :service
        :variable variable})))
 
 (defn- var->0-service [variable]
@@ -644,7 +644,7 @@
     (demolish [_ _])
     p/FactoryDescription
     (description [_]
-      {:kind     :service
+      {::kind    :service
        :variable variable})))
 
 (defn- var->service [variable]
@@ -698,12 +698,12 @@
 (extend-protocol p/FactoryDescription
   nil
   (description [this]
-    {:kind   :trivial
+    {::kind  :trivial
      :object this})
 
   Object
   (description [this]
-    {:kind   :trivial
+    {::kind  :trivial
      :object this}))
 
 (c/derive ::root     ::instance)
