@@ -61,26 +61,6 @@
            (di/inspect `c))))
 
 
-(t/deftest update-key-test
-  (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`a :required}
-             :description  {::di/kind :ref
-                            :key      `a
-                            :type     :required}}
-            {:key          `a,
-             :dependencies {`a+di-update-key#0-target :optional,
-                            `a+di-update-key#0-f      :optional}
-             :description  {::di/kind   :middleware
-                            :middleware ::di/update-key
-                            :target     `a}}
-            {:key         `a+di-update-key#0-target
-             :description {::di/kind :service
-                           :variable #'a}}
-            {:key         `a+di-update-key#0-f
-             :description {::di/kind :trivial
-                           :object   str}}]
-           (di/inspect `a (di/update-key `a str)))))
-
 (t/deftest ref-test
   (t/is (= [{:key          ::di/implicit-root
              :dependencies {`foo :required}
@@ -109,6 +89,7 @@
                            :object   nil}}]
            (di/inspect `foo {`foo nil}))))
 
+
 (t/deftest trivial-obj-test
   (t/is (= [{:key          ::di/implicit-root
              :dependencies {`foo :required}
@@ -119,3 +100,30 @@
              :description {::di/kind :trivial
                            :object   str}}]
            (di/inspect `foo {`foo str}))))
+
+
+(t/deftest update-key-test
+  (t/is (= [{:key          ::di/implicit-root,
+             :dependencies {`a :required}
+             :description  {::di/kind :ref
+                            :key      `a
+                            :type     :required}}
+            {:key          `a,
+             :dependencies {`a+di-update-key#0-target :optional
+                            `a+di-update-key#0-f      :optional
+                            `a+di-update-key#0-arg#0  :optional}
+             :description  {::di/kind   :middleware
+                            :middleware ::di/update-key
+                            :target     `a
+                            :f          str
+                            :args       ["arg"]}}
+            {:key         `a+di-update-key#0-target
+             :description {::di/kind :service
+                           :variable #'a}}
+            {:key         `a+di-update-key#0-f
+             :description {::di/kind :trivial
+                           :object   str}}
+            {:key         `a+di-update-key#0-arg#0,
+             :description {::di/kind :trivial
+                           :object   "arg"}}]
+           (di/inspect `a (di/update-key `a str "arg")))))

@@ -523,7 +523,9 @@
                            (description [_]
                              {::kind      :middleware
                               :middleware ::update-key
-                              :target     target}))
+                              :target     target
+                              :f          f
+                              :args       args}))
           own-registry   (zipmap (cons f-key arg-keys)
                                  (cons f     args))
           target-factory (registry target)]
