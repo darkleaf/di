@@ -3,6 +3,14 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
+(defn implicit-root [key]
+  {:key          ::di/implicit-root
+   :dependencies {key :required}
+   :description  {::di/kind :ref
+                  :key      key
+                  :type     :required}})
+
+
 ;; todo:
 ;; component 0 arity
 ;; component 1 arity
@@ -29,11 +37,7 @@
 
 
 (t/deftest zero-arity-service-test
-  (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`a :required}
-             :description  {::di/kind :ref
-                            :key      `a
-                            :type     :required}}
+  (t/is (= [(implicit-root `a)
             {:key         `a
              :description {::di/kind :service
                            :variable #'a}}]
@@ -42,11 +46,7 @@
 
 ;; todo: name
 (t/deftest ok
-  (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`c :required}
-             :description  {::di/kind :ref
-                            :key      `c
-                            :type     :required}}
+  (t/is (= [(implicit-root `c)
             {:key          `c
              :dependencies {`a :required `b :optional}
              :description  {::di/kind :service
@@ -62,11 +62,7 @@
 
 
 (t/deftest ref-test
-  (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`foo :required}
-             :description  {::di/kind :ref
-                            :key      `foo
-                            :type     :required}}
+  (t/is (= [(implicit-root `foo)
             {:key          `foo
              :dependencies {`bar :required}
              :description  {::di/kind :ref
@@ -78,11 +74,7 @@
            (di/inspect `foo {`foo (di/ref `bar)}))))
 
 (t/deftest template-test
-  (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`foo :required}
-             :description  {::di/kind :ref
-                            :key      `foo
-                            :type     :required}}
+  (t/is (= [(implicit-root `foo)
             {:key          `foo
              :dependencies {`bar :required}
              :description  {::di/kind :template
@@ -94,11 +86,7 @@
 
 
 (t/deftest trivial-nil-test
-  (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`foo :required}
-             :description  {::di/kind :ref
-                            :key      `foo
-                            :type     :required}}
+  (t/is (= [(implicit-root `foo)
             {:key         `foo
              :description {::di/kind :trivial
                            :object   nil}}]
@@ -106,11 +94,7 @@
 
 
 (t/deftest trivial-obj-test
-  (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`foo :required}
-             :description  {::di/kind :ref
-                            :key      `foo
-                            :type     :required}}
+  (t/is (= [(implicit-root `foo)
             {:key         `foo
              :description {::di/kind :trivial
                            :object   str}}]
@@ -118,12 +102,8 @@
 
 
 (t/deftest update-key-test
-  (t/is (= [{:key          ::di/implicit-root,
-             :dependencies {`a :required}
-             :description  {::di/kind :ref
-                            :key      `a
-                            :type     :required}}
-            {:key          `a,
+  (t/is (= [(implicit-root `a)
+            {:key          `a
              :dependencies {`a+di-update-key#0-target :optional
                             `a+di-update-key#0-f      :optional
                             `a+di-update-key#0-arg#0  :optional}
@@ -138,7 +118,7 @@
             {:key         `a+di-update-key#0-f
              :description {::di/kind :trivial
                            :object   str}}
-            {:key         `a+di-update-key#0-arg#0,
+            {:key         `a+di-update-key#0-arg#0
              :description {::di/kind :trivial
                            :object   "arg"}}]
            (di/inspect `a (di/update-key `a str "arg")))))
