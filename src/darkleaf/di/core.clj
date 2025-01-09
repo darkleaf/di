@@ -611,25 +611,36 @@
 
 (defn- var->0-component [variable]
   (let [stop (stop-fn variable)]
-    (reify p/Factory
+    (reify
+      p/Factory
       (dependencies [_])
       (build [_ _]
         (doto (variable)
           (validate-obj! variable)))
       (demolish [_ obj]
-        (stop obj)))))
+        (stop obj))
+      p/FactoryDescription
+      (description [_]
+        {::kind    :component
+         :variable variable}))))
+
 
 (defn- var->1-component [variable]
   (let [deps (dependencies-fn variable)
         stop (stop-fn variable)]
-    (reify p/Factory
+    (reify
+      p/Factory
       (dependencies [_]
         deps)
       (build [_ deps]
         (doto (variable deps)
           (validate-obj! variable)))
       (demolish [_ obj]
-        (stop obj)))))
+        (stop obj))
+      p/FactoryDescription
+      (description [_]
+        {::kind    :component
+         :variable variable}))))
 
 (defn- service-factory [variable declared-deps]
   (reify
@@ -709,6 +720,10 @@
   (build [this _] this)
   (demolish [_ _] nil))
 
+
+;; может быть тут тогда просто {} возвращать?
+;; а для объектов в реестре протокол реализовывать?
+;; а то странно, если FactoryDescription не реализован, то он тривиальный
 (extend-protocol p/FactoryDescription
   nil
   (description [this]

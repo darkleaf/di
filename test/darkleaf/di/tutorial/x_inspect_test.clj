@@ -12,53 +12,71 @@
 
 
 ;; todo:
-;; component 0 arity
-;; component 1 arity
-;; service 0 arity
-;; service N arity
 ;; service multimethod
 
-(defn a
+
+(defn component-0-arity
+  {::di/kind :component}
+  []
+  :ok)
+
+(t/deftest component-0-arity-test
+  (t/is (= [(implicit-root `component-0-arity)
+            {:key         `component-0-arity
+             :description {::di/kind :component
+                           :variable #'component-0-arity}}]
+           (di/inspect `component-0-arity))))
+
+
+(defn component-1-arity
+  {::di/kind :component}
+  [-deps]
+  :ok)
+
+(t/deftest component-1-arity-test
+  (t/is (= [(implicit-root `component-1-arity)
+            {:key         `component-1-arity
+             :description {::di/kind :component
+                           :variable #'component-1-arity}}]
+           (di/inspect `component-1-arity))))
+
+
+(defn service-0-arity
   {::di/kind :service}
   []
   :ok)
 
-(defn b
+(t/deftest service-0-arity-test
+  (t/is (= [(implicit-root `service-0-arity)
+            {:key         `service-0-arity
+             :description {::di/kind :service
+                           :variable #'service-0-arity}}]
+           (di/inspect `service-0-arity))))
+
+
+(defn service-n-arity
   {::di/kind :service}
-  [{a `a}]
+  [-deps]
   :ok)
 
-(defn c
-  {::di/kind :service}
-  [{a   `a
-    b   `b
-    :or {b :default}}]
-  :ok)
-
-
-(t/deftest zero-arity-service-test
-  (t/is (= [(implicit-root `a)
-            {:key         `a
+(t/deftest service-n-arity-test
+  (t/is (= [(implicit-root `service-n-arity)
+            {:key         `service-n-arity
              :description {::di/kind :service
-                           :variable #'a}}]
-           (di/inspect `a))))
+                           :variable #'service-n-arity}}]
+           (di/inspect `service-n-arity))))
 
 
-;; todo: name
-(t/deftest ok
-  (t/is (= [(implicit-root `c)
-            {:key          `c
-             :dependencies {`a :required `b :optional}
-             :description  {::di/kind :service
-                            :variable #'c}}
-            {:key         `a
+(defmulti multimethod-service
+  {::di/deps []}
+  (fn [-deps kind] kind))
+
+(t/deftest multimethod-service-test
+  (t/is (= [(implicit-root `multimethod-service)
+            {:key         `multimethod-service
              :description {::di/kind :service
-                           :variable #'a}}
-            {:key          `b
-             :dependencies {`a :required}
-             :description  {::di/kind :service
-                            :variable #'b}}]
-           (di/inspect `c))))
+                           :variable #'multimethod-service}}]
+           (di/inspect `multimethod-service))))
 
 
 (t/deftest ref-test
@@ -125,12 +143,19 @@
                             :f          str
                             :args       ["arg"]}}
             {:key         `a+di-update-key#0-target
-             :description {::di/kind :service
-                           :variable #'a}}
+             :description {::di/kind :trivial
+                           :object   :obj}}
             {:key         `a+di-update-key#0-f
              :description {::di/kind :trivial
                            :object   str}}
             {:key         `a+di-update-key#0-arg#0
              :description {::di/kind :trivial
                            :object   "arg"}}]
-           (di/inspect `a (di/update-key `a str "arg")))))
+           (di/inspect `a
+                       {`a :obj}
+                       (di/update-key `a str "arg")))))
+
+#_
+(t/deftest add-side-dependency-test
+  (t/is (= []
+           (di/inspect `a (di/add-side-dependency)))))
