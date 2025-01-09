@@ -583,12 +583,19 @@
 (defn- stop-fn [variable]
   (-> variable meta (::stop (fn no-op [_]))))
 
+(defn- validate-obj! [obj variable]
+  (when (nil? obj)
+    (throw (ex-info "A component fn must not return nil"
+                    {:type     ::nil-return
+                     :variable variable}))))
+
 (defn- var->0-component [variable]
   (let [stop (stop-fn variable)]
     (reify p/Factory
       (dependencies [_])
       (build [_ _]
-        (variable))
+        (doto (variable)
+          (validate-obj! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
@@ -599,7 +606,8 @@
       (dependencies [_]
         deps)
       (build [_ deps]
-        (variable deps))
+        (doto (variable deps)
+          (validate-obj! variable)))
       (demolish [_ obj]
         (stop obj)))))
 
@@ -632,8 +640,9 @@
                      [0] (var->0-component variable)
                      [1] (var->1-component variable)
                      (throw (ex-info
-                             "The component must only have 0 or 1 arity"
-                             {:variable variable
+                             "A component fn must only have 0 or 1 arity"
+                             {:type     ::invalid-arity
+                              :variable variable
                               :arities  arities})))
         #_service  (case arities
                      [0] (var->0-service variable)
