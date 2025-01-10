@@ -943,8 +943,7 @@
           p/FactoryDescription
           (description [_]
             (assoc (p/description factory)
-                   ::logged true)))))))
-
+                   ::will-be-logged true)))))))
 
 (defn- inspect-middleware []
   (fn [registry]
