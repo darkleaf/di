@@ -92,6 +92,7 @@
                            :object   nil}}]
            (di/inspect `foo {`foo (di/ref `bar)}))))
 
+
 (t/deftest template-test
   (t/is (= [(implicit-root `foo)
             {:key          `foo
@@ -102,6 +103,7 @@
              :description {::di/kind :trivial
                            :object   nil}}]
            (di/inspect `foo {`foo (di/template [42 (di/ref `bar)])}))))
+
 
 (t/deftest derive-test
   (t/is (= [(implicit-root `foo)
@@ -115,6 +117,7 @@
              :description {::di/kind :trivial  ;; можно попробовать тут что-то другое писать
                            :object   nil}}]
            (di/inspect `foo {`foo (di/derive `bar str "arg")}))))
+
 
 (t/deftest trivial-nil-test
   (t/is (= [(implicit-root `foo)
