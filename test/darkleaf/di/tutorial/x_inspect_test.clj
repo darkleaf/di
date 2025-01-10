@@ -202,3 +202,18 @@
                            :object   x-ns-publics-test/ok-test}}]
            (di/inspect :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
                        (di/ns-publics)))))
+
+
+(t/deftest env-parsing-test
+  (t/is (= [(implicit-root :env.long/PORT)
+            {:key          :env.long/PORT
+             :dependencies {"PORT" :optional}
+             :description  {::di/kind   :middleware
+                            :middleware ::di/env-parsing
+                            :cmap       {:env.long parse-long}}}
+            {:key         "PORT"
+             :description {::di/kind :trivial
+                           :object   "8080"}}]
+           (di/inspect :env.long/PORT
+                       (di/env-parsing :env.long parse-long)
+                       {"PORT" "8080"}))))

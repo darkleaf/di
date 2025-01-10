@@ -783,13 +783,19 @@
             key-name (name key)
             parser   (cmap key-ns)]
         (if (some? parser)
-           (reify p/Factory
-             (dependencies [_]
-               {key-name :optional})
-             (build [_ deps]
-               (some-> key-name deps parser))
-             (demolish [_ _]))
-           (registry key))))))
+          (reify
+            p/Factory
+            (dependencies [_]
+              {key-name :optional})
+            (build [_ deps]
+              (some-> key-name deps parser))
+            (demolish [_ _])
+            p/FactoryDescription
+            (description [_]
+              {::kind      :middleware
+               :middleware ::env-parsing
+               :cmap       cmap}))
+          (registry key))))))
 
 ;; (defn rename-deps [target rmap]
 ;;   (let [inverted-rmap (set/map-invert rmap)]
