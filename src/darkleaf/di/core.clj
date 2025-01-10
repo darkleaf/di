@@ -158,13 +158,38 @@
         (throw-many! exs)))))
 
 (defn- nil-registry [key]
-  nil)
+  (reify
+    p/Factory
+    (dependencies [_])
+    (build [_ _] nil)
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {::kind  :trivial
+       :object nil})))
+
+(defn- trivial [map key]
+  (when-some [factory (get map key)]
+    (reify
+      p/Factory
+      (dependencies [_]
+        (p/dependencies factory))
+      (build [_ deps]
+        (p/build factory deps))
+      (demolish [_ obj]
+        (p/demolish factory obj))
+      p/FactoryDescription
+      (description [_]
+        (if-some [desc (not-empty (p/description factory))]
+          desc
+          {::kind  :trivial
+           :object factory})))))
 
 (defn- apply-middleware [registry middleware]
   (cond
     (fn? middleware)      (middleware registry)
     (map? middleware)     (fn [key]
-                            (?? (get middleware key)
+                            (?? (trivial middleware key)
                                 (registry key)))
     (seqable? middleware) (reduce apply-middleware
                                   registry middleware)
@@ -539,7 +564,14 @@
                               :f          f
                               :args       args}))
           own-registry   (zipmap (cons f-key arg-keys)
-                                 (cons f     args))
+                                 (cons f     args)
+
+                                 ;; kind update-f    ????
+                                 ;; knid update-arg  ????
+                                 #_
+                                 (for [obj (cons f     args)]
+                                   (reify ...
+                                     ...)))
           target-factory (registry target)]
       (when (nil? target-factory)
         (throw (ex-info (str "Can't update non-existent key " target)
@@ -733,20 +765,14 @@
   (build [this _] this)
   (demolish [_ _] nil))
 
-
-;; может быть тут тогда просто {} возвращать?
-;; а для объектов в реестре протокол реализовывать?
-;; а то странно, если FactoryDescription не реализован, то он тривиальный
 (extend-protocol p/FactoryDescription
   nil
   (description [this]
-    {::kind  :trivial
-     :object this})
+    {})
 
   Object
   (description [this]
-    {::kind  :trivial
-     :object this}))
+    {}))
 
 (c/derive ::root     ::instance)
 (c/derive ::template ::instance)

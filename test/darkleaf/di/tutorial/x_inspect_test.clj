@@ -2,6 +2,7 @@
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]
+   [darkleaf.di.protocols :as p]
    [darkleaf.di.tutorial.x-ns-publics-test :as x-ns-publics-test]))
 
 (defn implicit-root [key]
@@ -206,8 +207,8 @@
              :description {::di/kind :component
                            :variable #'x-ns-publics-test/component}}
             {:key         `x-ns-publics-test/ok-test
-             :description {::di/kind :trivial
-                           :object   x-ns-publics-test/ok-test}}]
+             :description {::di/kind :variable
+                           :variable #'x-ns-publics-test/ok-test}}]
            (di/inspect :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
                        (di/ns-publics)))))
 
@@ -241,3 +242,27 @@
            (di/inspect `foo
                        {`foo :obj}
                        (di/log)))))
+
+
+(t/deftest unimplemented-test
+  (t/is (= [(implicit-root `foo)
+            {:key `foo}]
+           (di/inspect `foo
+                       {`foo :ok}
+                       (fn null-middleware [registry]
+                         (fn [key]
+                           (let [factory (registry key)]
+                             (if (= `foo key)
+                               (reify
+                                 p/Factory
+                                 (dependencies [_]
+                                   (p/dependencies factory))
+                                 (build [_ deps]
+                                   (p/build factory deps))
+                                 (demolish [_ obj]
+                                   (p/demolish factory obj))
+                                 #_#_
+                                 p/FactoryDescription
+                                 (description [_]
+                                   (p/description factory)))
+                               factory))))))))
