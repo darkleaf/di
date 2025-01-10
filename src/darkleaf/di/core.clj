@@ -526,14 +526,9 @@
                         {:type ::non-existent-key
                          :key  target})))
       (fn [key]
-        (cond
-          (= new-key key)
-          target-factory
-
-          (= target key)
-          new-factory
-
-          :else
+        (condp = key
+          new-key target-factory
+          target  new-factory
           (?? (own-registry key)
               (registry key)))))))
 
