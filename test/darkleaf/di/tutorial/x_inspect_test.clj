@@ -217,3 +217,19 @@
            (di/inspect :env.long/PORT
                        (di/env-parsing :env.long parse-long)
                        {"PORT" "8080"}))))
+
+
+(t/deftest log-test
+  (t/is (= [{:key          ::di/implicit-root
+             :dependencies {`foo :required}
+             :description  {::di/kind   :ref
+                            :key        `foo
+                            :type       :required
+                            ::di/logged true}}
+            {:key         `foo
+             :description {::di/kind   :trivial
+                           :object     :obj
+                           ::di/logged true}}]
+           (di/inspect `foo
+                       {`foo :obj}
+                       (di/log)))))

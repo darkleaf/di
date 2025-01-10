@@ -895,7 +895,8 @@
   (fn [registry]
     (fn [key]
       (let [factory (registry key)]
-        (reify p/Factory
+        (reify
+          p/Factory
           (dependencies [_]
             (p/dependencies factory))
           (build [_ deps]
@@ -905,7 +906,11 @@
           (demolish [_ obj]
             (p/demolish factory obj)
             (after-demolish! {:key key :object obj})
-            nil))))))
+            nil)
+          p/FactoryDescription
+          (description [_]
+            (assoc (p/description factory)
+                   ::logged true)))))))
 
 
 (defn- inspect-middleware []
