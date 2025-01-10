@@ -172,7 +172,7 @@
             {:key         `a
              :description {::di/kind :trivial
                            :object   :obj}}
-            {:key         `side-dep,
+            {:key         `side-dep
              :description {::di/kind :trivial
                            :object   :side-dep}}]
            (di/inspect `a
