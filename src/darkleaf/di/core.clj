@@ -665,8 +665,6 @@
        :variable variable})))
 
 (defn- var->0-service [variable]
-  ;; todo: meta ::service
-
   (reify
     p/Factory
     (dependencies [_])
