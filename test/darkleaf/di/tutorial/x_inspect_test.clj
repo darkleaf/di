@@ -2,7 +2,7 @@
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]
-   [darkleaf.di.tutorial.x-ns-publics-test :as-alias x-ns-publics-test]))
+   [darkleaf.di.tutorial.x-ns-publics-test :as x-ns-publics-test]))
 
 (defn implicit-root [key]
   {:key          ::di/implicit-root
@@ -187,17 +187,17 @@
              :dependencies {`x-ns-publics-test/service   :required
                             `x-ns-publics-test/component :required
                             `x-ns-publics-test/ok-test   :required}
-             :description {::di/kind     :middleware
-                           :middleware   ::di/ns-publics
-                           :component-ns 'darkleaf.di.tutorial.x-ns-publics-test}}
+             :description  {::di/kind     :middleware
+                            :middleware   ::di/ns-publics
+                            :component-ns 'darkleaf.di.tutorial.x-ns-publics-test}}
             {:key          `x-ns-publics-test/service
              :dependencies {`x-ns-publics-test/component :required}
-             :description {::di/kind :service
-                           :variable #'x-ns-publics-test/service}}
-            {:key `darkleaf.di.tutorial.x-ns-publics-test/component
-             :description {::di/kind :component,
+             :description  {::di/kind :service
+                            :variable #'x-ns-publics-test/service}}
+            {:key         `x-ns-publics-test/component
+             :description {::di/kind :component
                            :variable #'x-ns-publics-test/component}}
-            {:key `darkleaf.di.tutorial.x-ns-publics-test/ok-test
+            {:key         `x-ns-publics-test/ok-test
              :description {::di/kind :trivial
                            :object   x-ns-publics-test/ok-test}}]
            (di/inspect :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
