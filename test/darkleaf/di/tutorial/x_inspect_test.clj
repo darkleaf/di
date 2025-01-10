@@ -12,9 +12,14 @@
                   :type     :required}})
 
 
-;; todo:
-;; service multimethod
+(def variable :obj)
 
+(t/deftest variable-test
+  (t/is (= [(implicit-root `variable)
+            {:key         `variable
+             :description {::di/kind :variable
+                           :variable #'variable}}]
+           (di/inspect `variable))))
 
 (defn component-0-arity
   {::di/kind :component}

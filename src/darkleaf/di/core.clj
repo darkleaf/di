@@ -708,7 +708,16 @@
     (service-factory variable deps)))
 
 (defn- var->factory-default [variable]
-  @variable)
+  (reify
+    p/Factory
+    (dependencies [_])
+    (build [_ _]
+      @variable)
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {::kind    :variable
+       :variable variable})))
 
 (defn- var->factory [variable]
   (?? (var->factory-meta-deps variable)
