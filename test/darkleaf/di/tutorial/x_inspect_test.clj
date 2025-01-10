@@ -187,9 +187,9 @@
              :dependencies {`x-ns-publics-test/service   :required
                             `x-ns-publics-test/component :required
                             `x-ns-publics-test/ok-test   :required}
-             :description  {::di/kind     :middleware
-                            :middleware   ::di/ns-publics
-                            :component-ns 'darkleaf.di.tutorial.x-ns-publics-test}}
+             :description  {::di/kind   :middleware
+                            :middleware ::di/ns-publics
+                            :ns         'darkleaf.di.tutorial.x-ns-publics-test}}
             {:key          `x-ns-publics-test/service
              :dependencies {`x-ns-publics-test/component :required}
              :description  {::di/kind :service

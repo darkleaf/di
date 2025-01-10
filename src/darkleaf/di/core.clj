@@ -850,9 +850,9 @@
             (demolish [_ _])
             p/FactoryDescription
             (description [_]
-              {::kind        :middleware
-               :middleware   ::ns-publics
-               :component-ns component-ns})))
+              {::kind      :middleware
+               :middleware ::ns-publics
+               :ns         component-ns})))
         (registry key)))))
 
 (defmacro with-open
