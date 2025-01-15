@@ -158,38 +158,35 @@
         (throw-many! exs)))))
 
 (defn- nil-registry [key]
-  (reify
-    p/Factory
-    (dependencies [_])
-    (build [_ _] nil)
-    (demolish [_ _])
-    p/FactoryDescription
-    (description [_]
-      {::kind  :trivial
-       :object nil})))
+  nil)
 
-(defn- trivial [map key]
-  (when-some [factory (get map key)]
+(defn- trivial-factory [factory]
+  ;; nil has default implementation
+  (when (some? factory)
     (reify
-      p/Factory
-      (dependencies [_]
-        (p/dependencies factory))
-      (build [_ deps]
-        (p/build factory deps))
-      (demolish [_ obj]
-        (p/demolish factory obj))
-      p/FactoryDescription
-      (description [_]
-        (if-some [desc (not-empty (p/description factory))]
-          desc
-          {::kind  :trivial
-           :object factory})))))
+       p/Factory
+       (dependencies [_]
+         (p/dependencies factory))
+       (build [_ deps]
+         (p/build factory deps))
+       (demolish [_ obj]
+         (p/demolish factory obj))
+       p/FactoryDescription
+       (description [_]
+         (if-some [desc (not-empty (p/description factory))]
+           desc
+           {::kind  :trivial
+            :object factory})))))
+
+(defn- trivial-registry [map key]
+  (trivial-factory (get map key)))
+
 
 (defn- apply-middleware [registry middleware]
   (cond
     (fn? middleware)      (middleware registry)
     (map? middleware)     (fn [key]
-                            (?? (trivial middleware key)
+                            (?? (trivial-registry middleware key)
                                 (registry key)))
     (seqable? middleware) (reduce apply-middleware
                                   registry middleware)
@@ -540,41 +537,36 @@
   [target f & args]
   {:pre [(key? target)]}
   (fn [registry]
-    (let [prefix       (str (symbol target) "+di-update-key#" (*next-id*))
-          new-key      (symbol (str prefix "-target"))
-          f-key        (symbol (str prefix "-f"))
-          arg-keys     (for [i (-> args count range)]
-                         (symbol (str prefix "-arg#" i)))
-          new-factory  (reify
-                         p/Factory
-                         (dependencies [_]
-                           (zipmap (concat [new-key f-key] arg-keys)
-                                   (repeat :optional)))
-                         (build [_ deps]
-                           (let [t    (deps new-key)
-                                 f    (deps f-key)
-                                 args (map deps arg-keys)]
-                             (apply f t args)))
-                         (demolish [_ _])
-                         p/FactoryDescription
-                         (description [_]
-                           {::kind          :middleware
-                            :middleware     ::update-key
-                            :target-key     target
-                            :new-target-key new-key
-                            :f-key          f-key
-                            :f              f
-                            :arg-keys       arg-keys
-                            :args           args}))
-          own-registry (zipmap (cons f-key arg-keys)
-                               (cons f     args)
-
-                               ;; kind update-f    ????
-                               ;; knid update-arg  ????
-                               #_
-                               (for [obj (cons f     args)]
-                                 (reify ...
-                                   ...)))
+    (let [prefix         (str (symbol target) "+di-update-key#" (*next-id*))
+          new-key        (symbol (str prefix "-target"))
+          f-key          (symbol (str prefix "-f"))
+          arg-keys       (for [i (-> args count range)]
+                           (symbol (str prefix "-arg#" i)))
+          new-factory    (reify
+                           p/Factory
+                           (dependencies [_]
+                             (zipmap (concat [new-key f-key] arg-keys)
+                                     (repeat :optional)))
+                           (build [_ deps]
+                             (let [t    (deps new-key)
+                                   f    (deps f-key)
+                                   args (map deps arg-keys)]
+                               (apply f t args)))
+                           (demolish [_ _])
+                           p/FactoryDescription
+                           (description [_]
+                             {::kind          :middleware
+                              :middleware     ::update-key
+                              :target-key     target
+                              :new-target-key new-key
+                              :f-key          f-key
+                              :f              f
+                              :arg-keys       arg-keys
+                              :args           args}))
+          own-registry   (zipmap (cons f-key arg-keys)
+                                 (cons f     args))
+          own-registry   (update-vals own-registry
+                                      trivial-factory)
           target-factory (registry target)]
       (when (nil? target-factory)
         (throw (ex-info (str "Can't update non-existent key " target)
@@ -771,7 +763,8 @@
 (extend-protocol p/FactoryDescription
   nil
   (description [this]
-    {})
+    {::kind :trivial
+     :object nil})
 
   Object
   (description [this]

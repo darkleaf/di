@@ -146,29 +146,31 @@
             {:key          `a
              :dependencies {`a+di-update-key#0-target :optional
                             `a+di-update-key#0-f      :optional
-                            `a+di-update-key#0-arg#0  :optional}
+                            `a+di-update-key#0-arg#0  :optional
+                            `a+di-update-key#0-arg#1  :optional}
              :description  {::di/kind       :middleware
                             :middleware     ::di/update-key
                             :target-key     `a
                             :new-target-key `a+di-update-key#0-target
                             :f-key          `a+di-update-key#0-f
                             :f              str
-                            :arg-keys       [`a+di-update-key#0-arg#0]
-                            :args           ["arg"]}}
+                            :arg-keys       [`a+di-update-key#0-arg#0 `a+di-update-key#0-arg#1]
+                            :args           ["arg" nil]}}
             {:key         `a+di-update-key#0-target
              :description {::di/kind :trivial
                            :object   :obj}}
             {:key         `a+di-update-key#0-f
-             #_#_
              :description {::di/kind :trivial
                            :object   str}}
             {:key         `a+di-update-key#0-arg#0
-             #_#_
              :description {::di/kind :trivial
-                           :object   "arg"}}]
+                           :object   "arg"}}
+            {:key         `a+di-update-key#0-arg#1
+             :description {::di/kind :trivial
+                           :object   nil}}]
            (di/inspect `a
                        {`a :obj}
-                       (di/update-key `a str "arg")))))
+                       (di/update-key `a str "arg" nil)))))
 
 
 (t/deftest add-side-dependency-test
