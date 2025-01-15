@@ -540,38 +540,41 @@
   [target f & args]
   {:pre [(key? target)]}
   (fn [registry]
-    (let [prefix         (str (symbol target) "+di-update-key#" (*next-id*))
-          new-key        (symbol (str prefix "-target"))
-          f-key          (symbol (str prefix "-f"))
-          arg-keys       (for [i (-> args count range)]
-                           (symbol (str prefix "-arg#" i)))
-          new-factory    (reify
-                           p/Factory
-                           (dependencies [_]
-                             (zipmap (concat [new-key f-key] arg-keys)
-                                     (repeat :optional)))
-                           (build [_ deps]
-                             (let [t    (deps new-key)
-                                   f    (deps f-key)
-                                   args (map deps arg-keys)]
-                               (apply f t args)))
-                           (demolish [_ _])
-                           p/FactoryDescription
-                           (description [_]
-                             {::kind      :middleware
-                              :middleware ::update-key
-                              :target     target
-                              :f          f
-                              :args       args}))
-          own-registry   (zipmap (cons f-key arg-keys)
-                                 (cons f     args)
+    (let [prefix       (str (symbol target) "+di-update-key#" (*next-id*))
+          new-key      (symbol (str prefix "-target"))
+          f-key        (symbol (str prefix "-f"))
+          arg-keys     (for [i (-> args count range)]
+                         (symbol (str prefix "-arg#" i)))
+          new-factory  (reify
+                         p/Factory
+                         (dependencies [_]
+                           (zipmap (concat [new-key f-key] arg-keys)
+                                   (repeat :optional)))
+                         (build [_ deps]
+                           (let [t    (deps new-key)
+                                 f    (deps f-key)
+                                 args (map deps arg-keys)]
+                             (apply f t args)))
+                         (demolish [_ _])
+                         p/FactoryDescription
+                         (description [_]
+                           {::kind          :middleware
+                            :middleware     ::update-key
+                            :target-key     target
+                            :new-target-key new-key
+                            :f-key          f-key
+                            :f              f
+                            :arg-keys       arg-keys
+                            :args           args}))
+          own-registry (zipmap (cons f-key arg-keys)
+                               (cons f     args)
 
-                                 ;; kind update-f    ????
-                                 ;; knid update-arg  ????
-                                 #_
-                                 (for [obj (cons f     args)]
-                                   (reify ...
-                                     ...)))
+                               ;; kind update-f    ????
+                               ;; knid update-arg  ????
+                               #_
+                               (for [obj (cons f     args)]
+                                 (reify ...
+                                   ...)))
           target-factory (registry target)]
       (when (nil? target-factory)
         (throw (ex-info (str "Can't update non-existent key " target)

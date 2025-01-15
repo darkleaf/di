@@ -147,18 +147,23 @@
              :dependencies {`a+di-update-key#0-target :optional
                             `a+di-update-key#0-f      :optional
                             `a+di-update-key#0-arg#0  :optional}
-             :description  {::di/kind   :middleware
-                            :middleware ::di/update-key
-                            :target     `a
-                            :f          str
-                            :args       ["arg"]}}
+             :description  {::di/kind       :middleware
+                            :middleware     ::di/update-key
+                            :target-key     `a
+                            :new-target-key `a+di-update-key#0-target
+                            :f-key          `a+di-update-key#0-f
+                            :f              str
+                            :arg-keys       [`a+di-update-key#0-arg#0]
+                            :args           ["arg"]}}
             {:key         `a+di-update-key#0-target
              :description {::di/kind :trivial
                            :object   :obj}}
             {:key         `a+di-update-key#0-f
+             #_#_
              :description {::di/kind :trivial
                            :object   str}}
             {:key         `a+di-update-key#0-arg#0
+             #_#_
              :description {::di/kind :trivial
                            :object   "arg"}}]
            (di/inspect `a
