@@ -271,3 +271,14 @@
                                    (p/demolish factory obj))
                                  #_"NOTE: no `p/description implemented")
                                factory))))))))
+
+(def variable-factory-regression
+  (reify p/Factory
+    (dependencies [_])
+    (build [_ _]
+      :ok)
+    (demolish [_ _])))
+
+(t/deftest variable-factory-regression-test
+  (t/is (= :ok
+           @(di/start `variable-factory-regression))))

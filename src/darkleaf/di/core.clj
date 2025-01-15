@@ -733,16 +733,19 @@
     (service-factory variable deps)))
 
 (defn- var->factory-default [variable]
-  (reify
-    p/Factory
-    (dependencies [_])
-    (build [_ _]
-      @variable)
-    (demolish [_ _])
-    p/FactoryDescription
-    (description [_]
-      {::kind    :variable
-       :variable variable})))
+  (let [val @variable]
+    (reify
+      p/Factory
+      (dependencies [_]
+        (p/dependencies val))
+      (build [_ deps]
+        (p/build val deps))
+      (demolish [_ obj]
+        (p/demolish val obj))
+      p/FactoryDescription
+      (description [_]
+        {::kind    :variable
+         :variable variable}))))
 
 (defn- var->factory [variable]
   (?? (var->factory-meta-deps variable)
