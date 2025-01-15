@@ -246,11 +246,21 @@
 
 (t/deftest no-description-test
   (t/is (= [(implicit-root `foo)
-            {:key `foo 
+            {:key `foo
              #_"NOTE: no description as it is not implemented"}]
            (di/inspect `foo
-                       {`foo (reify p/Factory
-                               (dependencies [_])
-                               (build [_ deps] :ok)
-                               (demolish [_ obj])
-                               #_"NOTE: no `p/description implemented")}))))
+                       {`foo :ok}
+                       (fn no-description-middleware [registry]
+                         (fn [key]
+                           (let [factory (registry key)]
+                             (if (= `foo key)
+                               (reify
+                                 p/Factory
+                                 (dependencies [_]
+                                   (p/dependencies factory))
+                                 (build [_ deps]
+                                   (p/build factory deps))
+                                 (demolish [_ obj]
+                                   (p/demolish factory obj))
+                                 #_"NOTE: no `p/description implemented")
+                               factory))))))))
