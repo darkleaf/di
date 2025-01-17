@@ -164,18 +164,18 @@
   ;; nil has default implementation
   (when (some? factory)
     (reify
-       p/Factory
-       (dependencies [_]
-         (p/dependencies factory))
-       (build [_ deps]
-         (p/build factory deps))
-       (demolish [_ obj]
-         (p/demolish factory obj))
-       p/FactoryDescription
-       (description [_]
-         (?? (not-empty (p/description factory))
-             {::kind  :trivial
-              :object factory})))))
+      p/Factory
+      (dependencies [_]
+        (p/dependencies factory))
+      (build [_ deps]
+        (p/build factory deps))
+      (demolish [_ obj]
+        (p/demolish factory obj))
+      p/FactoryDescription
+      (description [_]
+        (?? (not-empty (p/description factory))
+            {::kind  :trivial
+             :object factory})))))
 
 (defn- trivial-registry [map key]
   (trivial-factory (get map key)))
