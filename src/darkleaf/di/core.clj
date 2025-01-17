@@ -180,7 +180,6 @@
 (defn- trivial-registry [map key]
   (trivial-factory (get map key)))
 
-
 (defn- apply-middleware [registry middleware]
   (cond
     (fn? middleware)      (middleware registry)
@@ -743,9 +742,10 @@
         (p/demolish val obj))
       p/FactoryDescription
       (description [_]
-        (?? (not-empty (p/description val))
-            {::kind    :variable
-             :variable variable})))))
+        (-> (not-empty (p/description val))
+            (?? {::kind  :trivial
+                 :object val})
+            (assoc ::variable variable))))))
 
 (defn- var->factory [variable]
   (?? (var->factory-meta-deps variable)

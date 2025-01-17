@@ -18,9 +18,11 @@
 (t/deftest variable-test
   (t/is (= [(implicit-root `variable)
             {:key         `variable
-             :description {::di/kind :variable
-                           :variable #'variable}}]
+             :description {::di/kind     :trivial
+                           :object       :obj
+                           ::di/variable #'variable}}]
            (di/inspect `variable))))
+
 
 (def variable+factory
   (reify p/Factory
@@ -31,9 +33,11 @@
 (t/deftest variable+factory-test
   (t/is (= [(implicit-root `variable+factory)
             {:key         `variable+factory
-             :description {::di/kind :variable
-                           :variable #'variable+factory}}]
+             :description {::di/kind     :trivial
+                           :object       variable+factory
+                           ::di/variable #'variable+factory}}]
            (di/inspect `variable+factory))))
+
 
 (def variable+description
   (reify
@@ -48,8 +52,22 @@
 (t/deftest variable+description-test
   (t/is (= [(implicit-root `variable+description)
             {:key         `variable+description
-             :description {::di/kind ::variable+description}}]
+             :description {::di/kind     ::variable+description
+                           ::di/variable #'variable+description}}]
            (di/inspect `variable+description))))
+
+
+(def variable+template
+  (di/template [42]))
+
+(t/deftest variable+template-test
+  (t/is (= [(implicit-root `variable+template)
+            {:key         `variable+template
+             :description {::di/kind     :template
+                           :template     [42]
+                           ::di/variable #'variable+template}}]
+           (di/inspect `variable+template))))
+
 
 (defn component-0-arity
   {::di/kind :component}
@@ -243,8 +261,9 @@
              :description {::di/kind :component
                            :variable #'x-ns-publics-test/component}}
             {:key         `x-ns-publics-test/ok-test
-             :description {::di/kind :variable
-                           :variable #'x-ns-publics-test/ok-test}}]
+             :description {::di/kind     :trivial
+                           :object       x-ns-publics-test/ok-test
+                           ::di/variable #'x-ns-publics-test/ok-test}}]
            (di/inspect :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
                        (di/ns-publics)))))
 
