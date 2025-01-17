@@ -173,10 +173,9 @@
          (p/demolish factory obj))
        p/FactoryDescription
        (description [_]
-         (if-some [desc (not-empty (p/description factory))]
-           desc
-           {::kind  :trivial
-            :object factory})))))
+         (?? (not-empty (p/description factory))
+             {::kind  :trivial
+              :object factory})))))
 
 (defn- trivial-registry [map key]
   (trivial-factory (get map key)))
