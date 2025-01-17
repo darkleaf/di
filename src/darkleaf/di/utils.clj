@@ -1,4 +1,6 @@
 (ns ^:no-doc darkleaf.di.utils
+  (:require
+   [darkleaf.di.protocols :as p])
   (:import
    (java.util List)))
 
@@ -62,3 +64,25 @@
      nil
      (catch Exception ex#
        ex#)))
+
+(defmacro delegate-factory [obj & other]
+  `(reify
+     p/Factory
+     (dependencies [this#]       (p/dependencies ~obj))
+     (build        [this# deps#] (p/build        ~obj deps#))
+     (demolish     [this# obj#]  (p/demolish     ~obj obj#))
+     ~@other))
+
+#_
+(defmacro delegate [proto->obj & other]
+  (let [proto->obj (update-keys proto->obj resolve)]
+    `(reify
+       ~@(if-some [obj (proto->obj #'p/Factory)]
+           `[p/Factory
+             (dependencies [this#]       (p/dependencies ~obj))
+             (build        [this# deps#] (p/build        ~obj deps#))
+             (demolish     [this# obj#]  (p/demolish     ~obj obj#))])
+       ~@(if-some [obj (proto->obj #'p/FactoryDescription)]
+           `[p/FactoryDescription
+             (description  [this#]       (p/description  ~obj))])
+       ~@other)))
