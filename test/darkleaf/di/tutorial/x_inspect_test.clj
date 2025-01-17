@@ -22,6 +22,35 @@
                            :variable #'variable}}]
            (di/inspect `variable))))
 
+(def variable+factory
+  (reify p/Factory
+    (dependencies [_])
+    (build [_ _] :ok)
+    (demolish [_ _])))
+
+(t/deftest variable+factory-test
+  (t/is (= [(implicit-root `variable+factory)
+            {:key         `variable+factory
+             :description {::di/kind :variable
+                           :variable #'variable+factory}}]
+           (di/inspect `variable+factory))))
+
+(def variable+description
+  (reify
+    p/Factory
+    (dependencies [_])
+    (build [_ _] :ok)
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {::di/kind ::variable+description})))
+
+(t/deftest variable+description-test
+  (t/is (= [(implicit-root `variable+description)
+            {:key         `variable+description
+             :description {::di/kind ::variable+description}}]
+           (di/inspect `variable+description))))
+
 (defn component-0-arity
   {::di/kind :component}
   []

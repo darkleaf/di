@@ -744,8 +744,9 @@
         (p/demolish val obj))
       p/FactoryDescription
       (description [_]
-        {::kind    :variable
-         :variable variable}))))
+        (?? (not-empty (p/description val))
+            {::kind    :variable
+             :variable variable})))))
 
 (defn- var->factory [variable]
   (?? (var->factory-meta-deps variable)
