@@ -21,4 +21,4 @@
 
 (defprotocol FactoryDescription
   (description [this]
-    "Returns map with factory description."))
+    "Returns a map with the factory description."))
