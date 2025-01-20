@@ -194,15 +194,18 @@
              :dependencies {`a+di-update-key#0-target :optional
                             `a+di-update-key#0-f      :optional
                             `a+di-update-key#0-arg#0  :optional
-                            `a+di-update-key#0-arg#1  :optional}
+                            `a+di-update-key#0-arg#1  :optional
+                            `a+di-update-key#0-arg#2  :optional}
              :description  {::di/kind       :middleware
                             :middleware     ::di/update-key
                             :target-key     `a
                             :new-target-key `a+di-update-key#0-target
                             :f-key          `a+di-update-key#0-f
                             :f              str
-                            :arg-keys       [`a+di-update-key#0-arg#0 `a+di-update-key#0-arg#1]
-                            :args           ["arg" nil]}}
+                            :arg-keys       [`a+di-update-key#0-arg#0
+                                             `a+di-update-key#0-arg#1
+                                             `a+di-update-key#0-arg#2]
+                            :args           ["arg" nil (di/ref `b)]}}
             {:key         `a+di-update-key#0-target
              :description {::di/kind :trivial
                            :object   :obj}}
@@ -214,10 +217,19 @@
                            :object   "arg"}}
             {:key         `a+di-update-key#0-arg#1
              :description {::di/kind :trivial
-                           :object   nil}}]
+                           :object   nil}}
+            {:key          `a+di-update-key#0-arg#2
+             :dependencies {`b :required}
+             :description  {::di/kind :ref
+                            :key      `b
+                            :type     :required}}
+            {:key         `b
+             :description {::di/kind :trivial
+                           :object   :b}}]
            (di/inspect `a
-                       {`a :obj}
-                       (di/update-key `a str "arg" nil)))))
+                       {`a :obj
+                        `b :b}
+                       (di/update-key `a str "arg" nil (di/ref `b))))))
 
 
 (t/deftest add-side-dependency-test
