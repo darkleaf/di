@@ -637,7 +637,6 @@
         {::kind    :component
          :variable variable}))))
 
-
 (defn- var->1-component [variable]
   (let [deps (dependencies-fn variable)
         stop (stop-fn variable)]
@@ -713,8 +712,7 @@
     (service-factory variable deps)))
 
 (defn- var->factory-default [variable]
-  (-> @variable
-      (u/update-description assoc ::variable variable)))
+  (u/update-description @variable assoc ::variable variable))
 
 (defn- var->factory [variable]
   (?? (var->factory-meta-deps variable)
