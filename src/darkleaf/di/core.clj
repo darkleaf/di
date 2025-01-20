@@ -889,9 +889,10 @@
   Must be the last one in the middleware chain.
   Both callbacks are expected to accept
   the following arg `{:keys [key object]}`."
-  [& {:keys [after-build! after-demolish!]
-      :or   {after-build!    (fn no-op [_])
-             after-demolish! (fn no-op [_])}}]
+  [& {:keys   [after-build! after-demolish!]
+      #_#_:as opts
+      :or     {after-build!    (fn no-op [_])
+               after-demolish! (fn no-op [_])}}]
   (fn [registry]
     (fn [key]
       (let [factory (registry key)]
@@ -910,7 +911,8 @@
           p/FactoryDescription
           (description [_]
             (assoc (p/description factory)
-                   ::will-be-logged true)))))))
+                   ::log  {:will-be-logged true
+                           #_#_:opts       opts})))))))
 
 (defn- inspect-middleware []
   (fn [registry]

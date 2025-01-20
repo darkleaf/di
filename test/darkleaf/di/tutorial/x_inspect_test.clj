@@ -282,14 +282,16 @@
 (t/deftest log-test
   (t/is (= [{:key          ::di/implicit-root
              :dependencies {`foo :required}
-             :description  {::di/kind           :ref
-                            :key                `foo
-                            :type               :required
-                            ::di/will-be-logged true}}
+             :description  {::di/kind :ref
+                            :key      `foo
+                            :type     :required
+                            ::di/log  {:will-be-logged true
+                                       #_#_:opts       nil}}}
             {:key         `foo
-             :description {::di/kind           :trivial
-                           :object             :obj
-                           ::di/will-be-logged true}}]
+             :description {::di/kind :trivial
+                           :object   :obj
+                           ::di/log  {:will-be-logged true
+                                      #_#_:opts       nil}}}]
            (di/inspect `foo
                        {`foo :obj}
                        (di/log)))))
