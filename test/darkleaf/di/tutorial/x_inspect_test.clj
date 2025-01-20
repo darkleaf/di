@@ -28,7 +28,8 @@
   (reify p/Factory
     (dependencies [_])
     (build [_ _] :ok)
-    (demolish [_ _])))
+    (demolish [_ _])
+    #_"NOTE: no `p/description implemented"))
 
 (t/deftest variable+factory-test
   (t/is (= [(implicit-root `variable+factory)
