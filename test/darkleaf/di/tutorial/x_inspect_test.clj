@@ -167,7 +167,7 @@
                             :f        str
                             :args     ["arg"]}}
             {:key         `bar
-             :description {::di/kind :trivial  ;; можно попробовать тут что-то другое писать
+             :description {::di/kind :trivial
                            :object   nil}}]
            (di/inspect `foo {`foo (di/derive `bar str "arg")}))))
 
