@@ -164,7 +164,7 @@
   (cond
     (fn? middleware)      (middleware registry)
     (map? middleware)     (fn [key]
-                            (?? (middleware key)
+                            (?? (get middleware key)
                                 (registry key)))
     (seqable? middleware) (reduce apply-middleware
                                   registry middleware)
@@ -349,6 +349,7 @@
   "Stops the root of a system"
   [^AutoCloseable root]
   (.close root))
+
 
 (def ^:private key? (some-fn symbol? keyword? string?))
 
