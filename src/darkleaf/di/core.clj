@@ -370,20 +370,6 @@
   [^AutoCloseable root]
   (.close root))
 
-(defn- with-extra-description-factory [factory & {:as descr}]
-  (reify
-    p/Factory
-    (dependencies [_]
-      (p/dependencies factory))
-    (build [_ deps]
-      (p/build factory deps))
-    (demolish [_ obj]
-      (p/demolish factory obj))
-    p/FactoryDescription
-    (description [_]
-      (merge (p/description factory)
-             descr))))
-
 (def ^:private key? (some-fn symbol? keyword? string?))
 
 (defn ref
@@ -574,13 +560,14 @@
                               :f              f
                               :arg-keys       arg-keys
                               :args           args}))
-          own-registry   (zipmap (cons f-key arg-keys)
-                                 (cons f     args))
-          own-registry   (update-vals own-registry
-                                      #(-> %
-                                           trivial-factory
-                                           (with-extra-description-factory
-                                             ::update-key target)))
+          own-keys       (cons f-key arg-keys)
+          own-factories  (cons f args)
+          own-factories  (for [factory own-factories]
+                           (-> factory
+                               trivial-factory
+                               (u/update-description assoc
+                                                     ::update-key-target target)))
+          own-registry   (zipmap own-keys own-factories)
           target-factory (registry target)]
       (when (nil? target-factory)
         (throw (ex-info (str "Can't update non-existent key " target)
@@ -749,7 +736,7 @@
 (defn- var->factory-default [variable]
   (-> @variable
       trivial-factory
-      (with-extra-description-factory ::variable variable)))
+      (u/update-description assoc ::variable variable)))
 
 (defn- var->factory [variable]
   (?? (var->factory-meta-deps variable)
