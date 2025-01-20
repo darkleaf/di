@@ -533,19 +533,17 @@
                            (demolish [_ _])
                            p/FactoryDescription
                            (description [_]
-                             {::kind          :middleware
-                              :middleware     ::update-key
-                              :target-key     target
-                              :new-target-key new-key
-                              :f-key          f-key
-                              :f              f
-                              :arg-keys       arg-keys
-                              :args           args}))
+                             {::kind      :middleware
+                              :middleware ::update-key
+                              :target     target
+                              :new-target new-key
+                              :f          f-key
+                              :args       arg-keys}))
           own-keys       (cons f-key arg-keys)
           own-factories  (cons f args)
           own-factories  (for [factory own-factories]
                            (u/update-description factory assoc
-                                                 ::update-key-target target))
+                                                 ::update-key {:target target}))
           own-registry   (zipmap own-keys own-factories)
           target-factory (registry target)]
       (when (nil? target-factory)
