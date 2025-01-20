@@ -160,31 +160,11 @@
 (defn- nil-registry [key]
   nil)
 
-(defn- trivial-factory [factory]
-  ;; nil has default implementation
-  (when (some? factory)
-    (reify
-      p/Factory
-      (dependencies [_]
-        (p/dependencies factory))
-      (build [_ deps]
-        (p/build factory deps))
-      (demolish [_ obj]
-        (p/demolish factory obj))
-      p/FactoryDescription
-      (description [_]
-        (?? (not-empty (p/description factory))
-            {::kind  :trivial
-             :object factory})))))
-
-(defn- trivial-registry [map key]
-  (trivial-factory (get map key)))
-
 (defn- apply-middleware [registry middleware]
   (cond
     (fn? middleware)      (middleware registry)
     (map? middleware)     (fn [key]
-                            (?? (trivial-registry middleware key)
+                            (?? (middleware key)
                                 (registry key)))
     (seqable? middleware) (reduce apply-middleware
                                   registry middleware)
@@ -563,10 +543,8 @@
           own-keys       (cons f-key arg-keys)
           own-factories  (cons f args)
           own-factories  (for [factory own-factories]
-                           (-> factory
-                               trivial-factory
-                               (u/update-description assoc
-                                                     ::update-key-target target)))
+                           (u/update-description factory assoc
+                                                 ::update-key-target target))
           own-registry   (zipmap own-keys own-factories)
           target-factory (registry target)]
       (when (nil? target-factory)
@@ -735,7 +713,6 @@
 
 (defn- var->factory-default [variable]
   (-> @variable
-      trivial-factory
       (u/update-description assoc ::variable variable)))
 
 (defn- var->factory [variable]
@@ -762,7 +739,10 @@
 
   Object
   (description [this]
-    {}))
+    (if (instance? (:on-interface p/Factory) this)
+      {}
+      {::kind  :trivial
+       :object this})))
 
 (c/derive ::root     ::instance)
 (c/derive ::template ::instance)

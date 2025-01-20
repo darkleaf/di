@@ -33,8 +33,7 @@
 (t/deftest variable+factory-test
   (t/is (= [(implicit-root `variable+factory)
             {:key         `variable+factory
-             :description {::di/kind     :trivial
-                           :object       variable+factory
+             :description {#_"NOTE: no description as it is not implemented"
                            ::di/variable #'variable+factory}}]
            (di/inspect `variable+factory))))
 
