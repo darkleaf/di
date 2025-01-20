@@ -210,19 +210,23 @@
              :description {::di/kind :trivial
                            :object   :obj}}
             {:key         `a+di-update-key#0-f
-             :description {::di/kind :trivial
-                           :object   str}}
+             :description {::di/kind       :trivial
+                           :object         str
+                           ::di/update-key `a}}
             {:key         `a+di-update-key#0-arg#0
-             :description {::di/kind :trivial
-                           :object   "arg"}}
+             :description {::di/kind       :trivial
+                           :object         "arg"
+                           ::di/update-key `a}}
             {:key         `a+di-update-key#0-arg#1
-             :description {::di/kind :trivial
-                           :object   nil}}
+             :description {::di/kind       :trivial
+                           :object         nil
+                           ::di/update-key `a}}
             {:key          `a+di-update-key#0-arg#2
              :dependencies {`b :required}
-             :description  {::di/kind :ref
-                            :key      `b
-                            :type     :required}}
+             :description  {::di/kind       :ref
+                            :key            `b
+                            :type           :required
+                            ::di/update-key `a}}
             {:key         `b
              :description {::di/kind :trivial
                            :object   :b}}]
