@@ -218,11 +218,13 @@
             {:key         `a+di-update-key#0-f
              :description {::di/kind       :trivial
                            :object         str
-                           ::di/update-key {:target `a}}}
+                           ::di/update-key {:target `a
+                                            :role   :f}}}
             {:key         `a+di-update-key#0-arg#0
              :description {::di/kind       :trivial
                            :object         "arg"
-                           ::di/update-key {:target `a}}}]
+                           ::di/update-key {:target `a
+                                            :role   :arg}}}]
            (di/inspect `a
                        {`a :obj}
                        (di/update-key `a str "arg")))))

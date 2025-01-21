@@ -539,12 +539,16 @@
                               :new-target new-key
                               :f          f-key
                               :args       arg-keys}))
-          own-keys       (cons f-key arg-keys)
-          own-factories  (cons f args)
-          own-factories  (for [factory own-factories]
-                           (u/update-description factory assoc
-                                                 ::update-key {:target target}))
-          own-registry   (zipmap own-keys own-factories)
+          f-factory      (do
+                           (u/update-description f assoc
+                                                 ::update-key {:target target
+                                                               :role   :f}))
+          arg-factories  (for [arg args]
+                           (u/update-description arg assoc
+                                                 ::update-key {:target target
+                                                               :role   :arg}))
+          own-registry   (zipmap (cons f-key     arg-keys)
+                                 (cons f-factory arg-factories))
           target-factory (registry target)]
       (when (nil? target-factory)
         (throw (ex-info (str "Can't update non-existent key " target)
