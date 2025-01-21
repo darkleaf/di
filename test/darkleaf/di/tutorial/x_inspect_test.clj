@@ -213,8 +213,10 @@
                             :f          `a+di-update-key#0-f
                             :args       [`a+di-update-key#0-arg#0]}}
             {:key         `a+di-update-key#0-target
-             :description {::di/kind :trivial
-                           :object   :obj}}
+             :description {::di/kind       :trivial
+                           :object         :obj
+                           ::di/update-key {:target `a
+                                            :role   :target}}}
             {:key         `a+di-update-key#0-f
              :description {::di/kind       :trivial
                            :object         str

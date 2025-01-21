@@ -549,7 +549,10 @@
                                                                :role   :arg}))
           own-registry   (zipmap (cons f-key     arg-keys)
                                  (cons f-factory arg-factories))
-          target-factory (registry target)]
+          target-factory (some-> (registry target)
+                                 (u/update-description assoc
+                                                       ::update-key {:target target
+                                                                     :role   :target}))]
       (when (nil? target-factory)
         (throw (ex-info (str "Can't update non-existent key " target)
                         {:type ::non-existent-key
