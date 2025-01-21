@@ -13,6 +13,18 @@
                   :type     :required}})
 
 
+(t/deftest no-description-test
+  (t/is (= [(implicit-root `foo)
+            {:key `foo
+             #_"NOTE: no description as it is not implemented"}]
+           (di/inspect `foo
+                       {`foo (reify p/Factory
+                               (dependencies [_])
+                               (build [_ _] :foo)
+                               (demolish [_ _])
+                               #_"NOTE: no `p/description implemented")}))))
+
+
 (def variable :obj)
 
 (t/deftest variable-test
@@ -296,27 +308,6 @@
                        {`foo :obj}
                        (di/log)))))
 
-
-(t/deftest no-description-test
-  (t/is (= [(implicit-root `foo)
-            {:key `foo
-             #_"NOTE: no description as it is not implemented"}]
-           (di/inspect `foo
-                       {`foo :ok}
-                       (fn no-description-middleware [registry]
-                         (fn [key]
-                           (let [factory (registry key)]
-                             (if (= `foo key)
-                               (reify
-                                 p/Factory
-                                 (dependencies [_]
-                                   (p/dependencies factory))
-                                 (build [_ deps]
-                                   (p/build factory deps))
-                                 (demolish [_ obj]
-                                   (p/demolish factory obj))
-                                 #_"NOTE: no `p/description implemented")
-                               factory))))))))
 
 (def variable-factory-regression
   (reify p/Factory
