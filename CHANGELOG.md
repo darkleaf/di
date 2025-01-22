@@ -1,3 +1,13 @@
+# 3.3.0
+
++ Add FactoryDescription protocol (#33)
+  This release's headline feature allows you to fully inspect your system as data.
+  If your development process heavily depends on feature flags, it is necessary to test your system.
+  This feature now makes it possible.
++ Add better component validation (#39)
++ Wrap exceptions during the build process (500179a)
++ Lint di.core/with-open as clojure.core/with-open (#34)
+
 # 3.2.1
 
 + Fixed `di/add-side-dependency` bug (#32)
