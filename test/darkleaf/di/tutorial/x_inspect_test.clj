@@ -89,8 +89,8 @@
 (t/deftest component-0-arity-test
   (t/is (= [(implicit-root `component-0-arity)
             {:key         `component-0-arity
-             :description {::di/kind :component
-                           :variable #'component-0-arity}}]
+             :description {::di/kind     :component
+                           ::di/variable #'component-0-arity}}]
            (di/inspect `component-0-arity))))
 
 
@@ -102,8 +102,8 @@
 (t/deftest component-1-arity-test
   (t/is (= [(implicit-root `component-1-arity)
             {:key         `component-1-arity
-             :description {::di/kind :component
-                           :variable #'component-1-arity}}]
+             :description {::di/kind     :component
+                           ::di/variable #'component-1-arity}}]
            (di/inspect `component-1-arity))))
 
 
@@ -115,8 +115,8 @@
 (t/deftest service-0-arity-test
   (t/is (= [(implicit-root `service-0-arity)
             {:key         `service-0-arity
-             :description {::di/kind :service
-                           :variable #'service-0-arity}}]
+             :description {::di/kind     :service
+                           ::di/variable #'service-0-arity}}]
            (di/inspect `service-0-arity))))
 
 
@@ -128,8 +128,8 @@
 (t/deftest service-n-arity-test
   (t/is (= [(implicit-root `service-n-arity)
             {:key         `service-n-arity
-             :description {::di/kind :service
-                           :variable #'service-n-arity}}]
+             :description {::di/kind     :service
+                           ::di/variable #'service-n-arity}}]
            (di/inspect `service-n-arity))))
 
 
@@ -140,8 +140,8 @@
 (t/deftest multimethod-service-test
   (t/is (= [(implicit-root `multimethod-service)
             {:key         `multimethod-service
-             :description {::di/kind :service
-                           :variable #'multimethod-service}}]
+             :description {::di/kind     :service
+                           ::di/variable #'multimethod-service}}]
            (di/inspect `multimethod-service))))
 
 
@@ -267,11 +267,11 @@
                             :ns         'darkleaf.di.tutorial.x-ns-publics-test}}
             {:key          `x-ns-publics-test/service
              :dependencies {`x-ns-publics-test/component :required}
-             :description  {::di/kind :service
-                            :variable #'x-ns-publics-test/service}}
+             :description  {::di/kind     :service
+                            ::di/variable #'x-ns-publics-test/service}}
             {:key         `x-ns-publics-test/component
-             :description {::di/kind :component
-                           :variable #'x-ns-publics-test/component}}
+             :description {::di/kind     :component
+                           ::di/variable #'x-ns-publics-test/component}}
             {:key         `x-ns-publics-test/ok-test
              :description {::di/kind     :trivial
                            :object       x-ns-publics-test/ok-test

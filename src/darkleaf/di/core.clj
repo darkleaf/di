@@ -639,8 +639,7 @@
         (stop obj))
       p/FactoryDescription
       (description [_]
-        {::kind    :component
-         :variable variable}))))
+        {::kind :component}))))
 
 (defn- var->1-component [variable]
   (let [deps (dependencies-fn variable)
@@ -656,8 +655,7 @@
         (stop obj))
       p/FactoryDescription
       (description [_]
-        {::kind    :component
-         :variable variable}))))
+        {::kind :component}))))
 
 (defn- service-factory [variable declared-deps]
   (reify
@@ -672,8 +670,7 @@
     (demolish [_ _])
     p/FactoryDescription
     (description [_]
-      {::kind    :service
-       :variable variable})))
+      {::kind :service})))
 
 (defn- var->0-service [variable]
   (reify
@@ -684,8 +681,7 @@
     (demolish [_ _])
     p/FactoryDescription
     (description [_]
-      {::kind    :service
-       :variable variable})))
+      {::kind :service})))
 
 (defn- var->service [variable]
   (let [deps (dependencies-fn variable)]
@@ -717,12 +713,13 @@
     (service-factory variable deps)))
 
 (defn- var->factory-default [variable]
-  (u/update-description @variable assoc ::variable variable))
+  @variable)
 
 (defn- var->factory [variable]
-  (?? (var->factory-meta-deps variable)
-      (var->factory-defn variable)
-      (var->factory-default variable)))
+  (-> (?? (var->factory-meta-deps variable)
+          (var->factory-defn variable)
+          (var->factory-default variable))
+      (u/update-description assoc ::variable variable)))
 
 (extend-protocol p/Factory
   nil
