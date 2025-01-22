@@ -1,4 +1,6 @@
 (ns ^:no-doc darkleaf.di.utils
+  (:require
+   [darkleaf.di.protocols :as p])
   (:import
    (java.util List)))
 
@@ -62,3 +64,16 @@
      nil
      (catch Exception ex#
        ex#)))
+
+(defn update-description [factory f & args]
+  (reify
+    p/Factory
+    (dependencies [_]
+      (p/dependencies factory))
+    (build [_ deps]
+      (p/build factory deps))
+    (demolish [_ obj]
+      (p/demolish factory obj))
+    p/FactoryDescription
+    (description [_]
+      (apply f (p/description factory) args))))

@@ -18,3 +18,7 @@
     "Builds an object from dependencies.")
   (demolish [this obj]
     "Demolishes or stops an object."))
+
+(defprotocol FactoryDescription
+  (description [this]
+    "Returns a map with the factory description."))

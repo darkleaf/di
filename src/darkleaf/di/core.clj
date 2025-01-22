@@ -389,7 +389,8 @@
   [form]
   ^{:type   ::template
     ::print form}
-  (reify p/Factory
+  (reify
+    p/Factory
     (dependencies [_]
       (->> form
            (tree-seq coll? seq)
@@ -397,7 +398,11 @@
            (reduce combine-dependencies)))
     (build [_ deps]
       (w/postwalk #(ref/build % deps) form))
-    (demolish [_ _])))
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {::kind    :template
+       :template form})))
 
 (defn derive
   "Applies `f` to an object built from `key`.
@@ -410,12 +415,19 @@
   [key f & args]
   {:pre [(key? key)
          (ifn? f)]}
-  (reify p/Factory
+  (reify
+    p/Factory
     (dependencies [_]
       {key :optional})
     (build [_ deps]
       (apply f (deps key) args))
-    (demolish [_ _])))
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {::kind :derive
+       :key   key
+       :f     f
+       :args  args})))
 
 ;; We currently don't need this middleware.
 ;; It should be rewritten as `update-key`.
@@ -508,7 +520,8 @@
           f-key          (symbol (str prefix "-f"))
           arg-keys       (for [i (-> args count range)]
                            (symbol (str prefix "-arg#" i)))
-          new-factory    (reify p/Factory
+          new-factory    (reify
+                           p/Factory
                            (dependencies [_]
                              (zipmap (concat [new-key f-key] arg-keys)
                                      (repeat :optional)))
@@ -517,10 +530,29 @@
                                    f    (deps f-key)
                                    args (map deps arg-keys)]
                                (apply f t args)))
-                           (demolish [_ _]))
-          own-registry   (zipmap (cons f-key arg-keys)
-                                 (cons f     args))
-          target-factory (registry target)]
+                           (demolish [_ _])
+                           p/FactoryDescription
+                           (description [_]
+                             {::kind      :middleware
+                              :middleware ::update-key
+                              :target     target
+                              :new-target new-key
+                              :f          f-key
+                              :args       arg-keys}))
+          f-factory      (do
+                           (u/update-description f assoc
+                                                 ::update-key {:target target
+                                                               :role   :f}))
+          arg-factories  (for [arg args]
+                           (u/update-description arg assoc
+                                                 ::update-key {:target target
+                                                               :role   :arg}))
+          own-registry   (zipmap (cons f-key     arg-keys)
+                                 (cons f-factory arg-factories))
+          target-factory (some-> (registry target)
+                                 (u/update-description assoc
+                                                       ::update-key {:target target
+                                                                     :role   :target}))]
       (when (nil? target-factory)
         (throw (ex-info (str "Can't update non-existent key " target)
                         {:type ::non-existent-key
@@ -547,14 +579,20 @@
   [dep-key]
   (fn [registry]
     (let [new-key     (symbol (str "darkleaf.di.core/new-key#" (*next-id*)))
-          new-factory (reify p/Factory
+          new-factory (reify
+                        p/Factory
                         (dependencies [_]
                           ;; array-map preserves order of keys
                           {new-key :required
                            dep-key :required})
                         (build [_ deps]
                           (new-key deps))
-                        (demolish [_ _]))]
+                        (demolish [_ _])
+                        p/FactoryDescription
+                        (description [_]
+                          {::kind      :middleware
+                           :middleware ::add-side-dependency
+                           :dep-key    dep-key}))]
       (fn [key]
         (cond
           (= ::implicit-root key) new-factory
@@ -586,28 +624,37 @@
 
 (defn- var->0-component [variable]
   (let [stop (stop-fn variable)]
-    (reify p/Factory
+    (reify
+      p/Factory
       (dependencies [_])
       (build [_ _]
         (doto (variable)
           (validate-obj! variable)))
       (demolish [_ obj]
-        (stop obj)))))
+        (stop obj))
+      p/FactoryDescription
+      (description [_]
+        {::kind :component}))))
 
 (defn- var->1-component [variable]
   (let [deps (dependencies-fn variable)
         stop (stop-fn variable)]
-    (reify p/Factory
+    (reify
+      p/Factory
       (dependencies [_]
         deps)
       (build [_ deps]
         (doto (variable deps)
           (validate-obj! variable)))
       (demolish [_ obj]
-        (stop obj)))))
+        (stop obj))
+      p/FactoryDescription
+      (description [_]
+        {::kind :component}))))
 
 (defn- service-factory [variable declared-deps]
-  (reify p/Factory
+  (reify
+    p/Factory
     (dependencies [_]
       declared-deps)
     (build [_ deps]
@@ -615,10 +662,21 @@
           (partial deps)
           (with-meta {:type   ::service
                       ::print variable})))
-    (demolish [_ _])))
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {::kind :service})))
 
 (defn- var->0-service [variable]
-  variable)
+  (reify
+    p/Factory
+    (dependencies [_])
+    (build [_ _]
+      variable)
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {::kind :service})))
 
 (defn- var->service [variable]
   (let [deps (dependencies-fn variable)]
@@ -653,9 +711,10 @@
   @variable)
 
 (defn- var->factory [variable]
-  (?? (var->factory-meta-deps variable)
-      (var->factory-defn variable)
-      (var->factory-default variable)))
+  (-> (?? (var->factory-meta-deps variable)
+          (var->factory-defn variable)
+          (var->factory-default variable))
+      (u/update-description assoc ::variable variable)))
 
 (extend-protocol p/Factory
   nil
@@ -667,6 +726,19 @@
   (dependencies [_] nil)
   (build [this _] this)
   (demolish [_ _] nil))
+
+(extend-protocol p/FactoryDescription
+  nil
+  (description [this]
+    {::kind :trivial
+     :object nil})
+
+  Object
+  (description [this]
+    (if (instance? (:on-interface p/Factory) this)
+      {}
+      {::kind  :trivial
+       :object this})))
 
 (c/derive ::root     ::instance)
 (c/derive ::template ::instance)
@@ -710,13 +782,19 @@
             key-name (name key)
             parser   (cmap key-ns)]
         (if (some? parser)
-           (reify p/Factory
-             (dependencies [_]
-               {key-name :optional})
-             (build [_ deps]
-               (some-> key-name deps parser))
-             (demolish [_ _]))
-           (registry key))))))
+          (reify
+            p/Factory
+            (dependencies [_]
+              {key-name :optional})
+            (build [_ deps]
+              (some-> key-name deps parser))
+            (demolish [_ _])
+            p/FactoryDescription
+            (description [_]
+              {::kind      :middleware
+               :middleware ::env-parsing
+               :cmap       cmap}))
+          (registry key))))))
 
 ;; (defn rename-deps [target rmap]
 ;;   (let [inverted-rmap (set/map-invert rmap)]
@@ -768,12 +846,18 @@
                                      (map symbol))
               deps              (zipmap component-symbols
                                         (repeat :required))]
-          (reify p/Factory
+          (reify
+            p/Factory
             (dependencies [_this]
               deps)
             (build [_this deps]
               (update-keys deps #(-> % name keyword)))
-            (demolish [_ _])))
+            (demolish [_ _])
+            p/FactoryDescription
+            (description [_]
+              {::kind      :middleware
+               :middleware ::ns-publics
+               :ns         component-ns})))
         (registry key)))))
 
 (defmacro with-open
@@ -804,13 +888,15 @@
   Must be the last one in the middleware chain.
   Both callbacks are expected to accept
   the following arg `{:keys [key object]}`."
-  [& {:keys [after-build! after-demolish!]
-      :or   {after-build!    (fn no-op [_])
-             after-demolish! (fn no-op [_])}}]
+  [& {:keys   [after-build! after-demolish!]
+      #_#_:as opts
+      :or     {after-build!    (fn no-op [_])
+               after-demolish! (fn no-op [_])}}]
   (fn [registry]
     (fn [key]
       (let [factory (registry key)]
-        (reify p/Factory
+        (reify
+          p/Factory
           (dependencies [_]
             (p/dependencies factory))
           (build [_ deps]
@@ -820,8 +906,12 @@
           (demolish [_ obj]
             (p/demolish factory obj)
             (after-demolish! {:key key :object obj})
-            nil))))))
-
+            nil)
+          p/FactoryDescription
+          (description [_]
+            (assoc (p/description factory)
+                   ::log  {:will-be-logged true
+                           #_#_:opts       opts})))))))
 
 (defn- inspect-middleware []
   (fn [registry]
@@ -831,7 +921,8 @@
             info          (into {}
                                 (filter (fn [[k v]] (some? v)))
                                 {:key          key
-                                 :dependencies declared-deps})]
+                                 :dependencies (not-empty declared-deps)
+                                 :description  (not-empty (p/description factory))})]
         (reify p/Factory
           (dependencies [_]
             declared-deps)
