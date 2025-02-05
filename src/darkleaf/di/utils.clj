@@ -1,6 +1,7 @@
 (ns ^:no-doc darkleaf.di.utils
   (:require
-   [darkleaf.di.protocols :as p])
+   [darkleaf.di.protocols :as p]
+   [darkleaf.di.core :as-alias di])
   (:import
    (java.util List)))
 
@@ -65,15 +66,27 @@
      (catch Exception ex#
        ex#)))
 
-(defn update-description [factory f & args]
+(def undefined
   (reify
     p/Factory
-    (dependencies [_]
-      (p/dependencies factory))
-    (build [_ deps]
-      (p/build factory deps))
-    (demolish [_ obj]
-      (p/demolish factory obj))
+    (dependencies [_])
+    (build [_ _] nil)
+    (demolish [_ _])
     p/FactoryDescription
     (description [_]
-      (apply f (p/description factory) args))))
+      {::di/kind :?undefined?})))
+
+(defn update-description [factory f & args]
+  (if (= undefined factory)
+    undefined
+    (reify
+      p/Factory
+      (dependencies [_]
+        (p/dependencies factory))
+      (build [_ deps]
+        (p/build factory deps))
+      (demolish [_ obj]
+        (p/demolish factory obj))
+      p/FactoryDescription
+      (description [_]
+        (apply f (p/description factory) args)))))

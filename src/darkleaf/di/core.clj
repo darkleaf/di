@@ -158,14 +158,15 @@
         (throw-many! exs)))))
 
 (defn- nil-registry [key]
-  nil)
+  u/undefined)
 
 (defn- apply-middleware [registry middleware]
   (cond
     (fn? middleware)      (middleware registry)
     (map? middleware)     (fn [key]
-                            (?? (get middleware key)
-                                (registry key)))
+                            (if-let [[_ trivial] (find middleware key)]
+                              trivial
+                              (registry key)))
     (seqable? middleware) (reduce apply-middleware
                                   registry middleware)
     :else                 (throw (IllegalArgumentException. "Wrong middleware kind"))))
@@ -557,11 +558,11 @@
                                                                :role   :arg}))
           own-registry   (zipmap (cons f-key     arg-keys)
                                  (cons f-factory arg-factories))
-          target-factory (some-> (registry target)
-                                 (u/update-description assoc
-                                                       ::update-key {:target target
-                                                                     :role   :target}))]
-      (when (nil? target-factory)
+          target-factory (-> (registry target)
+                             (u/update-description assoc
+                                                   ::update-key {:target target
+                                                                 :role   :target}))]
+      (when (= u/undefined target-factory)
         (throw (ex-info (str "Can't update non-existent key " target)
                         {:type ::non-existent-key
                          :key  target})))
