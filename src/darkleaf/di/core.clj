@@ -192,7 +192,8 @@
   [registry]
   (fn [key]
     (?? (when (string? key)
-          (System/getenv key))
+          (-> (System/getenv key)
+              (u/update-description assoc ::kind :env)))
         (registry key))))
 
 (declare ref template)

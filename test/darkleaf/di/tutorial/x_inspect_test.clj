@@ -25,6 +25,13 @@
                                #_"NOTE: no `p/description implemented")}))))
 
 
+(t/deftest env-test
+  (t/is (= [(implicit-root "FOO")
+            {:key         "FOO"
+             :description {::di/kind :env}}]
+           (di/inspect "FOO"))))
+
+
 (def variable :obj)
 
 (t/deftest variable-test
