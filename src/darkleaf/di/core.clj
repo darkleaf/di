@@ -192,7 +192,15 @@
   [registry]
   (fn [key]
     (?? (when (string? key)
-          (System/getenv key))
+          (reify
+            p/Factory
+            (dependencies [_])
+            (build [_ _]
+              (System/getenv key))
+            (demolish [_ _])
+            p/FactoryDescription
+            (description [_]
+              {::kind :env})))
         (registry key))))
 
 (declare ref template)
