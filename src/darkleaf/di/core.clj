@@ -157,7 +157,7 @@
             exs (cons ex exs)]
         (throw-many! exs)))))
 
-(def ^:private nil-factory
+(def ^:private undefined-factory
   (reify
     p/Factory
     (dependencies [_])
@@ -165,10 +165,10 @@
     (demolish [_ _])
     p/FactoryDescription
     (description [_]
-      {::kind :?undefined?})))
+      {::kind :undefined})))
 
-(defn- nil-registry [key]
-  nil-factory)
+(defn- undefined-registry [key]
+  undefined-factory)
 
 (defn- apply-middleware [registry middleware]
   (cond
@@ -284,7 +284,7 @@
                                with-ns
                                root-registry]
                               middlewares)
-          registry    (apply-middleware nil-registry middlewares)
+          registry    (apply-middleware undefined-registry middlewares)
           ctx         {:registry   registry
                        :*stop-list (volatile! '())}
           obj         (try-build ctx key)
@@ -583,7 +583,7 @@
                                 (cons f-factory arg-factories))
 
           target-factory (registry target)
-          _              (when (= nil-factory target-factory)
+          _              (when (= undefined-factory target-factory)
                            (throw (ex-info (str "Can't update non-existent key " target)
                                            {:type ::non-existent-key
                                             :key  target})))

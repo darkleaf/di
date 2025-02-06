@@ -168,7 +168,7 @@
                             :key      `bar
                             :type     :required}}
             {:key         `bar
-             :description {::di/kind :?undefined?}}]
+             :description {::di/kind :undefined}}]
            (di/inspect `foo {`foo (di/ref `bar)}))))
 
 
@@ -179,7 +179,7 @@
              :description  {::di/kind :template
                             :template [42 (di/ref `bar)]}}
             {:key         `bar
-             :description {::di/kind :?undefined?}}]
+             :description {::di/kind :undefined}}]
            (di/inspect `foo {`foo (di/template [42 (di/ref `bar)])}))))
 
 
@@ -192,7 +192,7 @@
                             :f        str
                             :args     ["arg"]}}
             {:key         `bar
-             :description {::di/kind :?undefined?}}]
+             :description {::di/kind :undefined}}]
            (di/inspect `foo {`foo (di/derive `bar str "arg")}))))
 
 
