@@ -1,3 +1,8 @@
+# 3.4.0
+
++ Add the description for envs (#42)
++ Fix description for undefined keys (#43)
+
 # 3.3.0
 
 + Add FactoryDescription protocol (#33)
