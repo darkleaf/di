@@ -157,15 +157,26 @@
             exs (cons ex exs)]
         (throw-many! exs)))))
 
-(defn- nil-registry [key]
-  nil)
+(def ^:private undefined-factory
+  (reify
+    p/Factory
+    (dependencies [_])
+    (build [_ _] nil)
+    (demolish [_ _])
+    p/FactoryDescription
+    (description [_]
+      {::kind :undefined})))
+
+(defn- undefined-registry [key]
+  undefined-factory)
 
 (defn- apply-middleware [registry middleware]
   (cond
     (fn? middleware)      (middleware registry)
     (map? middleware)     (fn [key]
-                            (?? (get middleware key)
-                                (registry key)))
+                            (if-some [[_ trivial] (find middleware key)]
+                              trivial
+                              (registry key)))
     (seqable? middleware) (reduce apply-middleware
                                   registry middleware)
     :else                 (throw (IllegalArgumentException. "Wrong middleware kind"))))
@@ -273,7 +284,7 @@
                                with-ns
                                root-registry]
                               middlewares)
-          registry    (apply-middleware nil-registry middlewares)
+          registry    (apply-middleware undefined-registry middlewares)
           ctx         {:registry   registry
                        :*stop-list (volatile! '())}
           obj         (try-build ctx key)
@@ -358,6 +369,19 @@
   [^AutoCloseable root]
   (.close root))
 
+
+(defn- update-description [factory f & args]
+  (reify
+    p/Factory
+    (dependencies [_]
+      (p/dependencies factory))
+    (build [_ deps]
+      (p/build factory deps))
+    (demolish [_ obj]
+      (p/demolish factory obj))
+    p/FactoryDescription
+    (description [_]
+      (apply f (p/description factory) args))))
 
 (def ^:private key? (some-fn symbol? keyword? string?))
 
@@ -523,45 +547,44 @@
   [target f & args]
   {:pre [(key? target)]}
   (fn [registry]
-    (let [prefix         (str (symbol target) "+di-update-key#" (*next-id*))
-          new-key        (symbol (str prefix "-target"))
-          f-key          (symbol (str prefix "-f"))
-          arg-keys       (for [i (-> args count range)]
-                           (symbol (str prefix "-arg#" i)))
-          new-factory    (reify
-                           p/Factory
-                           (dependencies [_]
-                             (zipmap (concat [new-key f-key] arg-keys)
-                                     (repeat :optional)))
-                           (build [_ deps]
-                             (let [t    (deps new-key)
-                                   f    (deps f-key)
-                                   args (map deps arg-keys)]
-                               (apply f t args)))
-                           (demolish [_ _])
-                           p/FactoryDescription
-                           (description [_]
-                             {::kind      :middleware
-                              :middleware ::update-key
-                              :target     target
-                              :new-target new-key
-                              :f          f-key
-                              :args       arg-keys}))
-          f-factory      (do
-                           (u/update-description f assoc
-                                                 ::update-key {:target target
-                                                               :role   :f}))
-          arg-factories  (for [arg args]
-                           (u/update-description arg assoc
-                                                 ::update-key {:target target
-                                                               :role   :arg}))
-          own-registry   (zipmap (cons f-key     arg-keys)
-                                 (cons f-factory arg-factories))
-          target-factory (some-> (registry target)
-                                 (u/update-description assoc
-                                                       ::update-key {:target target
-                                                                     :role   :target}))]
-      (when (nil? target-factory)
+    (let [prefix          (str (symbol target) "+di-update-key#" (*next-id*))
+          new-key         (symbol (str prefix "-target"))
+          f-key           (symbol (str prefix "-f"))
+          arg-keys        (for [i (-> args count range)]
+                            (symbol (str prefix "-arg#" i)))
+          new-factory     (reify
+                            p/Factory
+                            (dependencies [_]
+                              (zipmap (concat [new-key f-key] arg-keys)
+                                      (repeat :optional)))
+                            (build [_ deps]
+                              (let [t    (deps new-key)
+                                    f    (deps f-key)
+                                    args (map deps arg-keys)]
+                                (apply f t args)))
+                            (demolish [_ _])
+                            p/FactoryDescription
+                            (description [_]
+                              {::kind      :middleware
+                               :middleware ::update-key
+                               :target     target
+                               :new-target new-key
+                               :f          f-key
+                               :args       arg-keys}))
+          f-factory       (update-description f assoc
+                                              ::update-key {:target target
+                                                            :role   :f})
+          arg-factories   (for [arg args]
+                            (update-description arg assoc
+                                                ::update-key {:target target
+                                                              :role   :arg}))
+          own-registry    (zipmap (cons f-key     arg-keys)
+                                  (cons f-factory arg-factories))
+          target-factory* (registry target)
+          target-factory  (update-description target-factory* assoc
+                                              ::update-key {:target target
+                                                            :role   :target})]
+      (when (= undefined-factory target-factory*)
         (throw (ex-info (str "Can't update non-existent key " target)
                         {:type ::non-existent-key
                          :key  target})))
@@ -722,7 +745,7 @@
   (-> (?? (var->factory-meta-deps variable)
           (var->factory-defn variable)
           (var->factory-default variable))
-      (u/update-description assoc ::variable variable)))
+      (update-description assoc ::variable variable)))
 
 (extend-protocol p/Factory
   nil
