@@ -174,7 +174,7 @@
   (cond
     (fn? middleware)      (middleware registry)
     (map? middleware)     (fn [key]
-                            (if-let [[_ trivial] (find middleware key)]
+                            (if-some [[_ trivial] (find middleware key)]
                               trivial
                               (registry key)))
     (seqable? middleware) (reduce apply-middleware
