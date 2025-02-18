@@ -48,7 +48,7 @@
           (build [_ deps]
             (p/build factory deps))
           (demolish [_ obj]
-            (p/build factory obj)))))))
+            (p/demolish factory obj)))))))
 
 (t/deftest null-registry-middleware-test
   (with-open [root (di/start `root (null-registry-middleware))]
