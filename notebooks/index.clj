@@ -136,6 +136,9 @@
 (view-doc #'dip/dependencies)
 (view-doc #'dip/build)
 (view-doc #'dip/demolish)
+;; `darkleaf.di.protocols/FactoryDescription`
+(view-doc #'dip/description)
+
 
 ;; ## License
 ;; Copyright © 2022 Mikhail Kuzmin
