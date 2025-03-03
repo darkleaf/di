@@ -63,7 +63,7 @@
 ;; ## Comparison with other tools
 
 (clerk/html
-  [:a {:href (clerk/doc-url "notebooks/integrant.clj")} "Comparison of Integrant and DI"])
+  [:a {:href (clerk/doc-url "notebooks/integrant")} "Comparison of Integrant and DI"])
 
 ;; ## Tutorial
 
@@ -73,29 +73,29 @@
 ;; ### Base
 (clerk/html
  [:ul
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/a_intro_test.clj")} "Intro"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/b_dependencies_test.clj")} "Dependencies"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/c_stop_test.clj")} "Stop"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/l_registries_test.clj")} "Registries"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/m_abstractions_test.clj")} "Abstractions"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/n_env_test.clj")} "Env"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/o_data_dsl_test.clj")} "Data DSL"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/p_fmap_test.clj")} "Fmap"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/q_starting_many_keys_test.clj")} "Starting many keys"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/r_multimethods_test.clj")} "Multimethods"]]])
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/a_intro_test")} "Intro"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/b_dependencies_test")} "Dependencies"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/c_stop_test")} "Stop"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/l_registries_test")} "Registries"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/m_abstractions_test")} "Abstractions"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/n_env_test")} "Env"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/o_data_dsl_test")} "Data DSL"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/p_fmap_test")} "Fmap"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/q_starting_many_keys_test")} "Starting many keys"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/r_multimethods_test")} "Multimethods"]]])
 
 ;; ### Advanced
 (clerk/html
  [:ul
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_add_side_dependency_test.clj")} "Add a side dependency"]]
-  #_[:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_instrument_test.clj")} "Instrument"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_update_key_test.clj")} "Update key"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_log_test.clj")} "Log"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_inspect_test.clj")} "Inspect"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/y_graceful_stop_test.clj")} "Graceful stop"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/y_multi_arity_service_test.clj")} "Multi arity service"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/z_multi_system_test.clj")} "Multi system"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/z_two_databases_test.clj")} "Two Databases"]]])
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_add_side_dependency_test")} "Add a side dependency"]]
+  #_[:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_instrument_test")} "Instrument"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_update_key_test")} "Update key"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_log_test")} "Log"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/x_inspect_test")} "Inspect"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/y_graceful_stop_test")} "Graceful stop"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/y_multi_arity_service_test")} "Multi arity service"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/z_multi_system_test")} "Multi system"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/z_two_databases_test")} "Two Databases"]]])
 
 ;; ## Example app
 
