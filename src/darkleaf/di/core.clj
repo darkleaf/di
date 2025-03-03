@@ -227,7 +227,7 @@
     (fn next-id []
       (swap! id inc))))
 
-(defn ^AutoCloseable start
+(defn start
   "Starts a system of dependent objects.
 
   key is a name of the system root.
@@ -276,7 +276,7 @@
 
   See the tests for use cases.
   See `update-key`."
-  [key & middlewares]
+  ^AutoCloseable [key & middlewares]
   (binding [*next-id* (->next-id)]
     (let [[key root-registry] (key->key&registry key)
 
