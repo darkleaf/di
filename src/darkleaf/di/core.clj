@@ -547,51 +547,47 @@
   [target f & args]
   {:pre [(key? target)]}
   (fn [registry]
-    (let [prefix          (str (symbol target) "+di-update-key#" (*next-id*))
-          new-key         (symbol (str prefix "-target"))
-          f-key           (symbol (str prefix "-f"))
-          arg-keys        (for [i (-> args count range)]
-                            (symbol (str prefix "-arg#" i)))
-          new-factory     (reify
-                            p/Factory
-                            (dependencies [_]
-                              (zipmap (concat [new-key f-key] arg-keys)
-                                      (repeat :optional)))
-                            (build [_ deps]
-                              (let [t    (deps new-key)
-                                    f    (deps f-key)
-                                    args (map deps arg-keys)]
-                                (apply f t args)))
-                            (demolish [_ _])
-                            p/FactoryDescription
-                            (description [_]
-                              {::kind      :middleware
-                               :middleware ::update-key
-                               :target     target
-                               :new-target new-key
-                               :f          f-key
-                               :args       arg-keys}))
-          f-factory       (update-description f assoc
+    (let [prefix        (str (symbol target) "+di-update-key#" (*next-id*))
+          f-key         (symbol (str prefix "-f"))
+          arg-keys      (for [i (-> args count range)]
+                          (symbol (str prefix "-arg#" i)))
+          own-deps      (zipmap (cons f-key arg-keys)
+                                (repeat :optional))
+          f-factory     (update-description f assoc
+                                            ::update-key {:target target
+                                                          :role   :f})
+          arg-factories (for [arg args]
+                          (update-description arg assoc
                                               ::update-key {:target target
-                                                            :role   :f})
-          arg-factories   (for [arg args]
-                            (update-description arg assoc
-                                                ::update-key {:target target
-                                                              :role   :arg}))
+                                                            :role   :arg}))
+
           own-registry    (zipmap (cons f-key     arg-keys)
                                   (cons f-factory arg-factories))
-          target-factory* (registry target)
-          target-factory  (update-description target-factory* assoc
-                                              ::update-key {:target target
-                                                            :role   :target})]
-      (when (= undefined-factory target-factory*)
+          target-factory (registry target)]
+      (when (= undefined-factory target-factory)
         (throw (ex-info (str "Can't update non-existent key " target)
                         {:type ::non-existent-key
                          :key  target})))
       (fn [key]
         (condp = key
-          new-key target-factory
-          target  new-factory
+          target (let [*built (volatile! nil)]
+                   (reify
+                     p/Factory
+                     (dependencies [_]
+                       (merge (p/dependencies target-factory)
+                              own-deps))
+                     (build [_ deps]
+                       (let [f    (deps f-key)
+                             args (map deps arg-keys)
+                             obj  (p/build target-factory deps)]
+                         (vreset! *built obj)
+                         (apply f obj args)))
+                     (demolish [_ _obj]
+                       (p/demolish target-factory @*built))
+                     p/FactoryDescription
+                     (description [_]
+                       ;; todo: merge with extra info
+                       (p/description target-factory))))
           (?? (own-registry key)
               (registry key)))))))
 

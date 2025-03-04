@@ -215,15 +215,21 @@
 (t/deftest update-key-test
   (t/is (= [(implicit-root `a)
             {:key          `a
-             :dependencies {`a+di-update-key#0-target :optional
-                            `a+di-update-key#0-f      :optional
-                            `a+di-update-key#0-arg#0  :optional}
-             :description  {::di/kind   :middleware
-                            :middleware ::di/update-key
-                            :target     `a
-                            :new-target `a+di-update-key#0-target
-                            :f          `a+di-update-key#0-f
-                            :args       [`a+di-update-key#0-arg#0]}}
+             :dependencies {#_#_`a+di-update-key#0-target :optional
+                            `a+di-update-key#0-f          :optional
+                            `a+di-update-key#0-arg#0      :optional}
+             :description  #_ {::di/kind       :middleware
+                               :middleware     ::di/update-key
+                               :target         `a
+                               #_#_:new-target `a+di-update-key#0-target
+                               :f              `a+di-update-key#0-f
+                               :args           [`a+di-update-key#0-arg#0]}
+             {:darkleaf.di.core/kind :trivial
+              :object                :obj}}
+            ;; todo: :f, :args
+
+
+            #_
             {:key         `a+di-update-key#0-target
              :description {::di/kind       :trivial
                            :object         :obj
