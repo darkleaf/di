@@ -982,3 +982,36 @@
                                 middlewares
                                 (inspect-middleware))]
     @components))
+
+
+;; Мы используем locking, чтобы не было проблем с параллельным выполнением тестов.
+;; Нужен ли тут тест?
+
+;; Кто создал объект, тот его и уничтожает. Для этого мы храним в ключе ссылку на фабрику.
+
+
+(defn ->memoize []
+  (let [cache (volatile! {})]
+    (fn [registry]
+      (fn [key]
+        (let [factory (registry key)]
+          (reify p/Factory
+            (dependencies [_]
+              (p/dependencies factory))
+            (build [owner deps]
+              (locking cache
+                (?? (get @cache [key deps])
+                    (let [obj (p/build factory deps)]
+                      (vswap! cache assoc
+                              [key deps]      obj
+                              ;; NOTE: track which factory creates `obj`
+                              ;; so that only that factory can demolish it later
+                              [key owner obj] deps)
+                      obj))))
+            (demolish [owner obj]
+              (locking cache
+                (when-some [deps (get @cache [key owner obj])]
+                  (vswap! cache dissoc
+                          [key deps]
+                          [key owner obj])
+                  (p/demolish factory obj))))))))))
