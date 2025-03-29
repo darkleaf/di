@@ -21,7 +21,8 @@
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
    (java.lang AutoCloseable)
-   (java.util List)))
+   (java.util List)
+   (java.util.function Function)))
 
 (set! *warn-on-reflection* true)
 
@@ -177,6 +178,8 @@
                                 (registry key)))
     (seqable? middleware) (reduce apply-middleware
                                   registry middleware)
+    (instance? Function middleware) (.apply ^Function middleware registry)
+
     :else                 (throw (IllegalArgumentException. "Wrong middleware kind"))))
 
 (declare var->factory)
@@ -872,28 +875,40 @@
 ;; Кто создал объект, тот его и уничтожает. Для этого мы храним в ключе ссылку на фабрику.
 
 
-(defn ->memoize []
-  (let [cache (volatile! {})]
-    (fn [registry]
-      (fn [key]
-        (let [factory (registry key)]
-          (reify p/Factory
-            (dependencies [_]
-              (p/dependencies factory))
-            (build [owner deps]
-              (locking cache
-                (?? (get @cache [key deps])
-                    (let [obj (p/build factory deps)]
-                      (vswap! cache assoc
-                              [key deps]      obj
-                              ;; NOTE: track which factory creates `obj`
-                              ;; so that only that factory can demolish it later
-                              [key owner obj] deps)
-                      obj))))
-            (demolish [owner obj]
-              (locking cache
-                (when-some [deps (get @cache [key owner obj])]
-                  (vswap! cache dissoc
-                          [key deps]
-                          [key owner obj])
-                  (p/demolish factory obj))))))))))
+
+
+
+(defn ->memoize ^AutoCloseable []
+  (let [cache      (volatile! {})
+        *stop-list (volatile! '())]
+    (reify
+      #_#_
+      IDeref
+      (deref [_] @cache)
+
+
+      ;; todo: наверное di/stop должен ее останавливать.
+      ;; этот интерфейс может быть и ок, а может и нет, нужно подумать
+      AutoCloseable
+      (close [_]
+        ;; этой функции нужно интерфейс поправить, чтобы сразу list принимала
+        (try-stop-started {:*stop-list *stop-list}))
+
+      Function
+      (apply [mw registry]
+        (fn [key]
+          (let [factory (registry key)]
+            (reify p/Factory
+              (dependencies [_]
+                (p/dependencies factory))
+              (build [owner deps]
+                (locking mw
+                  (?? (get @cache [key deps])
+                      (let [obj (p/build factory deps)]
+                        (vswap! *stop-list conj #(p/demolish factory obj))
+                        (vswap! cache assoc
+                                [key deps]      obj)
+                        obj))))
+              (demolish [_ _]
+                (throw (UnsupportedOperationException. "%TODO% stop the whole memoize"))))))))))
+                ;; todo: just throw an exception
