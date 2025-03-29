@@ -28,82 +28,85 @@
   (Object.))
 
 (t/deftest ok-test
-  (let [mem      (di/->memoize)
-        registry (fn []
-                   [{::param (Object.)}
-                    mem])]
-    (with-open [main      (di/start `a (registry))
-                secondary (di/start `a (registry))]
+  (with-open [mem (di/->memoize)]
+    (let [registry  (fn []
+                      [{::param (Object.)}
+                       mem])
+          main      (di/start `a (registry))
+          secondary (di/start `a (registry))]
       (t/is (some+identical? @main @secondary)))))
 
 (t/deftest changed-not-identical-test
-  (let [mem      (di/->memoize)
-        registry (fn []
-                   [{::param (Object.)}
-                    mem])]
-    (with-open [main      (di/start `a (registry))
-                secondary (di/start `a (registry)
-                                    {::param (Object.)})]
+  (with-open [mem (di/->memoize)]
+    (let [registry  (fn []
+                      [{::param (Object.)}
+                       mem])
+          main      (di/start `a (registry))
+          secondary (di/start `a (registry)
+                              {::param (Object.)})]
       (t/is (some+not-identical? @main @secondary)))))
 
 (t/deftest changed-equal-and-identical-test
-  (let [mem      (di/->memoize)
-        registry (fn []
-                   [{::param :equal-and-identical}
-                    mem])]
-    (with-open [main      (di/start `a (registry))
-                secondary (di/start `a (registry)
-                                    {::param :equal-and-identical})]
-      (t/is (some+identical? @main @secondary)))))
+  (with-open [mem (di/->memoize)]
+    (let [registry  (fn []
+                      [{::param :equal-and-identical}
+                       mem])
+          main      (di/start `a (registry))
+          secondary (di/start `a (registry)
+                              {::param :equal-and-identical})]
+     (t/is (some+identical? @main @secondary)))))
 
 
 (t/deftest changed-equal-but-not-identical-test
-  (let [mem      (di/->memoize)
-        registry (fn []
-                   [{::param 'equal-but-not-identical}
-                    mem])]
-    (with-open [main      (di/start `a (registry))
-                secondary (di/start `a (registry)
-                                    {::param 'equal-but-not-identical})]
+  (with-open [mem (di/->memoize)]
+    (let [registry  (fn []
+                      [{::param 'equal-but-not-identical}
+                       mem])
+          main      (di/start `a (registry))
+          secondary (di/start `a (registry)
+                              {::param 'equal-but-not-identical})]
       (t/is (some+identical? @main @secondary)))))
 
 (t/deftest changed-equal-but-different-test
-  (let [mem      (di/->memoize)
-        registry (fn []
-                   [{::param []}
-                    mem])]
-    (with-open [main      (di/start `a (registry))
-                secondary (di/start `a (registry)
-                                    {::param '()})]
+  (with-open [mem (di/->memoize)]
+    (let [registry  (fn []
+                      [{::param []}
+                       mem])
+          main      (di/start `a (registry))
+          secondary (di/start `a (registry)
+                              {::param '()})]
       (t/is (some+identical? @main @secondary)))))
 
 
 (t/deftest start-stop-order-test
   (let [mem       (di/->memoize)
-        registry  (fn []
-                    [{::param :param}
-                     mem])
         log       (atom [])
         callbacks (fn [system]
                     {:after-build!    (fn [{:keys [key]}]
                                         (swap! log conj [:start system key]))
                      :after-demolish! (fn [{:keys [key]}]
-                                        (swap! log conj [:stop system key]))})]
-    (with-open [_ (di/start `a
-                            (registry)
-                            (di/log (callbacks :main)))
-                _ (di/start [::x `a]
-                            {::x :x}
-                            (di/log (callbacks :second))
-                            (registry))
-                _ (di/start [::y `a]
-                            {::y :y}
-                            (di/log (callbacks :third))
-                            (registry))])
+                                        (swap! log conj [:stop system key]))})
+        registry  (fn [system]
+                    [{::param :param}
+                     (di/log (callbacks system))
+                     mem])]
+    (di/start `a
+              (registry :first))
+    (di/start [::x `a]
+              {::x :x}
+              (registry :second))
+    (di/start [::y `a]
+              {::y :y}
+              (registry :third))
+    ;; (di/stop mem)
+    (.close mem)
 
-    (t/is (= [[:start :main   ::param]
-              [:start :main   `a]
-              [:start :main   ::di/implicit-root]
+    #_(prn @mem)
+
+
+    (t/is (= [[:start :first  ::param]
+              [:start :first  `a]
+              [:start :first  ::di/implicit-root]
 
               [:start :second ::x]
               [:start :second ::di/implicit-root]
@@ -117,7 +120,7 @@
               [:stop  :second ::di/implicit-root]
               [:stop  :second ::x]
 
-              [:stop  :main   ::di/implicit-root]
-              [:stop  :main   `a]
-              [:stop  :main   ::param]]
+              [:stop  :first  ::di/implicit-root]
+              [:stop  :first  `a]
+              [:stop  :first  ::param]]
              @log))))
