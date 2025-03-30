@@ -7,16 +7,22 @@
 
 (defn implicit-root [key]
   {:key          ::di/implicit-root
-   :dependencies {key :required}
+   :dependencies (seq {key                  :required
+                       ::di/side-dependency :optional})
    :description  {::di/kind :ref
                   :key      key
                   :type     :required}})
+
+(defn side-dependency []
+  {:key         ::di/side-dependency
+   :description {::di/kind :undefined}})
 
 
 (t/deftest no-description-test
   (t/is (= [(implicit-root `foo)
             {:key `foo
-             #_"NOTE: no description as it is not implemented"}]
+             #_"NOTE: no description as it is not implemented"}
+            (side-dependency)]
            (di/inspect `foo
                        {`foo (reify p/Factory
                                (dependencies [_])
@@ -28,7 +34,8 @@
 (t/deftest env-test
   (t/is (= [(implicit-root "FOO")
             {:key         "FOO"
-             :description {::di/kind :env}}]
+             :description {::di/kind :env}}
+            (side-dependency)]
            (di/inspect "FOO"))))
 
 
@@ -36,7 +43,8 @@
   (t/is (= [(implicit-root "FOO")
             {:key         "FOO"
              :description {::di/kind :trivial
-                           :object   "value"}}]
+                           :object   "value"}}
+            (side-dependency)]
            (di/inspect "FOO" {"FOO" "value"}))))
 
 
@@ -47,7 +55,8 @@
             {:key         `variable
              :description {::di/kind     :trivial
                            :object       :obj
-                           ::di/variable #'variable}}]
+                           ::di/variable #'variable}}
+            (side-dependency)]
            (di/inspect `variable))))
 
 
@@ -62,7 +71,8 @@
   (t/is (= [(implicit-root `variable+factory)
             {:key         `variable+factory
              :description {#_"NOTE: no description as it is not implemented"
-                           ::di/variable #'variable+factory}}]
+                           ::di/variable #'variable+factory}}
+            (side-dependency)]
            (di/inspect `variable+factory))))
 
 
@@ -80,7 +90,8 @@
   (t/is (= [(implicit-root `variable+description)
             {:key         `variable+description
              :description {::di/kind     ::variable+description
-                           ::di/variable #'variable+description}}]
+                           ::di/variable #'variable+description}}
+            (side-dependency)]
            (di/inspect `variable+description))))
 
 
@@ -92,7 +103,8 @@
             {:key         `variable+template
              :description {::di/kind     :template
                            :template     [42]
-                           ::di/variable #'variable+template}}]
+                           ::di/variable #'variable+template}}
+            (side-dependency)]
            (di/inspect `variable+template))))
 
 
@@ -105,7 +117,8 @@
   (t/is (= [(implicit-root `component-0-arity)
             {:key         `component-0-arity
              :description {::di/kind     :component
-                           ::di/variable #'component-0-arity}}]
+                           ::di/variable #'component-0-arity}}
+            (side-dependency)]
            (di/inspect `component-0-arity))))
 
 
@@ -118,7 +131,8 @@
   (t/is (= [(implicit-root `component-1-arity)
             {:key         `component-1-arity
              :description {::di/kind     :component
-                           ::di/variable #'component-1-arity}}]
+                           ::di/variable #'component-1-arity}}
+            (side-dependency)]
            (di/inspect `component-1-arity))))
 
 
@@ -131,7 +145,8 @@
   (t/is (= [(implicit-root `service-0-arity)
             {:key         `service-0-arity
              :description {::di/kind     :service
-                           ::di/variable #'service-0-arity}}]
+                           ::di/variable #'service-0-arity}}
+            (side-dependency)]
            (di/inspect `service-0-arity))))
 
 
@@ -144,7 +159,8 @@
   (t/is (= [(implicit-root `service-n-arity)
             {:key         `service-n-arity
              :description {::di/kind     :service
-                           ::di/variable #'service-n-arity}}]
+                           ::di/variable #'service-n-arity}}
+            (side-dependency)]
            (di/inspect `service-n-arity))))
 
 
@@ -156,7 +172,8 @@
   (t/is (= [(implicit-root `multimethod-service)
             {:key         `multimethod-service
              :description {::di/kind     :service
-                           ::di/variable #'multimethod-service}}]
+                           ::di/variable #'multimethod-service}}
+            (side-dependency)]
            (di/inspect `multimethod-service))))
 
 
@@ -168,7 +185,8 @@
                             :key      `bar
                             :type     :required}}
             {:key         `bar
-             :description {::di/kind :undefined}}]
+             :description {::di/kind :undefined}}
+            (side-dependency)]
            (di/inspect `foo {`foo (di/ref `bar)}))))
 
 
@@ -179,7 +197,8 @@
              :description  {::di/kind :template
                             :template [42 (di/ref `bar)]}}
             {:key         `bar
-             :description {::di/kind :undefined}}]
+             :description {::di/kind :undefined}}
+            (side-dependency)]
            (di/inspect `foo {`foo (di/template [42 (di/ref `bar)])}))))
 
 
@@ -192,7 +211,8 @@
                             :f        str
                             :args     ["arg"]}}
             {:key         `bar
-             :description {::di/kind :undefined}}]
+             :description {::di/kind :undefined}}
+            (side-dependency)]
            (di/inspect `foo {`foo (di/derive `bar str "arg")}))))
 
 
@@ -200,7 +220,8 @@
   (t/is (= [(implicit-root `foo)
             {:key         `foo
              :description {::di/kind :trivial
-                           :object   nil}}]
+                           :object   nil}}
+            (side-dependency)]
            (di/inspect `foo {`foo nil}))))
 
 
@@ -208,7 +229,8 @@
   (t/is (= [(implicit-root `foo)
             {:key         `foo
              :description {::di/kind :trivial
-                           :object   str}}]
+                           :object   str}}
+            (side-dependency)]
            (di/inspect `foo {`foo str}))))
 
 
@@ -238,7 +260,8 @@
              :description {::di/kind       :trivial
                            :object         "arg"
                            ::di/update-key {:target `a
-                                            :role   :arg}}}]
+                                            :role   :arg}}}
+            (side-dependency)]
            (di/inspect `a
                        {`a :obj}
                        (di/update-key `a str "arg")))))
@@ -246,16 +269,19 @@
 
 (t/deftest add-side-dependency-test
   (t/is (= [{:key          ::di/implicit-root
-             :dependencies (seq {`a          :required
-                                 `side-dep-1 :required
-                                 `side-dep-2 :required})
-             :description  {::di/kind                :ref
-                            :key                     `a
-                            :type                    :required
-                            ::di/side-dependencies [`side-dep-1 `side-dep-2]}}
+             :dependencies (seq {`a                   :required
+                                 ::di/side-dependency :optional})
+             :description  {::di/kind :ref
+                            :key      `a
+                            :type     :required}}
             {:key         `a
              :description {::di/kind :trivial
                            :object   :obj}}
+            {:key          ::di/side-dependency
+             :dependencies (seq {`side-dep-1 :required
+                                 `side-dep-2 :required})
+             :description  {::di/kind              :undefined
+                            ::di/side-dependencies [`side-dep-1 `side-dep-2]}}
             {:key         `side-dep-1
              :description {::di/kind :trivial
                            :object   :side-dep}}
@@ -289,7 +315,8 @@
             {:key         `x-ns-publics-test/ok-test
              :description {::di/kind     :trivial
                            :object       x-ns-publics-test/ok-test
-                           ::di/variable #'x-ns-publics-test/ok-test}}]
+                           ::di/variable #'x-ns-publics-test/ok-test}}
+            (side-dependency)]
            (di/inspect :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
                        (di/ns-publics)))))
 
@@ -303,25 +330,23 @@
                             :cmap       {:env.long parse-long}}}
             {:key         "PORT"
              :description {::di/kind :trivial
-                           :object   "8080"}}]
+                           :object   "8080"}}
+            (side-dependency)]
            (di/inspect :env.long/PORT
                        (di/env-parsing :env.long parse-long)
                        {"PORT" "8080"}))))
 
 
 (t/deftest log-test
-  (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`foo :required}
-             :description  {::di/kind :ref
-                            :key      `foo
-                            :type     :required
-                            ::di/log  {:will-be-logged true
-                                       #_#_:opts       nil}}}
+  (t/is (= [(implicit-root `foo)
             {:key         `foo
              :description {::di/kind :trivial
                            :object   :obj
                            ::di/log  {:will-be-logged true
-                                      #_#_:opts       nil}}}]
+                                      #_#_:opts       nil}}}
+            {:key         ::di/side-dependency
+             :description {::di/kind :undefined
+                           ::di/log  {:will-be-logged true}}}]
            (di/inspect `foo
                        {`foo :obj}
                        (di/log)))))

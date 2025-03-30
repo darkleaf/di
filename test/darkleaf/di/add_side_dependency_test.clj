@@ -77,8 +77,9 @@
 
 (t/deftest bug-array-map->hash-map
   (let [log          (atom [])
-        after-build! (fn [{:keys [key]}]
-                       (swap! log conj key))]
+        after-build! (fn [{:keys [key object]}]
+                       (when (some? object)
+                         (swap! log conj key)))]
     (with-open [root (di/start ::root
                                {::root :ok}
                                (di/add-side-dependency `d1)
@@ -91,15 +92,16 @@
                                (di/add-side-dependency `d8)
                                (di/add-side-dependency `extra-d9)
                                (di/log :after-build! after-build!))]
-      (t/is (= [::root `d1 `d2 `d3 `d4 `d5 `d6 `d7 `d8 `extra-d9 ::di/implicit-root]
+      (t/is (= [::root `d1 `d2 `d3 `d4 `d5 `d6 `d7 `d8 `extra-d9]
                @log))
       (t/is (= :ok @root)))))
 
 
 (t/deftest bug-array-map->hash-map-2
   (let [log          (atom [])
-        after-build! (fn [{:keys [key]}]
-                       (swap! log conj key))]
+        after-build! (fn [{:keys [key object]}]
+                       (when (some? object)
+                         (swap! log conj key)))]
     (with-open [root (di/start ::root
                                {::root :ok}
                                (di/add-side-dependency `extra-d9)
@@ -114,8 +116,7 @@
                                (di/add-side-dependency `extra-d10)
                                (di/log :after-build! after-build!))]
       (t/is (= [::root
-                `extra-d9 `d1 `d2 `d3 `d4 `d5 `d6 `d7 `d8 `extra-d10
-                ::di/implicit-root]
+                `extra-d9 `d1 `d2 `d3 `d4 `d5 `d6 `d7 `d8 `extra-d10]
                @log))
       (t/is (= :ok @root)))))
 

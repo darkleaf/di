@@ -22,7 +22,8 @@
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
    (java.lang AutoCloseable)
-   (java.util.function Function)))
+   (java.util.function Function)
+   (java.util.concurrent ConcurrentHashMap)))
 
 (set! *warn-on-reflection* true)
 
@@ -181,11 +182,11 @@
      (map? mw)               (apply-map registry mw)
      (instance? Function mw) (.apply ^Function mw registry)
      :else                   (throw (IllegalArgumentException. "Wrong middleware kind")))
-   (with-meta {::idx (-> registry meta ::idx inc)})))
+   (with-meta {::idx (-> registry meta (::idx 0) inc)})))
 
-(defn- apply-middlewares [registry middlewares init-idx]
+(defn- apply-middlewares [registry middlewares]
   (reduce apply-middleware
-          (-> registry (with-meta {::idx init-idx}))
+          registry
           (flatten middlewares)))
 
 (declare var->factory)
@@ -227,68 +228,29 @@
   (let [factory (cond
                   (vector? key) (->> key (map ref) template)
                   (map? key)    (->  key (update-vals ref) template)
-                  :else         (->  key ref))]
+                  :else         (->  key ref))
+        factory (reify
+                  p/Factory
+                  p/FactoryDescription
+                  (dependencies [_]
+                    (concat (seq (p/dependencies factory))
+                            (seq {::side-dependency :optional})))
+                  (build [_ deps]
+                    (p/build factory deps))
+                  (demolish [_ obj]
+                    (p/demolish factory obj))
+                  (description [_]
+                    (p/description factory)))]
     {::implicit-root factory}))
 
-(defn start
-  "Starts a system of dependent objects.
+(def ^:private initial-registry
+  (-> undefined-registry with-env with-ns))
 
-  key is a name of the system root.
-  Use symbols for var names, keywords for abstract dependencies,
-  and strings for environments variables.
-
-  key is looked up in a registry.
-  By default registry uses Clojure namespaces and system env
-  to resolve symbols and strings, respectively.
-
-  You can extend it with registry middlewares.
-  Each middleware can be one of the following form:
-
-  - a function `registry -> key -> Factory`
-  - a map of key and `p/Factory` instance
-  - nil, as no-op middleware
-  - a sequence of the previous forms
-
-  Middlewares also allows you to instrument built objects.
-  It's useful for logging, schema validation, AOP, etc.
-  See `update-key`.
-
-  ```clojure
-  (di/start `root
-            {:my-abstraction implemntation
-             `some-key replacement
-             \"LOG_LEVEL\" \"info\"}
-            [dev-middlwares test-middlewares]
-            (if dev-routes?
-              (di/update-key `route-data conj `dev-route-data)
-            (di/instrument `log))
-  ```
-
-  Returns a container contains started root of the system.
-  The container implements `AutoCloseable`, `IDeref`, `IFn`, `Indexed` and `ILookup`.
-
-  Use `with-open` in tests to stop the system reliably.
-
-  You can pass a vector as the key argument to start many keys:
-
-  ```clojure
-  (with-open [root (di/start [`handler `helper])]
-    (let [[handler helper] root]
-       ...))
-  ```
-
-  See the tests for use cases.
-  See `update-key`."
-  ^AutoCloseable [key & middlewares]
-  (let [base-mws    [with-env
-                     with-ns
-                     (implicit-root key)]
-        init-idx    (- (count base-mws))
-        middlewares (concat base-mws middlewares)
-        registry    (apply-middlewares undefined-registry middlewares init-idx)
-        ctx         {:registry   registry
-                     :*stop-list (atom '())}
-        obj         (try-build ctx ::implicit-root)]
+(defn- start* ^AutoCloseable [key middlewares]
+  (let [registry (apply-middlewares initial-registry middlewares)
+        ctx      {:registry   registry
+                  :*stop-list (atom '())}
+        obj      (try-build ctx key)]
     ^{:type   ::root
       ::print obj}
     (reify
@@ -362,6 +324,58 @@
         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
       (applyTo [_ args]
         (.applyTo ^IFn obj args)))))
+
+(defn start
+  "Starts a system of dependent objects.
+
+  key is a name of the system root.
+  Use symbols for var names, keywords for abstract dependencies,
+  and strings for environments variables.
+
+  key is looked up in a registry.
+  By default registry uses Clojure namespaces and system env
+  to resolve symbols and strings, respectively.
+
+  You can extend it with registry middlewares.
+  Each middleware can be one of the following form:
+
+  - a function `registry -> key -> Factory`
+  - a map of key and `p/Factory` instance
+  - nil, as no-op middleware
+  - a sequence of the previous forms
+
+  Middlewares also allows you to instrument built objects.
+  It's useful for logging, schema validation, AOP, etc.
+  See `update-key`.
+
+  ```clojure
+  (di/start `root
+            {:my-abstraction implemntation
+             `some-key replacement
+             \"LOG_LEVEL\" \"info\"}
+            [dev-middlwares test-middlewares]
+            (if dev-routes?
+              (di/update-key `route-data conj `dev-route-data)
+            (di/instrument `log))
+  ```
+
+  Returns a container contains started root of the system.
+  The container implements `AutoCloseable`, `IDeref`, `IFn`, `Indexed` and `ILookup`.
+
+  Use `with-open` in tests to stop the system reliably.
+
+  You can pass a vector as the key argument to start many keys:
+
+  ```clojure
+  (with-open [root (di/start [`handler `helper])]
+    (let [[handler helper] root]
+       ...))
+  ```
+
+  See the tests for use cases.
+  See `update-key`."
+  ^AutoCloseable [key & middlewares]
+  (start* ::implicit-root [middlewares (implicit-root key)]))
 
 (defn stop
   "Stops the root of a system"
@@ -611,7 +625,7 @@
   (fn [registry]
     (fn [key]
       (let [factory (registry key)]
-        (if (= ::implicit-root key)
+        (if (= ::side-dependency key)
           (reify
             p/Factory
             (dependencies [_]
@@ -978,7 +992,47 @@
    {:key `bar}]
   ```"
   [key & middlewares]
-  (with-open [components (start key
-                                middlewares
-                                with-inspect)]
+  (with-open [components (start* ::implicit-root
+                                 [middlewares
+                                  (implicit-root key)
+                                  with-inspect])]
     @components))
+
+
+(defn ->memoize
+  "Returns a statefull middleware that memoizes all registry build accesses.
+
+  To stop all memoized components use `(di/stop mem)`."
+  ^AutoCloseable [& middlewares]
+  (let [registry   (apply-middlewares initial-registry middlewares)
+        factories  (ConcurrentHashMap.)
+        objs       (ConcurrentHashMap.)
+        *stop-list (atom '())]
+    (reify
+      AutoCloseable
+      (close [_]
+        (.clear factories)
+        (.clear objs)
+        (try-stop-started {:*stop-list *stop-list}))
+      Function
+      (apply [_ previous-registry]
+        (when-not (identical? previous-registry initial-registry)
+          (throw (ex-info "memoize should be first" {})))
+        (fn [key]
+          (let [factory #_(registry key)  (.computeIfAbsent factories key registry)]
+            (reify
+              p/Factory
+              (dependencies [_]
+                (p/dependencies factory))
+              (build [_ deps]
+                (.computeIfAbsent objs [factory deps]
+                                  (fn [_]
+                                    (let [obj (p/build factory deps)]
+                                      (swap! *stop-list conj #(p/demolish factory obj))
+                                      obj))))
+              (demolish [_ obj])
+
+              p/FactoryDescription
+              (description [_]
+                (assoc (p/description factory)
+                       ::memoize {:will-be-memoized true})))))))))
