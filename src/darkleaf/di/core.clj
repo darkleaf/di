@@ -170,13 +170,16 @@
 (defn- undefined-registry [key]
   undefined-factory)
 
+(defn- apply-map [registry map]
+  (fn [key]
+    (if-some [[_ trivial] (find map key)]
+      trivial
+      (registry key))))
+
 (defn- apply-middleware [registry middleware]
   (cond
     (fn? middleware)      (middleware registry)
-    (map? middleware)     (fn [key]
-                            (if-some [[_ trivial] (find middleware key)]
-                              trivial
-                              (registry key)))
+    (map? middleware)     (apply-map registry middleware)
     (seqable? middleware) (reduce apply-middleware
                                   registry middleware)
     :else                 (throw (IllegalArgumentException. "Wrong middleware kind"))))
