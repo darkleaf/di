@@ -25,9 +25,6 @@
 
 (set! *warn-on-reflection* true)
 
-(defn ^:dynamic *next-id* []
-  (throw (IllegalStateException. "Attempting to call unbound `di/*next-id*`")))
-
 (def ^:private dependency-type-priority
   {:required 1
    :optional 2})
@@ -177,14 +174,18 @@
       (registry key))))
 
 (defn- apply-middleware [registry mw]
-  (cond
-    (nil? mw) registry
-    (fn? mw)  (mw registry)
-    (map? mw) (apply-map registry mw)
-    :else     (throw (IllegalArgumentException. "Wrong middleware kind"))))
+  (with-meta
+    (cond
+      (nil? mw) registry
+      (fn? mw)  (mw registry)
+      (map? mw) (apply-map registry mw)
+      :else     (throw (IllegalArgumentException. "Wrong middleware kind")))
+    {::registry-number (-> registry meta ::registry-number inc)}))
 
 (defn- apply-middlewares [registry middlewares]
-  (reduce apply-middleware registry (flatten middlewares)))
+  (reduce apply-middleware
+          (-> registry (with-meta {::registry-number 0}))
+          (flatten middlewares)))
 
 (declare var->factory)
 
@@ -227,10 +228,6 @@
     (map? key)    [::implicit-root {::implicit-root (->  key (update-vals ref) template)}]
     :else         [::implicit-root {::implicit-root (->  key ref)}]))
 
-(defn- ->next-id []
-  (let [id (atom -1)]
-    (fn next-id []
-      (swap! id inc))))
 
 (defn start
   "Starts a system of dependent objects.
@@ -282,92 +279,89 @@
   See the tests for use cases.
   See `update-key`."
   ^AutoCloseable [key & middlewares]
-  (binding [*next-id* (->next-id)]
-    (let [[key root-registry] (key->key&registry key)
+  (let [[key root-registry] (key->key&registry key)
 
-          middlewares (concat [with-env
-                               with-ns
-                               root-registry]
-                              middlewares)
-          registry    (apply-middlewares undefined-registry middlewares)
-          ctx         {:registry   registry
-                       :*stop-list (volatile! '())}
-          obj         (try-build ctx key)
-          bindings    (get-thread-bindings)]
-      ^{:type   ::root
-        ::print obj}
-      (reify
-        AutoCloseable
-        (close [_]
-          (with-bindings bindings
-            (->> (try-stop-started ctx)
-                 (throw-many!))))
-        IDeref
-        (deref [_]
-          obj)
-        Indexed
-        (nth [_    i]
-          (nth obj i))
-        (nth [_    i not-found]
-          (nth obj i not-found))
-        (count [_]
-          (count obj))
-        ILookup
-        (valAt [_  key]
-          (get obj key))
-        (valAt [_  key not-found]
-          (get obj key not-found))
-        IFn
-        (call [_]
-          (.call ^IFn obj))
-        (run [_]
-          (.run ^IFn obj))
-        (invoke [this]
-          (.invoke ^IFn obj))
-        (invoke [_          a1]
-          (.invoke ^IFn obj a1))
-        (invoke [_          a1 a2]
-          (.invoke ^IFn obj a1 a2))
-        (invoke [_          a1 a2 a3]
-          (.invoke ^IFn obj a1 a2 a3))
-        (invoke [_          a1 a2 a3 a4]
-          (.invoke ^IFn obj a1 a2 a3 a4))
-        (invoke [_          a1 a2 a3 a4 a5]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5))
-        (invoke [_          a1 a2 a3 a4 a5 a6]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20))
-        (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
-          (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
-        (applyTo [_ args]
-          (.applyTo ^IFn obj args))))))
+        middlewares (concat [with-env
+                             with-ns
+                             root-registry]
+                            middlewares)
+        registry    (apply-middlewares undefined-registry middlewares)
+        ctx         {:registry   registry
+                     :*stop-list (volatile! '())}
+        obj         (try-build ctx key)]
+    ^{:type   ::root
+      ::print obj}
+    (reify
+      AutoCloseable
+      (close [_]
+        (->> (try-stop-started ctx)
+             (throw-many!)))
+      IDeref
+      (deref [_]
+        obj)
+      Indexed
+      (nth [_    i]
+        (nth obj i))
+      (nth [_    i not-found]
+        (nth obj i not-found))
+      (count [_]
+        (count obj))
+      ILookup
+      (valAt [_  key]
+        (get obj key))
+      (valAt [_  key not-found]
+        (get obj key not-found))
+      IFn
+      (call [_]
+        (.call ^IFn obj))
+      (run [_]
+        (.run ^IFn obj))
+      (invoke [this]
+        (.invoke ^IFn obj))
+      (invoke [_          a1]
+        (.invoke ^IFn obj a1))
+      (invoke [_          a1 a2]
+        (.invoke ^IFn obj a1 a2))
+      (invoke [_          a1 a2 a3]
+        (.invoke ^IFn obj a1 a2 a3))
+      (invoke [_          a1 a2 a3 a4]
+        (.invoke ^IFn obj a1 a2 a3 a4))
+      (invoke [_          a1 a2 a3 a4 a5]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5))
+      (invoke [_          a1 a2 a3 a4 a5 a6]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20))
+      (invoke [_          a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args]
+        (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
+      (applyTo [_ args]
+        (.applyTo ^IFn obj args)))))
 
 (defn stop
   "Stops the root of a system"
@@ -552,7 +546,8 @@
   [target f & args]
   {:pre [(key? target)]}
   (fn [registry]
-    (let [prefix          (str (symbol target) "+di-update-key#" (*next-id*))
+    (let [num             (-> registry meta ::registry-number)
+          prefix          (str (symbol target) "+di-update-key#" num)
           new-key         (symbol (str prefix "-target"))
           f-key           (symbol (str prefix "-f"))
           arg-keys        (for [i (-> args count range)]
@@ -614,7 +609,8 @@
   ```"
   [dep-key]
   (fn [registry]
-    (let [new-key     (symbol (str "darkleaf.di.core/new-key#" (*next-id*)))
+    (let [num         (-> registry meta ::registry-number)
+          new-key     (symbol (str "darkleaf.di.core/new-key#" num))
           new-factory (reify
                         p/Factory
                         (dependencies [_]
