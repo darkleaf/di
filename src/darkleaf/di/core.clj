@@ -176,15 +176,15 @@
       trivial
       (registry key))))
 
-(defn- apply-middleware [registry middleware]
-  (loop [registry                registry
-         [head & tail :as stack] (list middleware)]
-    (cond
-      (empty? stack)  registry
-      (fn? head)      (recur (head registry) tail)
-      (map? head)     (recur (apply-map registry head) tail)
-      (seqable? head) (recur registry (concat head tail))
-      :else           (throw (IllegalArgumentException. "Wrong middleware kind")))))
+(defn- apply-middleware [registry mw]
+  (cond
+    (nil? mw) registry
+    (fn? mw)  (mw registry)
+    (map? mw) (apply-map registry mw)
+    :else     (throw (IllegalArgumentException. "Wrong middleware kind"))))
+
+(defn- apply-middlewares [registry middlewares]
+  (reduce apply-middleware registry (flatten middlewares)))
 
 (declare var->factory)
 
@@ -289,7 +289,7 @@
                                with-ns
                                root-registry]
                               middlewares)
-          registry    (apply-middleware undefined-registry middlewares)
+          registry    (apply-middlewares undefined-registry middlewares)
           ctx         {:registry   registry
                        :*stop-list (volatile! '())}
           obj         (try-build ctx key)
