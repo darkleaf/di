@@ -215,26 +215,26 @@
 (t/deftest update-key-test
   (t/is (= [(implicit-root `a)
             {:key          `a
-             :dependencies {`a+di-update-key#0-target :optional
-                            `a+di-update-key#0-f      :optional
-                            `a+di-update-key#0-arg#0  :optional}
+             :dependencies {`a+di-update-key#1-target :optional
+                            `a+di-update-key#1-f      :optional
+                            `a+di-update-key#1-arg#0  :optional}
              :description  {::di/kind   :middleware
                             :middleware ::di/update-key
                             :target     `a
-                            :new-target `a+di-update-key#0-target
-                            :f          `a+di-update-key#0-f
-                            :args       [`a+di-update-key#0-arg#0]}}
-            {:key         `a+di-update-key#0-target
+                            :new-target `a+di-update-key#1-target
+                            :f          `a+di-update-key#1-f
+                            :args       [`a+di-update-key#1-arg#0]}}
+            {:key         `a+di-update-key#1-target
              :description {::di/kind       :trivial
                            :object         :obj
                            ::di/update-key {:target `a
                                             :role   :target}}}
-            {:key         `a+di-update-key#0-f
+            {:key         `a+di-update-key#1-f
              :description {::di/kind       :trivial
                            :object         str
                            ::di/update-key {:target `a
                                             :role   :f}}}
-            {:key         `a+di-update-key#0-arg#0
+            {:key         `a+di-update-key#1-arg#0
              :description {::di/kind       :trivial
                            :object         "arg"
                            ::di/update-key {:target `a
@@ -246,12 +246,12 @@
 
 (t/deftest add-side-dependency-test
   (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`di/new-key#0 :required
+             :dependencies {`di/new-key#1 :required
                             `side-dep     :required}
              :description  {::di/kind   :middleware
                             :middleware ::di/add-side-dependency
                             :dep-key    `side-dep}}
-            {:key          `di/new-key#0
+            {:key          `di/new-key#1
              :dependencies {`a :required}
              :description  {::di/kind :ref
                             :key      `a

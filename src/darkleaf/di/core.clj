@@ -174,17 +174,17 @@
       (registry key))))
 
 (defn- apply-middleware [registry mw]
-  (with-meta
-    (cond
+  (->
+   (cond
       (nil? mw) registry
       (fn? mw)  (mw registry)
       (map? mw) (apply-map registry mw)
       :else     (throw (IllegalArgumentException. "Wrong middleware kind")))
-    {::registry-number (-> registry meta ::registry-number inc)}))
+   (with-meta {::middleware-id (-> registry meta ::middleware-id inc)})))
 
-(defn- apply-middlewares [registry middlewares]
+(defn- apply-middlewares [registry middlewares init-id]
   (reduce apply-middleware
-          (-> registry (with-meta {::registry-number 0}))
+          (-> registry (with-meta {::middleware-id init-id}))
           (flatten middlewares)))
 
 (declare var->factory)
@@ -281,11 +281,12 @@
   ^AutoCloseable [key & middlewares]
   (let [[key root-registry] (key->key&registry key)
 
-        middlewares (concat [with-env
-                             with-ns
-                             root-registry]
-                            middlewares)
-        registry    (apply-middlewares undefined-registry middlewares)
+        base-mws    [with-env
+                     with-ns
+                     root-registry]
+        init-id     (- (count base-mws))
+        middlewares (concat base-mws middlewares)
+        registry    (apply-middlewares undefined-registry middlewares init-id)
         ctx         {:registry   registry
                      :*stop-list (volatile! '())}
         obj         (try-build ctx key)]
@@ -546,8 +547,8 @@
   [target f & args]
   {:pre [(key? target)]}
   (fn [registry]
-    (let [num             (-> registry meta ::registry-number)
-          prefix          (str (symbol target) "+di-update-key#" num)
+    (let [id              (-> registry meta ::middleware-id)
+          prefix          (str (symbol target) "+di-update-key#" id)
           new-key         (symbol (str prefix "-target"))
           f-key           (symbol (str prefix "-f"))
           arg-keys        (for [i (-> args count range)]
@@ -609,8 +610,8 @@
   ```"
   [dep-key]
   (fn [registry]
-    (let [num         (-> registry meta ::registry-number)
-          new-key     (symbol (str "darkleaf.di.core/new-key#" num))
+    (let [id          (-> registry meta ::middleware-id)
+          new-key     (symbol (str "darkleaf.di.core/new-key#" id))
           new-factory (reify
                         p/Factory
                         (dependencies [_]
