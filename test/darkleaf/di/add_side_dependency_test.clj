@@ -86,7 +86,7 @@
                                (di/add-side-dependency `side-dep)
                                (di/log :after-build! after-build!))]
       (t/is (= [`a `b `c `d `e `f `g `h
-                ::root `di/new-key#0 `side-dep ::di/implicit-root] @log))
+                ::root `di/new-key#1 `side-dep ::di/implicit-root] @log))
       (t/is (= {:a :a
                 :b :b
                 :c :c
@@ -121,7 +121,7 @@
       (t/is (= [`a `b `c `d `e `f `g `h
                 ::root
                 `di/new-key#0 `side-dep
-                `di/new-key#1 `side-dep2
+                `di/new-key#2 `side-dep2
                 ::di/implicit-root]
                @log))
       (t/is (= {:a :a
