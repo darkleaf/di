@@ -89,6 +89,14 @@
                        :stack (map :key stack)}
                       ex)))))
 
+(defn- bound-stop
+  "a faster replacement for `bound-fn`"
+  [factory obj]
+  (let [next-id *next-id*]
+    (fn []
+      (binding [*next-id* next-id]
+        (p/demolish factory obj)))))
+
 (defn- build [{:keys [registry *stop-list]} key]
   (loop [stack     (list (stack-frame key :required (registry key)))
          built-map {}]
@@ -118,7 +126,7 @@
 
           :else
           (let [obj  (build-obj built-map stack)
-                stop #(p/demolish factory obj)]
+                stop (bound-stop factory obj)]
             (vswap! *stop-list conj stop)
             (case [obj dep-type]
               [nil :optional] (recur tail built-map)
@@ -287,16 +295,14 @@
           registry    (apply-middleware undefined-registry middlewares)
           ctx         {:registry   registry
                        :*stop-list (volatile! '())}
-          obj         (try-build ctx key)
-          bindings    (get-thread-bindings)]
+          obj         (try-build ctx key)]
       ^{:type   ::root
         ::print obj}
       (reify
         AutoCloseable
         (close [_]
-          (with-bindings bindings
-            (->> (try-stop-started ctx)
-                 (throw-many!))))
+          (->> (try-stop-started ctx)
+               (throw-many!)))
         IDeref
         (deref [_]
           obj)
