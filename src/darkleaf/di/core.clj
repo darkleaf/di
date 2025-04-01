@@ -177,12 +177,14 @@
       (registry key))))
 
 (defn- apply-middleware [registry middleware]
-  (cond
-    (fn? middleware)      (middleware registry)
-    (map? middleware)     (apply-map registry middleware)
-    (seqable? middleware) (reduce apply-middleware
-                                  registry middleware)
-    :else                 (throw (IllegalArgumentException. "Wrong middleware kind"))))
+  (loop [registry                registry
+         [head & tail :as stack] (list middleware)]
+    (cond
+      (empty? stack)  registry
+      (fn? head)      (recur (head registry) tail)
+      (map? head)     (recur (apply-map registry head) tail)
+      (seqable? head) (recur registry (concat head tail))
+      :else           (throw (IllegalArgumentException. "Wrong middleware kind")))))
 
 (declare var->factory)
 
