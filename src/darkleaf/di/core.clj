@@ -180,11 +180,11 @@
       (fn? mw)  (mw registry)
       (map? mw) (apply-map registry mw)
       :else     (throw (IllegalArgumentException. "Wrong middleware kind")))
-   (with-meta {::middleware-id (-> registry meta ::middleware-id inc)})))
+   (with-meta {::idx (-> registry meta ::idx inc)})))
 
-(defn- apply-middlewares [registry middlewares init-id]
+(defn- apply-middlewares [registry middlewares init-idx]
   (reduce apply-middleware
-          (-> registry (with-meta {::middleware-id init-id}))
+          (-> registry (with-meta {::idx init-idx}))
           (flatten middlewares)))
 
 (declare var->factory)
@@ -284,9 +284,9 @@
         base-mws    [with-env
                      with-ns
                      root-registry]
-        init-id     (- (count base-mws))
+        init-idx    (- (count base-mws))
         middlewares (concat base-mws middlewares)
-        registry    (apply-middlewares undefined-registry middlewares init-id)
+        registry    (apply-middlewares undefined-registry middlewares init-idx)
         ctx         {:registry   registry
                      :*stop-list (volatile! '())}
         obj         (try-build ctx key)]
@@ -547,8 +547,8 @@
   [target f & args]
   {:pre [(key? target)]}
   (fn [registry]
-    (let [id              (-> registry meta ::middleware-id)
-          prefix          (str (symbol target) "+di-update-key#" id)
+    (let [idx             (-> registry meta ::idx)
+          prefix          (str (symbol target) "+di-update-key#" idx)
           new-key         (symbol (str prefix "-target"))
           f-key           (symbol (str prefix "-f"))
           arg-keys        (for [i (-> args count range)]
@@ -610,8 +610,8 @@
   ```"
   [dep-key]
   (fn [registry]
-    (let [id          (-> registry meta ::middleware-id)
-          new-key     (symbol (str "darkleaf.di.core/new-key#" id))
+    (let [idx         (-> registry meta ::idx)
+          new-key     (symbol (str "darkleaf.di.core/new-key#" idx))
           new-factory (reify
                         p/Factory
                         (dependencies [_]
