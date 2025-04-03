@@ -998,6 +998,7 @@
     (reify
       AutoCloseable
       (close [_]
+        (.clear mem)
         (try-stop-started {:*stop-list *stop-list}))
       Function
       (apply [_ registry]
