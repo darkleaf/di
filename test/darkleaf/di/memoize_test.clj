@@ -1,8 +1,7 @@
 (ns darkleaf.di.memoize-test
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di]
-   [darkleaf.di.protocols :as p]))
+   [darkleaf.di.core :as di]))
 
 (set! *warn-on-reflection* true)
 
@@ -68,23 +67,29 @@
 (t/deftest start-stop-order-test
   (let [mem       (di/->memoize)
         log       (atom [])
-        registry  (fn [system]
-                    [{::param :param}
-                     (di/log {:after-build!    #(swap! log conj [:start system (:key %)])
-                              :after-demolish! #(swap! log conj [:stop  system (:key %)])})
-                     mem])
-        system    (di/start `a (registry :system))
+        log-mw    (fn [system key-predicate]
+                    (di/log :after-build!
+                            #(when (key-predicate (:key %))
+                               (swap! log conj [:start system (:key %)]))
+                            :after-demolish!
+                            #(when (key-predicate (:key %))
+                               (swap! log conj [:stop  system (:key %)]))))
+        system    (di/start `a
+                            {::param :param}
+                            (log-mw :system any?)
+                            mem)
         _         (di/stop system)
-        the-same  (di/start `a (registry :the-same))
+        the-same  (di/start `a
+                            {::param :param}
+                            (log-mw :the-same any?)
+                            mem)
         _         (di/stop the-same)
-        redefined (di/start `a (registry :redefined)
-                            {::param (reify p/Factory
-                                       (dependencies [_])
-                                       (build [_ _]
-                                         (swap! log conj [:start :redefined ::param])
-                                         :new-param)
-                                       (demolish [_ _]
-                                         (swap! log conj [:stop  :redefined ::param])))})
+        redefined (di/start `a
+                            {::param :param}
+                            (log-mw :redefined any?)
+                            mem
+                            {::param :new-param}
+                            (log-mw :redefined #{::param}))
         _         (di/stop redefined)
         _         (di/stop mem)]
     (t/is (= [[:start :system  ::param]
