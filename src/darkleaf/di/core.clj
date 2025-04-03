@@ -117,7 +117,7 @@
           :else
           (let [obj  (build-obj built-map stack)
                 stop #(p/demolish factory obj)]
-            (vswap! *stop-list conj stop)
+            (swap! *stop-list conj stop)
             (case [obj dep-type]
               [nil :optional] (recur tail built-map)
               [nil :required] (missing-dependency! stack)
@@ -143,8 +143,7 @@
            (throw)))
 
 (defn- try-stop-started [{:keys [*stop-list]}]
-  (let [stops @*stop-list]
-    (vswap! *stop-list empty)
+  (let [[stops _] (swap-vals! *stop-list empty)]
     (try-run-all stops)))
 
 (defn- try-build [ctx key]
@@ -290,7 +289,7 @@
         middlewares (concat base-mws middlewares)
         registry    (apply-middlewares undefined-registry middlewares init-idx)
         ctx         {:registry   registry
-                     :*stop-list (volatile! '())}
+                     :*stop-list (atom '())}
         obj         (try-build ctx key)]
     ^{:type   ::root
       ::print obj}
