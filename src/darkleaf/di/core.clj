@@ -1019,8 +1019,5 @@
 
               p/FactoryDescription
               (description [_]
-                (-> factory
-                    p/description
-                    ;; хз надо ли так
-                    ;; у нас тут нет способа понять уже закешировано или только сейчас
-                    #_(assoc ::memoized true))))))))))
+                (assoc (p/description factory)
+                       ::memoize {:will-be-memoized true})))))))))
