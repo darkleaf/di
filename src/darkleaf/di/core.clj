@@ -990,7 +990,6 @@
 
 (defn ->memoize
   "Returns a statefull middleware that memoizes all registry build accesses.
-  Must be the last in a middleware chain.
 
   To stop all memoized components use `(di/stop mem)`."
   ^AutoCloseable []
@@ -999,7 +998,6 @@
     (reify
       AutoCloseable
       (close [_]
-        ;; этой функции нужно интерфейс поправить, чтобы сразу list принимала (?)
         (try-stop-started {:*stop-list *stop-list}))
       Function
       (apply [_ registry]
