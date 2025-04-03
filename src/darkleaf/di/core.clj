@@ -22,7 +22,8 @@
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
    (java.lang AutoCloseable)
-   (java.util.function Function)))
+   (java.util.function Function)
+   (java.util.concurrent ConcurrentHashMap)))
 
 (set! *warn-on-reflection* true)
 
@@ -985,3 +986,37 @@
                                 middlewares
                                 (inspect-middleware))]
     @components))
+
+
+(defn ->memoize
+  "Returns a statefull middleware that memoizes all registry build accesses.
+
+  To stop all memoized components use `(di/stop mem)`."
+  ^AutoCloseable []
+  (let [mem        (ConcurrentHashMap.)
+        *stop-list (atom '())]
+    (reify
+      AutoCloseable
+      (close [_]
+        (.clear mem)
+        (try-stop-started {:*stop-list *stop-list}))
+      Function
+      (apply [_ registry]
+        (fn [key]
+          (let [factory (registry key)]
+            (reify
+              p/Factory
+              (dependencies [_]
+                (p/dependencies factory))
+              (build [_ deps]
+                (.computeIfAbsent mem [key deps]
+                                  (fn [_]
+                                    (let [obj (p/build factory deps)]
+                                      (swap! *stop-list conj #(p/demolish factory obj))
+                                      obj))))
+              (demolish [_ obj])
+
+              p/FactoryDescription
+              (description [_]
+                (assoc (p/description factory)
+                       ::memoize {:will-be-memoized true})))))))))
