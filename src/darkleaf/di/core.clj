@@ -21,7 +21,8 @@
   (:import
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
-   (java.lang AutoCloseable)))
+   (java.lang AutoCloseable)
+   (java.util.function Function)))
 
 (set! *warn-on-reflection* true)
 
@@ -176,10 +177,11 @@
 (defn- apply-middleware [registry mw]
   (->
    (cond
-     (nil? mw) registry
-     (fn? mw)  (mw registry)
-     (map? mw) (apply-map registry mw)
-     :else     (throw (IllegalArgumentException. "Wrong middleware kind")))
+     (nil? mw)               registry
+     (fn? mw)                (mw registry)
+     (map? mw)               (apply-map registry mw)
+     (instance? Function mw) (.apply ^Function mw registry)
+     :else                   (throw (IllegalArgumentException. "Wrong middleware kind")))
    (with-meta {::idx (-> registry meta ::idx inc)})))
 
 (defn- apply-middlewares [registry middlewares init-idx]
