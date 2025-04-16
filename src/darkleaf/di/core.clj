@@ -985,3 +985,52 @@
                                 middlewares
                                 (inspect-middleware))]
     @components))
+
+
+
+(defn- graphviz-id [x]
+  (str "\"" x "\""))
+
+(defn graphviz [root middlewares]
+  (let [components (inspect root middlewares)]
+    (with-out-str
+     (println "digraph {")
+     (println "rankdir=LR;")
+     #_(println "splines=ortho;")
+     #_(println "concentrate=true;")
+
+     (println "node [shape=box color=gray style=rounded];")
+     (println "edge [color=gray arrowhead=empty];")
+
+     #_
+     (println (graphviz-id (-> components first :key))
+              (str "[color=magenta];"))
+
+     (doseq [{:keys [key dependencies]} components]
+       (print "{")
+       (doseq [token (interpose "," (map graphviz-id (keys dependencies)))]
+         (print token))
+       (println "}"  "->" (graphviz-id key)))
+
+     #_
+     (doseq [[cluster keys] (->> components
+                                 (map :key)
+                                 (group-by try-namespace))
+             :when          (and (some? cluster)
+                                 (not (str/starts-with? cluster "env"))
+                                 (not (str/starts-with? cluster "darkleaf.di.core")))]
+       (println "subgraph" (graphviz-id cluster) "{")
+       (println " " (str "label=" (graphviz-id cluster) ";"))
+       (println " " "cluster=true;")
+       (println " " "labeljust=l;")
+       (println " " "color=gray;")
+       (println " " "style=dashed;")
+
+       (doseq [key keys]
+         (println " " (graphviz-id key)
+                  (str "["
+                       "label=" (graphviz-id (name key)) ;; keywords must start with :
+                       "];")))
+       (println "}"))
+
+     (println "}"))))
