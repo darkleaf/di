@@ -223,12 +223,12 @@
 
 (declare ref template)
 
-(defn- key->key&registry [key]
-  (cond
-    (vector? key) [::implicit-root {::implicit-root (->> key (map ref) template)}]
-    (map? key)    [::implicit-root {::implicit-root (->  key (update-vals ref) template)}]
-    :else         [::implicit-root {::implicit-root (->  key ref)}]))
-
+(defn- implicit-root [key]
+  (let [factory (cond
+                  (vector? key) (->> key (map ref) template)
+                  (map? key)    (->  key (update-vals ref) template)
+                  :else         (->  key ref))]
+    {::implicit-root factory}))
 
 (defn start
   "Starts a system of dependent objects.
@@ -280,17 +280,15 @@
   See the tests for use cases.
   See `update-key`."
   ^AutoCloseable [key & middlewares]
-  (let [[key root-registry] (key->key&registry key)
-
-        base-mws    [with-env
+  (let [base-mws    [with-env
                      with-ns
-                     root-registry]
+                     (implicit-root key)]
         init-idx    (- (count base-mws))
         middlewares (concat base-mws middlewares)
         registry    (apply-middlewares undefined-registry middlewares init-idx)
         ctx         {:registry   registry
                      :*stop-list (atom '())}
-        obj         (try-build ctx key)]
+        obj         (try-build ctx ::implicit-root)]
     ^{:type   ::root
       ::print obj}
     (reify
