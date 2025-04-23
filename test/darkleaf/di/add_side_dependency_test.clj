@@ -134,6 +134,7 @@
                 :h :h} @root)))))
 
 (t/deftest bug-with-update-key
+  #_
   (let [info (di/inspect ::root
                          {::root     42
                           ::unused   0

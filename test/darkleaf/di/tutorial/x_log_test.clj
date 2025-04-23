@@ -28,8 +28,8 @@
               [:built `b
                "#darkleaf.di.core/service #'darkleaf.di.tutorial.x-log-test/b"]
               [:built `c ":c"]
-              [:built ::di/implicit-root ":c"]
-              [:demolished ::di/implicit-root ":c"]
+              [:built ::di/implicit-root ":void"]
+              [:demolished ::di/implicit-root ":void"]
               [:demolished `c ":c"]
               [:demolished `b
                "#darkleaf.di.core/service #'darkleaf.di.tutorial.x-log-test/b"]

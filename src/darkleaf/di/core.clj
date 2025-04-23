@@ -223,6 +223,18 @@
 
 (declare ref template)
 
+
+;; видимо это нужно переделать
+;; не через template и реестры
+;; а несколько раз вызывать try-build на общем контексте
+;; и надо делать try-build еще раз первым - чтобы запустить сайд зависимости
+;; и наверное прям имя такое дать
+
+;; и будет несколько корней
+;; в том числе на graphviz
+
+
+
 (defn- key->key&registry [key]
   (cond
     (vector? key) [::implicit-root {::implicit-root (->> key (map ref) template)}]
@@ -280,17 +292,21 @@
   See the tests for use cases.
   See `update-key`."
   ^AutoCloseable [key & middlewares]
-  (let [[key root-registry] (key->key&registry key)
-
-        base-mws    [with-env
+  (let [base-mws    [with-env
                      with-ns
-                     root-registry]
+                     {::implicit-root :void}]
         init-idx    (- (count base-mws))
         middlewares (concat base-mws middlewares)
         registry    (apply-middlewares undefined-registry middlewares init-idx)
         ctx         {:registry   registry
                      :*stop-list (atom '())}
-        obj         (try-build ctx key)]
+        obj         (cond
+                      (vector? key) (mapv #(try-build ctx %) key)
+                      (map? key)    (update-vals key #(try-build ctx %))
+                      :else         (try-build ctx key))
+
+        ir           (try-build ctx ::implicit-root)] ;; todo: rename: ::side-dependency
+
     ^{:type   ::root
       ::print obj}
     (reify
