@@ -611,27 +611,27 @@
   ```"
   [dep-key]
   (fn [registry]
-    (let [idx         (-> registry meta ::idx)
-          new-key     (symbol (str "darkleaf.di.core/new-key#" idx))
-          new-factory (reify
-                        p/Factory
-                        (dependencies [_]
-                          ;; array-map preserves order of keys
-                          {new-key :required
-                           dep-key :required})
-                        (build [_ deps]
-                          (new-key deps))
-                        (demolish [_ _])
-                        p/FactoryDescription
-                        (description [_]
-                          {::kind      :middleware
-                           :middleware ::add-side-dependency
-                           :dep-key    dep-key}))]
-      (fn [key]
-        (cond
-          (= ::implicit-root key) new-factory
-          (= new-key key)         (registry ::implicit-root)
-          :else                   (registry key))))))
+    (fn [key]
+      (let [factory (registry key)]
+        (if (= ::implicit-root key)
+          (reify
+            p/Factory
+            (dependencies [_]
+              ;; This is an incorrect implementation that does not preserve order.
+              ;; (assoc (p/dependencies factory)
+              ;;        dep-key :required)
+              (concat (seq (p/dependencies factory))
+                      (seq {dep-key :required})))
+            (build [_ deps]
+              (p/build factory (dissoc deps dep-key)))
+            (demolish [_ obj]
+              (p/demolish factory obj))
+            p/FactoryDescription
+            (description [_]
+              (-> (p/description factory)
+                  (update ::side-dependencies (fnil conj []) dep-key))))
+          factory)))))
+
 
 (defn- arglists [variable]
   (-> variable meta :arglists))

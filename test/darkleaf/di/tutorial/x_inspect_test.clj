@@ -246,26 +246,28 @@
 
 (t/deftest add-side-dependency-test
   (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`di/new-key#1 :required
-                            `side-dep     :required}
-             :description  {::di/kind   :middleware
-                            :middleware ::di/add-side-dependency
-                            :dep-key    `side-dep}}
-            {:key          `di/new-key#1
-             :dependencies {`a :required}
-             :description  {::di/kind :ref
-                            :key      `a
-                            :type     :required}}
+             :dependencies (seq {`a          :required
+                                 `side-dep-1 :required
+                                 `side-dep-2 :required})
+             :description  {::di/kind                :ref
+                            :key                     `a
+                            :type                    :required
+                            ::di/side-dependencies [`side-dep-1 `side-dep-2]}}
             {:key         `a
              :description {::di/kind :trivial
                            :object   :obj}}
-            {:key         `side-dep
+            {:key         `side-dep-1
+             :description {::di/kind :trivial
+                           :object   :side-dep}}
+            {:key         `side-dep-2
              :description {::di/kind :trivial
                            :object   :side-dep}}]
            (di/inspect `a
-                       {`a        :obj
-                        `side-dep :side-dep}
-                       (di/add-side-dependency `side-dep)))))
+                       {`a          :obj
+                        `side-dep-1 :side-dep
+                        `side-dep-2 :side-dep}
+                       (di/add-side-dependency `side-dep-1)
+                       (di/add-side-dependency `side-dep-2)))))
 
 
 (t/deftest ns-publics-test
