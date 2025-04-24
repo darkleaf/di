@@ -24,114 +24,100 @@
                    :h 8
                    :i 9}))))
 
-(defn- a
+(defn- d1
   {::di/kind :component}
   []
-  :a)
+  :d1)
 
-(defn- b
+(defn- d2
   {::di/kind :component}
   []
-  :b)
+  :d2)
 
-(defn- c
+(defn- d3
   {::di/kind :component}
   []
   :c)
 
-(defn- d
+(defn- d4
   {::di/kind :component}
   []
-  :d)
+  :d4)
 
-(defn- e
+(defn- d5
   {::di/kind :component}
   []
-  :e)
+  :d5)
 
-(defn- f
+(defn- d6
   {::di/kind :component}
   []
-  :f)
+  :d6)
 
-(defn- g
+(defn- d7
   {::di/kind :component}
   []
-  :g)
+  :d7)
 
-(defn- h
+(defn- d8
   {::di/kind :component}
   []
-  :h)
+  :d8)
 
-(defn- side-dep
+(defn- extra-d9
   {::di/kind :component}
   []
-  :side-dep)
+  :d9)
+
+(defn- extra-d10
+  {::di/kind :component}
+  []
+  :d10)
+
 
 (t/deftest bug-array-map->hash-map
   (let [log          (atom [])
         after-build! (fn [{:keys [key]}]
                        (swap! log conj key))]
     (with-open [root (di/start ::root
-                               {::root (di/template
-                                        {:a (di/ref `a)
-                                         :b (di/ref `b)
-                                         :c (di/ref `c)
-                                         :d (di/ref `d)
-                                         :e (di/ref `e)
-                                         :f (di/ref `f)
-                                         :g (di/ref `g)
-                                         :h (di/ref `h)})}
-                               (di/add-side-dependency `side-dep)
+                               {::root :ok}
+                               (di/add-side-dependency `d1)
+                               (di/add-side-dependency `d2)
+                               (di/add-side-dependency `d3)
+                               (di/add-side-dependency `d4)
+                               (di/add-side-dependency `d5)
+                               (di/add-side-dependency `d6)
+                               (di/add-side-dependency `d7)
+                               (di/add-side-dependency `d8)
+                               (di/add-side-dependency `extra-d9)
                                (di/log :after-build! after-build!))]
-      (t/is (= [`a `b `c `d `e `f `g `h
-                ::root `side-dep ::di/implicit-root] @log))
-      (t/is (= {:a :a
-                :b :b
-                :c :c
-                :d :d
-                :e :e
-                :f :f
-                :g :g
-                :h :h} @root)))))
+      (t/is (= [::root `d1 `d2 `d3 `d4 `d5 `d6 `d7 `d8 `extra-d9 ::di/implicit-root]
+               @log))
+      (t/is (= :ok @root)))))
 
-(defn- side-dep2
-  {::di/kind :component}
-  []
-  :side-dep2)
 
 (t/deftest bug-array-map->hash-map-2
   (let [log          (atom [])
         after-build! (fn [{:keys [key]}]
                        (swap! log conj key))]
     (with-open [root (di/start ::root
-                               (di/add-side-dependency `side-dep)
-                               {::root (di/template
-                                        {:a (di/ref `a)
-                                         :b (di/ref `b)
-                                         :c (di/ref `c)
-                                         :d (di/ref `d)
-                                         :e (di/ref `e)
-                                         :f (di/ref `f)
-                                         :g (di/ref `g)
-                                         :h (di/ref `h)})}
-                               (di/add-side-dependency `side-dep2)
+                               {::root :ok}
+                               (di/add-side-dependency `extra-d9)
+                               (di/add-side-dependency `d1)
+                               (di/add-side-dependency `d2)
+                               (di/add-side-dependency `d3)
+                               (di/add-side-dependency `d4)
+                               (di/add-side-dependency `d5)
+                               (di/add-side-dependency `d6)
+                               (di/add-side-dependency `d7)
+                               (di/add-side-dependency `d8)
+                               (di/add-side-dependency `extra-d10)
                                (di/log :after-build! after-build!))]
-      (t/is (= [`a `b `c `d `e `f `g `h
-                ::root
-                `side-dep
-                `side-dep2
+      (t/is (= [::root
+                `extra-d9 `d1 `d2 `d3 `d4 `d5 `d6 `d7 `d8 `extra-d10
                 ::di/implicit-root]
                @log))
-      (t/is (= {:a :a
-                :b :b
-                :c :c
-                :d :d
-                :e :e
-                :f :f
-                :g :g
-                :h :h} @root)))))
+      (t/is (= :ok @root)))))
 
 (t/deftest bug-with-update-key
   (let [info (di/inspect ::root

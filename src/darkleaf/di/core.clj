@@ -617,6 +617,9 @@
           (reify
             p/Factory
             (dependencies [_]
+              ;; This is an incorrect implementation that does not preserve order.
+              ;; (assoc (p/dependencies factory)
+              ;;        dep-key :required)
               (concat (seq (p/dependencies factory))
                       (seq {dep-key :required})))
             (build [_ deps]
