@@ -246,16 +246,12 @@
 
 (t/deftest add-side-dependency-test
   (t/is (= [{:key          ::di/implicit-root
-             :dependencies {`di/new-key#1 :required
-                            `side-dep     :required}
-             :description  {::di/kind   :middleware
-                            :middleware ::di/add-side-dependency
-                            :dep-key    `side-dep}}
-            {:key          `di/new-key#1
-             :dependencies {`a :required}
+             :dependencies (seq {`a        :required
+                                 `side-dep :required})
              :description  {::di/kind :ref
                             :key      `a
-                            :type     :required}}
+                            :type     :required
+                            ::di/add-side-dependency (list `side-dep)}}
             {:key         `a
              :description {::di/kind :trivial
                            :object   :obj}}
