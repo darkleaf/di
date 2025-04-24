@@ -626,7 +626,7 @@
             p/FactoryDescription
             (description [_]
               (-> (p/description factory)
-                  (update ::add-side-dependency conj dep-key))))
+                  (update ::side-dependencies (fnil conj []) dep-key))))
           factory)))))
 
 
