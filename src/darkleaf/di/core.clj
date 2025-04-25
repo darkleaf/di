@@ -283,61 +283,11 @@
 (def ^:private initial-registry
   (-> undefined-registry with-env with-ns))
 
-(defn start
-  "Starts a system of dependent objects.
-
-  key is a name of the system root.
-  Use symbols for var names, keywords for abstract dependencies,
-  and strings for environments variables.
-
-  key is looked up in a registry.
-  By default registry uses Clojure namespaces and system env
-  to resolve symbols and strings, respectively.
-
-  You can extend it with registry middlewares.
-  Each middleware can be one of the following form:
-
-  - a function `registry -> key -> Factory`
-  - a map of key and `p/Factory` instance
-  - nil, as no-op middleware
-  - a sequence of the previous forms
-
-  Middlewares also allows you to instrument built objects.
-  It's useful for logging, schema validation, AOP, etc.
-  See `update-key`.
-
-  ```clojure
-  (di/start `root
-            {:my-abstraction implemntation
-             `some-key replacement
-             \"LOG_LEVEL\" \"info\"}
-            [dev-middlwares test-middlewares]
-            (if dev-routes?
-              (di/update-key `route-data conj `dev-route-data)
-            (di/instrument `log))
-  ```
-
-  Returns a container contains started root of the system.
-  The container implements `AutoCloseable`, `IDeref`, `IFn`, `Indexed` and `ILookup`.
-
-  Use `with-open` in tests to stop the system reliably.
-
-  You can pass a vector as the key argument to start many keys:
-
-  ```clojure
-  (with-open [root (di/start [`handler `helper])]
-    (let [[handler helper] root]
-       ...))
-  ```
-
-  See the tests for use cases.
-  See `update-key`."
-  ^AutoCloseable [key & middlewares]
-  (let [middlewares (concat [(implicit-root key)] middlewares)
-        registry    (apply-middlewares initial-registry middlewares -1)
-        ctx         {:registry   registry
-                     :*stop-list (atom '())}
-        obj         (try-build ctx ::implicit-root)]
+(defn start* ^AutoCloseable [key middlewares]
+  (let [registry (apply-middlewares initial-registry middlewares -1)
+        ctx      {:registry   registry
+                  :*stop-list (atom '())}
+        obj      (try-build ctx key)]
     ^{:type   ::root
       ::print obj}
     (reify
@@ -411,6 +361,59 @@
         (.invoke ^IFn obj a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16 a17 a18 a19 a20 args))
       (applyTo [_ args]
         (.applyTo ^IFn obj args)))))
+
+
+(defn start
+  "Starts a system of dependent objects.
+
+  key is a name of the system root.
+  Use symbols for var names, keywords for abstract dependencies,
+  and strings for environments variables.
+
+  key is looked up in a registry.
+  By default registry uses Clojure namespaces and system env
+  to resolve symbols and strings, respectively.
+
+  You can extend it with registry middlewares.
+  Each middleware can be one of the following form:
+
+  - a function `registry -> key -> Factory`
+  - a map of key and `p/Factory` instance
+  - nil, as no-op middleware
+  - a sequence of the previous forms
+
+  Middlewares also allows you to instrument built objects.
+  It's useful for logging, schema validation, AOP, etc.
+  See `update-key`.
+
+  ```clojure
+  (di/start `root
+            {:my-abstraction implemntation
+             `some-key replacement
+             \"LOG_LEVEL\" \"info\"}
+            [dev-middlwares test-middlewares]
+            (if dev-routes?
+              (di/update-key `route-data conj `dev-route-data)
+            (di/instrument `log))
+  ```
+
+  Returns a container contains started root of the system.
+  The container implements `AutoCloseable`, `IDeref`, `IFn`, `Indexed` and `ILookup`.
+
+  Use `with-open` in tests to stop the system reliably.
+
+  You can pass a vector as the key argument to start many keys:
+
+  ```clojure
+  (with-open [root (di/start [`handler `helper])]
+    (let [[handler helper] root]
+       ...))
+  ```
+
+  See the tests for use cases.
+  See `update-key`."
+  ^AutoCloseable [key & middlewares]
+  (start* ::implicit-root [(implicit-root key) middlewares]))
 
 (defn stop
   "Stops the root of a system"
@@ -1016,7 +1019,8 @@
    {:key `bar}]
   ```"
   [key & middlewares]
-  (with-open [components (start key
-                                middlewares
-                                with-inspect)]
+  (with-open [components (start* ::implicit-root
+                                 [(implicit-root key)
+                                  middlewares
+                                  with-inspect])]
     @components))
