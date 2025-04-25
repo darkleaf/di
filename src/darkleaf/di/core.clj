@@ -270,7 +270,7 @@
               {::kind :env})))
         (registry key))))
 
-(declare ref template)
+(declare ref template update-description)
 
 (defn- implicit-root [key]
   (let [[factory
