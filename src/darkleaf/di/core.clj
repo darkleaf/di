@@ -230,11 +230,11 @@
      (map? mw)               (apply-map registry mw)
      (instance? Function mw) (.apply ^Function mw registry)
      :else                   (throw (IllegalArgumentException. "Wrong middleware kind")))
-   (with-meta {::idx (-> registry meta ::idx inc)})))
+   (with-meta {::idx (-> registry meta (::idx 0) inc)})))
 
-(defn- apply-middlewares [registry middlewares init-idx]
+(defn- apply-middlewares [registry middlewares]
   (reduce apply-middleware
-          (-> registry (with-meta {::idx init-idx}))
+          registry
           (flatten middlewares)))
 
 (declare var->factory)
@@ -277,14 +277,26 @@
                   (vector? key) (->> key (map ref) template)
                   (map? key)    (->  key (update-vals ref) template)
                   :else         (->  key ref))
-        factory (vary-meta factory assoc ::implementation-detail true)]
+        factory (vary-meta factory assoc ::implementation-detail true)
+        factory (decorator factory
+                  (dependencies [_]
+                    (into []
+                          cat
+                          [(p/dependencies factory)
+                           {::side-dependency :required}])))]
     {::implicit-root factory}))
 
+(defn- with-internals [registry]
+  (fn [key]
+    (case key
+      ::side-dependency (quote ^::implementation-detail _)
+      (registry key))))
+
 (def ^:private initial-registry
-  (-> undefined-registry with-env with-ns))
+  (-> undefined-registry with-env with-ns with-internals))
 
 (defn start* ^AutoCloseable [key middlewares]
-  (let [registry (apply-middlewares initial-registry middlewares -1)
+  (let [registry (apply-middlewares initial-registry middlewares)
         ctx      {:registry   registry
                   :*stop-list (atom '())}
         obj      (try-build ctx key)]
@@ -413,7 +425,7 @@
   See the tests for use cases.
   See `update-key`."
   ^AutoCloseable [key & middlewares]
-  (start* ::implicit-root [(implicit-root key) middlewares]))
+  (start* ::implicit-root [middlewares (implicit-root key)]))
 
 (defn stop
   "Stops the root of a system"
@@ -656,17 +668,17 @@
     (fn [key]
       (let [factory (registry key)]
         (condp = key
-          ::implicit-root (decorator factory
-                            (dependencies [_]
-                              ;; This is an incorrect implementation that does not preserve order.
-                              ;; (assoc (p/dependencies factory)
-                              ;;        dep-key :required)
-                              (into []
-                                    cat
-                                    [(p/dependencies factory)
-                                     {dep-key :required}]))
-                            (build [_ deps]
-                              (p/build factory (dissoc deps dep-key))))
+          ::side-dependency (decorator factory
+                             (dependencies [_]
+                               ;; This is an incorrect implementation that does not preserve order.
+                               ;; (assoc (p/dependencies factory)
+                               ;;        dep-key :required)
+                               (into []
+                                     cat
+                                     [(p/dependencies factory)
+                                      {dep-key :required}]))
+                             (build [_ deps]
+                               (p/build factory (dissoc deps dep-key))))
           dep-key         (update-description factory assoc ::side-dependency true)
           factory)))))
 
@@ -1020,7 +1032,7 @@
   ```"
   [key & middlewares]
   (with-open [components (start* ::implicit-root
-                                 [(implicit-root key)
-                                  middlewares
+                                 [middlewares
+                                  (implicit-root key)
                                   with-inspect])]
     @components))
