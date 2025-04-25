@@ -945,26 +945,25 @@
                    ::log  {:will-be-logged true
                            #_#_:opts       opts})))))))
 
-(defn- inspect-middleware []
-  (fn [registry]
-    (fn [key]
-      (let [factory       (registry key)
-            declared-deps (p/dependencies factory)
-            info          (into {}
-                                (filter (fn [[k v]] (some? v)))
-                                {:key          key
-                                 :dependencies (not-empty declared-deps)
-                                 :description  (not-empty (p/description factory))})]
-        (reify p/Factory
-          (dependencies [_]
-            declared-deps)
-          (build [_ deps]
-            (into [info]
-                  (comp
-                   (mapcat val)
-                   (distinct))
-                  deps))
-          (demolish [_ obj]))))))
+(defn- with-inspect [registry]
+  (fn [key]
+    (let [factory       (registry key)
+          declared-deps (p/dependencies factory)
+          info          (into {}
+                              (filter (fn [[k v]] (some? v)))
+                              {:key          key
+                               :dependencies (not-empty declared-deps)
+                               :description  (not-empty (p/description factory))})]
+      (reify p/Factory
+        (dependencies [_]
+          declared-deps)
+        (build [_ deps]
+          (into [info]
+                (comp
+                 (mapcat val)
+                 (distinct))
+                deps))
+        (demolish [_ obj])))))
 
 (defn inspect
   "Collects and returns a vector of keys along with their dependencies.
@@ -981,5 +980,5 @@
   [key & middlewares]
   (with-open [components (start key
                                 middlewares
-                                (inspect-middleware))]
+                                with-inspect)]
     @components))
