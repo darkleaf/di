@@ -223,11 +223,13 @@
              :description {::di/kind :trivial
                            :object   :obj}}
             {:key         `side-dep-1
-             :description {::di/kind :trivial
-                           :object   :side-dep}}
+             :description {::di/kind            :trivial
+                           :object              :side-dep
+                           ::di/side-dependency true}}
             {:key         `side-dep-2
-             :description {::di/kind :trivial
-                           :object   :side-dep}}]
+             :description {::di/kind            :trivial
+                           :object              :side-dep
+                           ::di/side-dependency true}}]
            (di/inspect `a
                        {`a          :obj
                         `side-dep-1 :side-dep

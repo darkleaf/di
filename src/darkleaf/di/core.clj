@@ -653,22 +653,19 @@
   (fn [registry]
     (fn [key]
       (let [factory (registry key)]
-        (if (= ::implicit-root key)
-          (decorator factory
-            (dependencies [_]
-              ;; This is an incorrect implementation that does not preserve order.
-              ;; (assoc (p/dependencies factory)
-              ;;        dep-key :required)
-              (into []
-                    cat
-                    [(p/dependencies factory)
-                     {dep-key :required}]))
-            (build [_ deps]
-              (p/build factory (dissoc deps dep-key)))
-            (description [_]
-              (-> (p/description factory)
-                  ;; todo:
-                  (update ::side-dependencies (fnil conj []) dep-key))))
+        (condp = key
+          ::implicit-root (decorator factory
+                            (dependencies [_]
+                              ;; This is an incorrect implementation that does not preserve order.
+                              ;; (assoc (p/dependencies factory)
+                              ;;        dep-key :required)
+                              (into []
+                                    cat
+                                    [(p/dependencies factory)
+                                     {dep-key :required}]))
+                            (build [_ deps]
+                              (p/build factory (dissoc deps dep-key))))
+          dep-key         (update-description factory assoc ::side-dependency true)
           factory)))))
 
 
