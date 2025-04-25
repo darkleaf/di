@@ -280,6 +280,9 @@
         factory (vary-meta factory assoc ::implementation-detail true)]
     {::implicit-root factory}))
 
+(def ^:private initial-registry
+  (-> undefined-registry with-env with-ns))
+
 (defn start
   "Starts a system of dependent objects.
 
@@ -330,12 +333,8 @@
   See the tests for use cases.
   See `update-key`."
   ^AutoCloseable [key & middlewares]
-  (let [base-mws    [with-env
-                     with-ns
-                     (implicit-root key)]
-        init-idx    (- (count base-mws))
-        middlewares (concat base-mws middlewares)
-        registry    (apply-middlewares undefined-registry middlewares init-idx)
+  (let [middlewares (concat [(implicit-root key)] middlewares)
+        registry    (apply-middlewares initial-registry middlewares -1)
         ctx         {:registry   registry
                      :*stop-list (atom '())}
         obj         (try-build ctx ::implicit-root)]
