@@ -273,10 +273,14 @@
 (declare ref template)
 
 (defn- implicit-root [key]
-  (let [factory (cond
-                  (vector? key) (->> key (map ref) template)
-                  (map? key)    (->  key (update-vals ref) template)
-                  :else         (->  key ref))
+  (let [[factory
+         root-keys] (cond
+                      (vector? key) [(->> key (map ref) template)
+                                     (set key)]
+                      (map? key)    [(->  key (update-vals ref) template)
+                                     (set (vals key))]
+                      :else         [(->  key ref)
+                                     #{key}])
         factory (vary-meta factory assoc ::implementation-detail true)
         factory (decorator factory
                   (dependencies [_]
@@ -284,7 +288,13 @@
                           cat
                           [(p/dependencies factory)
                            {::side-dependency :required}])))]
-    {::implicit-root factory}))
+    (fn [registry]
+      (fn [key]
+        (cond
+          (= ::implicit-root key)   factory
+          (contains? root-keys key) (-> (registry key)
+                                        (update-description assoc ::root true))
+          :else                     (registry key))))))
 
 (defn- with-internals [registry]
   (fn [key]

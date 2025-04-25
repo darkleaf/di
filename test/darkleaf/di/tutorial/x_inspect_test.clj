@@ -6,8 +6,9 @@
    [darkleaf.di.tutorial.x-ns-publics-test :as x-ns-publics-test]))
 
 (t/deftest no-description-test
-  (t/is (= [{:key `foo
-             #_"NOTE: no description as it is not implemented"}]
+  (t/is (= [{:key         `foo
+             :description {::di/root true}
+             #_ "NOTE: no description as it is not implemented"}]
            (di/inspect `foo
                        {`foo (reify p/Factory
                                (dependencies [_])
@@ -18,14 +19,16 @@
 
 (t/deftest env-test
   (t/is (= [{:key         "FOO"
-             :description {::di/kind :env}}]
+             :description {::di/kind :env
+                           ::di/root true}}]
            (di/inspect "FOO"))))
 
 
 (t/deftest fixed-env-test
   (t/is (= [{:key         "FOO"
              :description {::di/kind :trivial
-                           :object   "value"}}]
+                           :object   "value"
+                           ::di/root true}}]
            (di/inspect "FOO" {"FOO" "value"}))))
 
 
@@ -35,6 +38,7 @@
   (t/is (= [{:key         `variable
              :description {::di/kind     :trivial
                            :object       :obj
+                           ::di/root     true
                            ::di/variable #'variable}}]
            (di/inspect `variable))))
 
@@ -49,6 +53,7 @@
 (t/deftest variable+factory-test
   (t/is (= [{:key         `variable+factory
              :description {#_"NOTE: no description as it is not implemented"
+                           ::di/root     true
                            ::di/variable #'variable+factory}}]
            (di/inspect `variable+factory))))
 
@@ -66,6 +71,7 @@
 (t/deftest variable+description-test
   (t/is (= [{:key         `variable+description
              :description {::di/kind     ::variable+description
+                           ::di/root     true
                            ::di/variable #'variable+description}}]
            (di/inspect `variable+description))))
 
@@ -77,6 +83,7 @@
   (t/is (= [{:key         `variable+template
              :description {::di/kind     :template
                            :template     [42]
+                           ::di/root     true
                            ::di/variable #'variable+template}}]
            (di/inspect `variable+template))))
 
@@ -89,6 +96,7 @@
 (t/deftest component-0-arity-test
   (t/is (= [{:key         `component-0-arity
              :description {::di/kind     :component
+                           ::di/root     true
                            ::di/variable #'component-0-arity}}]
            (di/inspect `component-0-arity))))
 
@@ -101,6 +109,7 @@
 (t/deftest component-1-arity-test
   (t/is (= [{:key         `component-1-arity
              :description {::di/kind     :component
+                           ::di/root     true
                            ::di/variable #'component-1-arity}}]
            (di/inspect `component-1-arity))))
 
@@ -113,6 +122,7 @@
 (t/deftest service-0-arity-test
   (t/is (= [{:key         `service-0-arity
              :description {::di/kind     :service
+                           ::di/root     true
                            ::di/variable #'service-0-arity}}]
            (di/inspect `service-0-arity))))
 
@@ -125,6 +135,7 @@
 (t/deftest service-n-arity-test
   (t/is (= [{:key         `service-n-arity
              :description {::di/kind     :service
+                           ::di/root     true
                            ::di/variable #'service-n-arity}}]
            (di/inspect `service-n-arity))))
 
@@ -136,6 +147,7 @@
 (t/deftest multimethod-service-test
   (t/is (= [{:key         `multimethod-service
              :description {::di/kind     :service
+                           ::di/root     true
                            ::di/variable #'multimethod-service}}]
            (di/inspect `multimethod-service))))
 
@@ -145,7 +157,8 @@
              :dependencies {`bar :required}
              :description  {::di/kind :ref
                             :key      `bar
-                            :type     :required}}
+                            :type     :required
+                            ::di/root true}}
             {:key         `bar
              :description {::di/kind :undefined}}]
            (di/inspect `foo {`foo (di/ref `bar)}))))
@@ -155,7 +168,8 @@
   (t/is (= [{:key          `foo
              :dependencies {`bar :required}
              :description  {::di/kind :template
-                            :template [42 (di/ref `bar)]}}
+                            :template [42 (di/ref `bar)]
+                            ::di/root true}}
             {:key         `bar
              :description {::di/kind :undefined}}]
            (di/inspect `foo {`foo (di/template [42 (di/ref `bar)])}))))
@@ -167,7 +181,8 @@
              :description  {::di/kind :derive
                             :key      `bar
                             :f        str
-                            :args     ["arg"]}}
+                            :args     ["arg"]
+                            ::di/root true}}
             {:key         `bar
              :description {::di/kind :undefined}}]
            (di/inspect `foo {`foo (di/derive `bar str "arg")}))))
@@ -176,14 +191,16 @@
 (t/deftest trivial-nil-test
   (t/is (= [{:key         `foo
              :description {::di/kind :trivial
-                           :object   nil}}]
+                           :object   nil
+                           ::di/root true}}]
            (di/inspect `foo {`foo nil}))))
 
 
 (t/deftest trivial-obj-test
   (t/is (= [{:key         `foo
              :description {::di/kind :trivial
-                           :object   str}}]
+                           :object   str
+                           ::di/root true}}]
            (di/inspect `foo {`foo str}))))
 
 
@@ -197,7 +214,8 @@
                             :target     `a
                             :new-target `a+di-update-key#1-target
                             :f          `a+di-update-key#1-f
-                            :args       [`a+di-update-key#1-arg#0]}}
+                            :args       [`a+di-update-key#1-arg#0]
+                            ::di/root   true}}
             {:key         `a+di-update-key#1-target
              :description {::di/kind       :trivial
                            :object         :obj
@@ -221,7 +239,8 @@
 (t/deftest add-side-dependency-test
   (t/is (= [{:key         `a
              :description {::di/kind :trivial
-                           :object   :obj}}
+                           :object   :obj
+                           ::di/root true}}
             {:key         `side-dep-1
              :description {::di/kind            :trivial
                            :object              :side-dep
@@ -245,7 +264,8 @@
                             `x-ns-publics-test/ok-test   :required}
              :description  {::di/kind   :middleware
                             :middleware ::di/ns-publics
-                            :ns         'darkleaf.di.tutorial.x-ns-publics-test}}
+                            :ns         'darkleaf.di.tutorial.x-ns-publics-test
+                            ::di/root   true}}
             {:key          `x-ns-publics-test/service
              :dependencies {`x-ns-publics-test/component :required}
              :description  {::di/kind     :service
@@ -266,7 +286,8 @@
              :dependencies {"PORT" :optional}
              :description  {::di/kind   :middleware
                             :middleware ::di/env-parsing
-                            :cmap       {:env.long parse-long}}}
+                            :cmap       {:env.long parse-long}
+                            ::di/root   true}}
             {:key         "PORT"
              :description {::di/kind :trivial
                            :object   "8080"}}]
@@ -280,7 +301,8 @@
              :description {::di/kind :trivial
                            :object   :obj
                            ::di/log  {:will-be-logged true
-                                      #_#_:opts       nil}}}]
+                                      #_#_:opts       nil}
+                           ::di/root true}}]
            (di/inspect `foo
                        {`foo :obj}
                        (di/log)))))
@@ -300,23 +322,19 @@
 
 (t/deftest vector-test
   (t/is (= [{:key "A"
-             :description {::di/kind :env}}
+             :description {::di/kind :env
+                           ::di/root true}}
             {:key "B"
-             :description {::di/kind :env}}]
+             :description {::di/kind :env
+                           ::di/root true}}]
            (di/inspect ["A" "B"]))))
 
 
 (t/deftest map-test
   (t/is (= [{:key         "A"
-             :description {::di/kind :env}}
+             :description {::di/kind :env
+                           ::di/root true}}
             {:key         "B"
-             :description {::di/kind :env}}]
+             :description {::di/kind :env
+                           ::di/root true}}]
            (di/inspect {:a "A" :b "B"}))))
-
-
-(t/deftest vector-test
-  (t/is (= [{:key         "A"
-             :description {::di/kind :env}}
-            {:key         "B"
-             :description {::di/kind :env}}]
-           (di/inspect ["A" "B"]))))
