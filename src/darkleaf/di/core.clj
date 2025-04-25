@@ -196,7 +196,12 @@
         (throw-many! exs)))))
 
 (def ^:private undefined-factory
-  (decorator nil
+  (reify
+    p/Factory
+    (dependencies [_])
+    (build [_ _] nil)
+    (demolish [_ _])
+    p/FactoryDescription
     (description [_]
       {::kind :undefined})))
 
