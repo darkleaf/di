@@ -305,7 +305,7 @@
 (def ^:private initial-registry
   (-> undefined-registry with-env with-ns with-internals))
 
-(defn start* ^AutoCloseable [key middlewares]
+(defn- start* ^AutoCloseable [key middlewares]
   (let [registry (apply-middlewares initial-registry middlewares)
         ctx      {:registry   registry
                   :*stop-list (atom '())}
