@@ -52,10 +52,10 @@
            decorated# (reify
                         p/Factory
                         p/FactoryDescription
-                        ~('dependencies methods)
-                        ~('build        methods)
-                        ~('demolish     methods)
-                        ~('description  methods))]
+                        ~(methods 'dependencies)
+                        ~(methods 'build)
+                        ~(methods 'demolish)
+                        ~(methods 'description))]
        (with-meta decorated# (merge meta# ~(meta &form))))))
 
 (comment
