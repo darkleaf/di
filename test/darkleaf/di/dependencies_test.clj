@@ -43,9 +43,7 @@
               [`a :built]
               [`b :built]
               [`root :built]
-              [::di/implicit-root :built]
 
-              [::di/implicit-root :stopped]
               [`root :stopped]
               [`b :stopped]
               [`a :stopped]

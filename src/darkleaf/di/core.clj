@@ -92,7 +92,10 @@
   (let [key (-> stack peek :key)]
     (throw (ex-info (str "Missing dependency " key)
                     {:type  ::missing-dependency
-                     :stack (map :key stack)}))))
+                     :stack (into []
+                                  (comp
+                                   (map :key))
+                                  stack)}))))
 
 (defn- circular-dependency! [stack]
   (let [key (-> stack peek :key)]
@@ -268,7 +271,8 @@
   (let [factory (cond
                   (vector? key) (->> key (map ref) template)
                   (map? key)    (->  key (update-vals ref) template)
-                  :else         (->  key ref))]
+                  :else         (->  key ref))
+        factory (vary-meta factory assoc ::implementation-detail true)]
     {::implicit-root factory}))
 
 (defn start
@@ -657,8 +661,9 @@
             (build [_ deps]
               (p/build factory (dissoc deps dep-key)))
             (description [_]
-             (-> (p/description factory)
-                 (update ::side-dependencies (fnil conj []) dep-key))))
+              (-> (p/description factory)
+                  ;; todo:
+                  (update ::side-dependencies (fnil conj []) dep-key))))
           factory)))))
 
 
@@ -958,19 +963,21 @@
   (fn [registry]
     (fn [key]
       (let [factory (registry key)]
-        (decorator factory
-          (build [_ deps]
-            (let [obj (p/build factory deps)]
-              (after-build! {:key key :object obj})
-              obj))
-          (demolish [_ obj]
-            (p/demolish factory obj)
-            (after-demolish! {:key key :object obj})
-            nil)
-          (description [_]
-            (assoc (p/description factory)
-                   ::log  {:will-be-logged true
-                           #_#_:opts       opts})))))))
+        (if (-> factory meta ::implementation-detail)
+          factory
+          (decorator factory
+            (build [_ deps]
+              (let [obj (p/build factory deps)]
+                (after-build! {:key key :object obj})
+                obj))
+            (demolish [_ obj]
+              (p/demolish factory obj)
+              (after-demolish! {:key key :object obj})
+              nil)
+            (description [_]
+              (assoc (p/description factory)
+                     ::log  {:will-be-logged true
+                             #_#_:opts       opts}))))))))
 
 (defn- with-inspect [registry]
   (fn [key]
@@ -980,12 +987,15 @@
                               (filter (fn [[k v]] (some? v)))
                               {:key          key
                                :dependencies (not-empty declared-deps)
-                               :description  (not-empty (p/description factory))})]
+                               :description  (not-empty (p/description factory))})
+          result        (if (-> factory meta ::implementation-detail)
+                          []
+                          [info])]
       (reify p/Factory
         (dependencies [_]
           declared-deps)
         (build [_ deps]
-          (into [info]
+          (into result
                 (comp
                  (mapcat val)
                  (distinct))
