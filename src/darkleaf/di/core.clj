@@ -94,6 +94,7 @@
                     {:type  ::missing-dependency
                      :stack (into []
                                   (comp
+                                   (remove #(-> % :factory meta ::implementation-detail))
                                    (map :key))
                                   stack)}))))
 
@@ -101,7 +102,11 @@
   (let [key (-> stack peek :key)]
     (throw (ex-info (str "Circular dependency " key)
                     {:type  ::circular-dependency
-                     :stack (map :key stack)}))))
+                     :stack (into []
+                                  (comp
+                                   (remove #(-> % :factory meta ::implementation-detail))
+                                   (map :key))
+                                  stack)}))))
 
 (defn- update-head [stack f & args]
  (let [head (peek stack)
