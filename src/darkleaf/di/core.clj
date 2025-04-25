@@ -26,6 +26,47 @@
 
 (set! *warn-on-reflection* true)
 
+(defmacro decorator
+  {:private      true
+   :style/indent [1 [:defn]]}
+  [binding & methods]
+  (let [factory  (gensym "factory-")
+        defaults {'dependencies `(dependencies
+                                  [_]
+                                  (p/dependencies ~factory))
+                  'build        `(build
+                                  [_ deps#]
+                                  (p/build ~factory deps#))
+                  'demolish     `(demolish
+                                  [_ obj#]
+                                  (p/demolish ~factory obj#))
+                  'description  `(description
+                                  [_]
+                                  (p/description ~factory))}
+        methods  (reduce (fn [acc method]
+                           (assoc acc (first method) method))
+                         defaults
+                         methods)]
+    `(let [~factory   ~binding
+           meta#      (meta ~factory)
+           decorated# (reify
+                        p/Factory
+                        p/FactoryDescription
+                        ~(methods 'dependencies)
+                        ~(methods 'build)
+                        ~(methods 'demolish)
+                        ~(methods 'description))]
+       (with-meta decorated# (merge meta# ~(meta &form))))))
+
+(comment
+  (let [base      ^{:a 1 :b 1} (reify ,,,)
+        decorated ^{:a 2} (decorator base)]
+    (meta decorated))
+  ;; => {:line 63, :column 17, :a 2, :b 1}
+  ,,,)
+
+
+
 (def ^:private dependency-type-priority
   {:required 1
    :optional 2})
@@ -370,15 +411,7 @@
 
 
 (defn- update-description [factory f & args]
-  (reify
-    p/Factory
-    (dependencies [_]
-      (p/dependencies factory))
-    (build [_ deps]
-      (p/build factory deps))
-    (demolish [_ obj]
-      (p/demolish factory obj))
-    p/FactoryDescription
+  (decorator factory
     (description [_]
       (apply f (p/description factory) args))))
 
@@ -612,8 +645,7 @@
     (fn [key]
       (let [factory (registry key)]
         (if (= ::implicit-root key)
-          (reify
-            p/Factory
+          (decorator factory
             (dependencies [_]
               ;; This is an incorrect implementation that does not preserve order.
               ;; (assoc (p/dependencies factory)
@@ -624,12 +656,9 @@
                      {dep-key :required}]))
             (build [_ deps]
               (p/build factory (dissoc deps dep-key)))
-            (demolish [_ obj]
-              (p/demolish factory obj))
-            p/FactoryDescription
             (description [_]
-              (-> (p/description factory)
-                  (update ::side-dependencies (fnil conj []) dep-key))))
+             (-> (p/description factory)
+                 (update ::side-dependencies (fnil conj []) dep-key))))
           factory)))))
 
 
@@ -929,10 +958,7 @@
   (fn [registry]
     (fn [key]
       (let [factory (registry key)]
-        (reify
-          p/Factory
-          (dependencies [_]
-            (p/dependencies factory))
+        (decorator factory
           (build [_ deps]
             (let [obj (p/build factory deps)]
               (after-build! {:key key :object obj})
@@ -941,7 +967,6 @@
             (p/demolish factory obj)
             (after-demolish! {:key key :object obj})
             nil)
-          p/FactoryDescription
           (description [_]
             (assoc (p/description factory)
                    ::log  {:will-be-logged true
