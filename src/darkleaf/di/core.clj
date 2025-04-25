@@ -618,8 +618,10 @@
               ;; This is an incorrect implementation that does not preserve order.
               ;; (assoc (p/dependencies factory)
               ;;        dep-key :required)
-              (concat (seq (p/dependencies factory))
-                      (seq {dep-key :required})))
+              (into []
+                    cat
+                    [(p/dependencies factory)
+                     {dep-key :required}]))
             (build [_ deps]
               (p/build factory (dissoc deps dep-key)))
             (demolish [_ obj]
