@@ -111,14 +111,10 @@
 ;; To check that, I have to look a little ahead and define component with a dependency.
 ;; As I said we consider deps in the next chapter.
 
-;; I have to use a dynamic var to test this behaviour but
-;; in real life during development you would redefine a static one.
-
-(defn ^:dynamic f [{x ::x} arg]
-  [::f x arg])
-
 (t/deftest f-test
+  (defn f [{x ::x} arg]
+    [::f x arg])
   (with-open [root (di/start `f {::x :x})]
-    (binding [f (fn [deps arg]
-                  [::new-f (deps ::x) arg])]
-      (t/is (= [::new-f :x 42] (root 42))))))
+    (defn f [deps arg]
+      [::new-f (deps ::x) arg])
+    (t/is (= [::new-f :x 42] (root 42)))))
