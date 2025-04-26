@@ -53,7 +53,7 @@
                     {:type  ::missing-dependency
                      :stack (into []
                                   (comp
-                                   (remove #(-> % :factory meta ::implementation-detail))
+                                   (remove #(-> % :factory p/description ::implementation-detail))
                                    (map :key))
                                   stack)}))))
 
@@ -63,7 +63,7 @@
                     {:type  ::circular-dependency
                      :stack (into []
                                   (comp
-                                   (remove #(-> % :factory meta ::implementation-detail))
+                                   (remove #(-> % :factory p/description ::implementation-detail))
                                    (map :key))
                                   stack)}))))
 
@@ -240,13 +240,20 @@
                                      (set (vals key))]
                       :else         [(->  key ref)
                                      #{key}])
-        factory (vary-meta factory assoc ::implementation-detail true)
-        factory (decorator factory
+        factory (reify
+                  p/Factory
+                  p/FactoryDescription
                   (dependencies [_]
                     (into []
                           cat
                           [(p/dependencies factory)
-                           {::side-dependency :required}])))]
+                           {::side-dependency :required}]))
+                  (build [_ deps]
+                    (p/build factory deps))
+                  (demolish [_ obj]
+                    (p/demolish factory obj))
+                  (description [_]
+                    {::implementation-detail true}))]
     (fn [registry]
       (fn [key]
         (cond
@@ -258,7 +265,9 @@
 (defn- with-internals [registry]
   (fn [key]
     (case key
-      ::side-dependency (quote ^::implementation-detail _)
+      ::side-dependency (reify p/FactoryDescription
+                          (description [_]
+                            {::implementation-detail true}))
       (registry key))))
 
 (def ^:private initial-registry
@@ -643,10 +652,11 @@
   [dep-key]
   (fn [registry]
     (fn [key]
-      (let [factory (registry key)]))))
+      (let [factory (registry key)]
         (condp = key
           ::side-dependency (reify
                               p/Factory
+                              p/FactoryDescription
                               (dependencies [_]
                                 ;; This is an incorrect implementation that does not preserve order.
                                 ;; (assoc (p/dependencies factory)
@@ -657,10 +667,12 @@
                                        {dep-key :required}]))
                               (build [_ deps]
                                 (p/build factory (dissoc deps dep-key)))
-                              (demolish [_ obj)
-                                (p/demolish factory obj)))
-          dep-key           (update-description factory assoc ::side-dependency true))
-          factory
+                              (demolish [_ obj]
+                                (p/demolish factory obj))
+                              (description [_]
+                                (p/description factory)))
+          dep-key           (update-description factory assoc ::side-dependency true)
+          factory)))))
 
 
 (defn- arglists [variable]
@@ -958,8 +970,8 @@
                after-demolish! (fn no-op [_])}}]
   (fn [registry]
     (fn [key]
-      (let [factory (registry key)]))))
-        (if (-> factory meta ::implementation-detail)
+      (let [factory (registry key)]
+        (if (-> factory p/description ::implementation-detail)
           factory
           (reify
             p/Factory
@@ -977,18 +989,19 @@
             (description [_]
               (assoc (p/description factory)
                      ::log  {:will-be-logged true
-                             #_#_:opts       opts}))))
+                             #_#_:opts       opts}))))))))
 
 (defn- with-inspect [registry]
   (fn [key]
     (let [factory       (registry key)
           declared-deps (p/dependencies factory)
+          description   (p/description factory)
           info          (into {}
                               (filter (fn [[k v]] (some? v)))
                               {:key          key
                                :dependencies (not-empty declared-deps)
-                               :description  (not-empty (p/description factory))})
-          result        (if (-> factory meta ::implementation-detail)
+                               :description  (not-empty description)})
+          result        (if (::implementation-detail description)
                           []
                           [info])]
       (reify p/Factory
