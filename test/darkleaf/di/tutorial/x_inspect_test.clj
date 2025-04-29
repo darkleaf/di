@@ -207,15 +207,28 @@
 (t/deftest update-key-test
   (t/is (= [{:key          `a
              :dependencies {`a+di-update-key#1-target :optional
+                            `a+di-update-key#2-f      :optional}
+             :description  {::di/kind   :middleware
+                            :middleware ::di/update-key
+                            :idx        2
+                            :target     `a
+                            :new-target `a+di-update-key#1-target
+                            :f          `a+di-update-key#2-f
+                            :args       []
+                            ::di/root   true}}
+
+
+            {:key          `a+di-update-key#2- ;; ...
+             :dependencies {`a+di-update-key#1-target :optional
                             `a+di-update-key#1-f      :optional
                             `a+di-update-key#1-arg#0  :optional}
              :description  {::di/kind   :middleware
                             :middleware ::di/update-key
+                            :idx        1
                             :target     `a
                             :new-target `a+di-update-key#1-target
                             :f          `a+di-update-key#1-f
-                            :args       [`a+di-update-key#1-arg#0]
-                            ::di/root   true}}
+                            :args       [`a+di-update-key#1-arg#0]}}
             {:key         `a+di-update-key#1-target
              :description {::di/kind       :trivial
                            :object         :obj
@@ -233,7 +246,8 @@
                                             :role   :arg}}}]
            (di/inspect `a
                        {`a :obj}
-                       (di/update-key `a str "arg")))))
+                       (di/update-key `a str "arg")
+                       (di/update-key `a identity)))))
 
 
 (t/deftest add-side-dependency-test
