@@ -216,22 +216,25 @@
                             :f          `a+di-update-key#2-f
                             :args       []
                             ::di/root   true}}
-
-
-            {:key          `a+di-update-key#2- ;; ...
-             :dependencies {`a+di-update-key#1-target :optional
+            {:key          `a+di-update-key#1-target
+             :dependencies {`a+di-update-key#0-target :optional
                             `a+di-update-key#1-f      :optional
                             `a+di-update-key#1-arg#0  :optional}
              :description  {::di/kind   :middleware
                             :middleware ::di/update-key
                             :idx        1
                             :target     `a
-                            :new-target `a+di-update-key#1-target
+                            :new-target `a+di-update-key#0-target
                             :f          `a+di-update-key#1-f
                             :args       [`a+di-update-key#1-arg#0]}}
-            {:key         `a+di-update-key#1-target
+
+            {:key         `a+di-update-key#0-target
              :description {::di/kind       :trivial
                            :object         :obj
+
+                           ;; тут вот расхождение с `:target`
+                           ;; нужно подумать над консистентностью
+                           #_#_
                            ::di/update-key {:target `a
                                             :role   :target}}}
             {:key         `a+di-update-key#1-f
@@ -243,7 +246,12 @@
              :description {::di/kind       :trivial
                            :object         "arg"
                            ::di/update-key {:target `a
-                                            :role   :arg}}}]
+                                            :role   :arg}}}
+            {:key         `a+di-update-key#2-f
+             :description {::di/kind       :trivial
+                           :object         identity
+                           ::di/update-key {:target `a
+                                            :role   :f}}}]
            (di/inspect `a
                        {`a :obj}
                        (di/update-key `a str "arg")

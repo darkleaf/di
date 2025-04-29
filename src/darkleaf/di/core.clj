@@ -182,16 +182,12 @@
       (registry key))))
 
 (defn- apply-middleware [registry mw]
-  (->
-   (cond
-     (nil? mw)               registry
-     (fn? mw)                (mw registry)
-     (map? mw)               (apply-map registry mw)
-     (instance? Function mw) (.apply ^Function mw registry)
-     :else                   (throw (IllegalArgumentException. "Wrong middleware kind")))
-
-   ;; вот это больше не нужно
-   (with-meta {::idx (-> registry meta (::idx 0) inc)})))
+  (cond
+    (nil? mw)               registry
+    (fn? mw)                (mw registry)
+    (map? mw)               (apply-map registry mw)
+    (instance? Function mw) (.apply ^Function mw registry)
+    :else                   (throw (IllegalArgumentException. "Wrong middleware kind"))))
 
 (defn- apply-middlewares [registry middlewares]
   (reduce apply-middleware
@@ -572,6 +568,9 @@
                     (stop [_]
                       (p/stop original))))))))))))
 
+(defn- update-key-key [target idx suffix]
+  (symbol (str (symbol target) "+di-update-key#" idx "-" suffix)))
+
 (defn update-key
   "A registry middleware for updating built objects.
 
@@ -596,43 +595,40 @@
                                            {:type ::non-existent-key
                                             :key  target})))
           idx            (-> target-factory p/description (:idx 0))
-          target-factory (update-description target-factory assoc
+          new-key        (update-key-key target idx "target")
+          idx            (inc idx)
+          f-key          (update-key-key target idx "f")
+          arg-keys       (for [i (-> args count range)]
+                           (update-key-key target idx (str "arg#" i)))
+          new-factory    (reify
+                           p/Factory
+                           (dependencies [_]
+                             (zipmap (concat [new-key f-key] arg-keys)
+                                     (repeat :optional)))
+                           (build [_ deps]
+                             (let [t    (deps new-key)
+                                   f    (deps f-key)
+                                   args (map deps arg-keys)]
+                               (apply f t args)))
+                           (demolish [_ _])
+                           p/FactoryDescription
+                           (description [_]
+                             {::kind      :middleware
+                              :middleware ::update-key
+                              :target     target
+                              :new-target new-key
+                              :f          f-key
+                              :args       arg-keys
+                              :idx        idx}))
+          f-factory      (update-description f assoc
                                              ::update-key {:target target
-                                                           :role   :target})
-          prefix        (str (symbol target) "+di-update-key#" idx)
-          new-key       (symbol (str prefix "-target"))
-          f-key         (symbol (str prefix "-f"))
-          arg-keys      (for [i (-> args count range)]
-                          (symbol (str prefix "-arg#" i)))
-          new-factory   (reify
-                          p/Factory
-                          (dependencies [_]
-                            (zipmap (concat [new-key f-key] arg-keys)
-                                    (repeat :optional)))
-                          (build [_ deps]
-                            (let [t    (deps new-key)
-                                  f    (deps f-key)
-                                  args (map deps arg-keys)]
-                              (apply f t args)))
-                          (demolish [_ _])
-                          p/FactoryDescription
-                          (description [_]
-                            {::kind      :middleware
-                             :middleware ::update-key
-                             :target     target
-                             :new-target new-key
-                             :f          f-key
-                             :args       arg-keys
-                             :idx        (inc idx)}))
-          f-factory     (update-description f assoc
-                                            ::update-key {:target target
-                                                          :role   :f})
-          arg-factories (for [arg args]
-                          (update-description arg assoc
-                                              ::update-key {:target target
-                                                            :role   :arg}))
-          own-registry  (zipmap (cons f-key     arg-keys)
-                                (cons f-factory arg-factories))]
+                                                           :role   :f})
+          arg-factories  (for [arg args]
+                           (update-description arg assoc
+                                               ::update-key {:target target
+                                                             :role   :arg}))
+          own-registry   (zipmap (cons f-key     arg-keys)
+                                 (cons f-factory arg-factories))]
       (fn [key]
         (condp = key
           new-key target-factory
