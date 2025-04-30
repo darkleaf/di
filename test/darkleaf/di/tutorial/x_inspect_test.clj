@@ -192,7 +192,15 @@
              :dependencies (seq {`b :required})
              :description  {::di/kind :trivial
                             :object   :obj
-                            ::di/root true}}
+                            ::di/root true
+                            ::di/update-key
+                            [[{::di/kind :trivial
+                               :object   str}
+                              {::di/kind :ref
+                               :key      `b
+                               :type     :required}]
+                             [{::di/kind :trivial
+                               :object   identity}]]}}
             {:key         `b
              :description {::di/kind :trivial
                            :object   "b"}}]

@@ -604,7 +604,10 @@
                             args (mapv p/build args (repeat deps) (repeat set-stop))]
                         (apply f t args)))
                     (description [_]
-                      (p/description factory)))]
+                      (-> (p/description factory)
+                          (update ::update-key u/conjv
+                                  (cons (p/description f)
+                                        (map p/description args))))))]
       (fn [key]
         (if (= target key)
           factory
