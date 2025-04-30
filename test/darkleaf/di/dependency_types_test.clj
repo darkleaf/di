@@ -10,9 +10,9 @@
   (reify p/Factory
     (dependencies [_]
       {dependency-key dependency-type})
-    (build [_ deps]
+    (build [_ deps _]
       [dependency-key (get deps dependency-key)])
-    (demolish [_ _])))
+    (description [_])))
 
 (t/deftest required-present-test
   (with-open [root (di/start ::root

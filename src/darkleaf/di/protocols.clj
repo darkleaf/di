@@ -14,11 +14,7 @@
   (dependencies [this]
     "Returns a map of a key and a dependency type.
      A type can be `:required` or `:optional`.")
-  (build [this dependencies]
+  (build [this dependencies set-stop-fn]
     "Builds an object from dependencies.")
-  (demolish [this obj]
-    "Demolishes or stops an object."))
-
-(defprotocol FactoryDescription
   (description [this]
     "Returns a map with the factory description."))

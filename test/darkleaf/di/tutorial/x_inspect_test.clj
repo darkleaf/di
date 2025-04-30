@@ -5,18 +5,6 @@
    [darkleaf.di.protocols :as p]
    [darkleaf.di.tutorial.x-ns-publics-test :as x-ns-publics-test]))
 
-(t/deftest no-description-test
-  (t/is (= [{:key         `foo
-             :description {::di/root true}
-             #_ "NOTE: no description as it is not implemented"}]
-           (di/inspect `foo
-                       {`foo (reify p/Factory
-                               (dependencies [_])
-                               (build [_ _] :foo)
-                               (demolish [_ _])
-                               #_"NOTE: no `p/description implemented")}))))
-
-
 (t/deftest env-test
   (t/is (= [{:key         "FOO"
              :description {::di/kind :env
@@ -46,25 +34,20 @@
 (def variable+factory
   (reify p/Factory
     (dependencies [_])
-    (build [_ _] :ok)
-    (demolish [_ _])
-    #_"NOTE: no `p/description implemented"))
+    (build [_ _ _] :ok)
+    (description [_] {})))
 
 (t/deftest variable+factory-test
   (t/is (= [{:key         `variable+factory
-             :description {#_"NOTE: no description as it is not implemented"
-                           ::di/root     true
+             :description {::di/root     true
                            ::di/variable #'variable+factory}}]
            (di/inspect `variable+factory))))
 
 
 (def variable+description
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_])
-    (build [_ _] :ok)
-    (demolish [_ _])
-    p/FactoryDescription
+    (build [_ _ _] :ok)
     (description [_]
       {::di/kind ::variable+description})))
 
@@ -205,35 +188,14 @@
 
 
 (t/deftest update-key-test
-  (t/is (= [{:key          `a
-             :dependencies {`a+di-update-key#1-target :optional
-                            `a+di-update-key#1-f      :optional
-                            `a+di-update-key#1-arg#0  :optional}
-             :description  {::di/kind   :middleware
-                            :middleware ::di/update-key
-                            :target     `a
-                            :new-target `a+di-update-key#1-target
-                            :f          `a+di-update-key#1-f
-                            :args       [`a+di-update-key#1-arg#0]
-                            ::di/root   true}}
-            {:key         `a+di-update-key#1-target
+  (t/is (= [{:key         `a
              :description {::di/kind       :trivial
                            :object         :obj
-                           ::di/update-key {:target `a
-                                            :role   :target}}}
-            {:key         `a+di-update-key#1-f
-             :description {::di/kind       :trivial
-                           :object         str
-                           ::di/update-key {:target `a
-                                            :role   :f}}}
-            {:key         `a+di-update-key#1-arg#0
-             :description {::di/kind       :trivial
-                           :object         "arg"
-                           ::di/update-key {:target `a
-                                            :role   :arg}}}]
+                           ::di/root true}}]
            (di/inspect `a
                        {`a :obj}
-                       (di/update-key `a str "arg")))))
+                       (di/update-key `a str "arg")
+                       (di/update-key `a identity)))))
 
 
 (t/deftest add-side-dependency-test
@@ -311,9 +273,8 @@
 (def variable-factory-regression
   (reify p/Factory
     (dependencies [_])
-    (build [_ _]
-      :ok)
-    (demolish [_ _])))
+    (build [_ _ _] :ok)
+    (description [_])))
 
 (t/deftest variable-factory-regression-test
   (t/is (= :ok
