@@ -599,8 +599,8 @@
                                     (p/dependencies f)
                                     (mapcat p/dependencies args))))
                     (build [_ deps set-stop]
-                      (let [t (p/build factory deps set-stop)
-                            f (p/build f deps set-stop)
+                      (let [t    (p/build factory deps set-stop)
+                            f    (p/build f deps set-stop)
                             args (mapv p/build args (repeat deps) (repeat set-stop))]
                         (apply f t args)))
                     (description [_]
