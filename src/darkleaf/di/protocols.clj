@@ -14,7 +14,7 @@
   (dependencies [this]
     "Returns a map of a key and a dependency type.
      A type can be `:required` or `:optional`.")
-  (build [this dependencies set-stop-fn]
+  (build [this dependencies add-stop]
     "Builds an object from dependencies.")
   (description [this]
     "Returns a map with the factory description."))

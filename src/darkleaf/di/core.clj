@@ -83,7 +83,7 @@
      :declared-deps  deps
      :remaining-deps (seq deps)}))
 
-(defn- ->set-stop-fn [{:keys [*stop-list]}]
+(defn- ->add-stop [{:keys [*stop-list]}]
   (fn [f]
     (swap! *stop-list conj f)))
 
@@ -91,7 +91,7 @@
   (let [factory       (:factory head)
         declared-deps (:declared-deps head)
         built-deps    (select-keys built-map (keys declared-deps))]
-    (p/build factory built-deps (->set-stop-fn ctx))))
+    (p/build factory built-deps (->add-stop ctx))))
 
 (defn- build-obj [ctx built-map stack]
   (try
@@ -250,8 +250,8 @@
                           cat
                           [(p/dependencies factory)
                            {::side-dependency :required}]))
-                  (build [_ deps set-stop]
-                    (p/build factory deps set-stop))
+                  (build [_ deps add-stop]
+                    (p/build factory deps add-stop))
                   (description [_]
                     {::implementation-detail true}))]
     (fn [registry]
@@ -419,8 +419,8 @@
     p/Factory
     (dependencies [_]
       (p/dependencies factory))
-    (build [_ deps set-stop]
-      (p/build factory deps set-stop))
+    (build [_ deps add-stop]
+      (p/build factory deps add-stop))
     (description [_]
       (apply f (p/description factory) args))))
 
@@ -469,8 +469,8 @@
            (tree-seq coll? seq)
            (map ref/deps)
            (reduce combine-dependencies)))
-    (build [_ deps set-stop]
-      (w/postwalk #(ref/build % deps set-stop) form))
+    (build [_ deps add-stop]
+      (w/postwalk #(ref/build % deps add-stop) form))
     (description [_]
       {::kind    :template
        :template form})))
@@ -596,10 +596,10 @@
                             (concat (p/dependencies factory)
                                     (p/dependencies f)
                                     (mapcat p/dependencies args))))
-                    (build [_ deps set-stop]
-                      (let [t    (p/build factory deps set-stop)
-                            f    (p/build f deps set-stop)
-                            args (mapv p/build args (repeat deps) (repeat set-stop))]
+                    (build [_ deps add-stop]
+                      (let [t    (p/build factory deps add-stop)
+                            f    (p/build f deps add-stop)
+                            args (mapv p/build args (repeat deps) (repeat add-stop))]
                         (apply f t args)))
                     (description [_]
                       (-> (p/description factory)
@@ -638,8 +638,8 @@
                                       cat
                                       [(p/dependencies factory)
                                        {dep-key :required}]))
-                              (build [_ deps set-stop]
-                                (p/build factory (dissoc deps dep-key) set-stop))
+                              (build [_ deps add-stop]
+                                (p/build factory (dissoc deps dep-key) add-stop))
                               (description [_]
                                 (p/description factory)))
           dep-key           (update-description factory assoc ::side-dependency true)
@@ -674,10 +674,10 @@
     (reify
       p/Factory
       (dependencies [_])
-      (build [_ _ set-stop]
+      (build [_ _ add-stop]
         (let [obj (variable)]
           (validate-obj! obj variable)
-          (set-stop #(stop obj))
+          (add-stop #(stop obj))
           obj))
       (description [_]
         {::kind :component}))))
@@ -689,10 +689,10 @@
       p/Factory
       (dependencies [_]
         deps)
-      (build [_ deps set-stop]
+      (build [_ deps add-stop]
         (let [obj (variable deps)]
           (validate-obj! obj variable)
-          (set-stop #(stop obj))
+          (add-stop #(stop obj))
           obj))
       (description [_]
         {::kind :component}))))
@@ -930,10 +930,10 @@
             p/Factory
             (dependencies [_]
               (p/dependencies factory))
-            (build [_ deps set-stop]
-              (let [obj (p/build factory deps set-stop)]
+            (build [_ deps add-stop]
+              (let [obj (p/build factory deps add-stop)]
                 (after-build! {:key key :object obj})
-                (set-stop #(after-demolish! {:key key :object obj}))
+                (add-stop #(after-demolish! {:key key :object obj}))
                 obj))
             (description [_]
               (assoc (p/description factory)

@@ -32,9 +32,9 @@
     (p/dependencies object)
     nil))
 
-(defn build [object deps set-stop]
+(defn build [object deps add-stop]
   (if (instance? Ref object)
-    (p/build object deps set-stop)
+    (p/build object deps add-stop)
     object))
 
 (defmethod print-method Ref [o ^Writer w]

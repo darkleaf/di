@@ -45,8 +45,8 @@
         (reify p/Factory
           (dependencies [_]
             (p/dependencies factory))
-          (build [_ deps set-stop]
-            (p/build factory deps set-stop))
+          (build [_ deps add-stop]
+            (p/build factory deps add-stop))
           (description [_]
             (p/description factory)))))))
 
