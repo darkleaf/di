@@ -84,8 +84,8 @@
      :remaining-deps (seq deps)}))
 
 (defn- ->add-stop [{:keys [*stop-list]}]
-  (fn [f]
-    (swap! *stop-list conj f)))
+  (fn [stop]
+    (swap! *stop-list conj stop)))
 
 (defn- build-obj* [ctx built-map head]
   (let [factory       (:factory head)
