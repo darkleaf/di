@@ -33,5 +33,7 @@
                           ::on-stop-dep-ex   on-stop-dep-ex}
         ex               (-> (di/start `root registry)
                              catch-some)]
-    (t/is (= on-start-root-ex (ex-cause ex)))
-    (t/is (= [on-stop-dep-ex] (vec (.getSuppressed ex))))))
+    (t/is (= ::di/build-failure (-> ex ex-data :type)))
+    (t/is (= [`root]            (-> ex ex-data :stack)))
+    (t/is (= on-start-root-ex   (-> ex ex-cause)))
+    (t/is (= [on-stop-dep-ex]   (-> ex .getSuppressed seq)))))

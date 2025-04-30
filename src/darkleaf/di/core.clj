@@ -47,13 +47,16 @@
    (.addSuppressed a b)
    a))
 
+(def ^:private remove-implementation-details
+  (remove #(-> % :factory p/description ::implementation-detail)))
+
 (defn- missing-dependency! [stack]
   (let [key (-> stack peek :key)]
     (throw (ex-info (str "Missing dependency " key)
                     {:type  ::missing-dependency
                      :stack (into []
                                   (comp
-                                   (remove #(-> % :factory p/description ::implementation-detail))
+                                   remove-implementation-details
                                    (map :key))
                                   stack)}))))
 
@@ -63,7 +66,7 @@
                     {:type  ::circular-dependency
                      :stack (into []
                                   (comp
-                                   (remove #(-> % :factory p/description ::implementation-detail))
+                                   remove-implementation-details
                                    (map :key))
                                   stack)}))))
 
@@ -92,7 +95,11 @@
     (catch Exception ex
       (throw (ex-info "A failure occurred during the build process"
                       {:type  ::build-failure
-                       :stack (map :key stack)}
+                       :stack (into []
+                                    (comp
+                                     remove-implementation-details
+                                     (map :key))
+                                    stack)}
                       ex)))))
 
 (defn- build [{:keys [registry *stop-list]} key]
