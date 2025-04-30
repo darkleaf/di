@@ -188,13 +188,18 @@
 
 
 (t/deftest update-key-test
-  (t/is (= [{:key         `a
-             :description {::di/kind       :trivial
-                           :object         :obj
-                           ::di/root true}}]
+  (t/is (= [{:key          `a
+             :dependencies (seq {`b :required})
+             :description  {::di/kind :trivial
+                            :object   :obj
+                            ::di/root true}}
+            {:key         `b
+             :description {::di/kind :trivial
+                           :object   "b"}}]
            (di/inspect `a
-                       {`a :obj}
-                       (di/update-key `a str "arg")
+                       {`a :obj
+                        `b "b"}
+                       (di/update-key `a str (di/ref `b))
                        (di/update-key `a identity)))))
 
 
