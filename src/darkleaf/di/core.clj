@@ -189,14 +189,12 @@
       (registry key))))
 
 (defn- apply-middleware [registry mw]
-  (->
-   (cond
-     (nil? mw)               registry
-     (fn? mw)                (mw registry)
-     (map? mw)               (apply-map registry mw)
-     (instance? Function mw) (.apply ^Function mw registry)
-     :else                   (throw (IllegalArgumentException. "Wrong middleware kind")))
-   (with-meta {::idx (-> registry meta (::idx 0) inc)})))
+  (cond
+    (nil? mw)               registry
+    (fn? mw)                (mw registry)
+    (map? mw)               (apply-map registry mw)
+    (instance? Function mw) (.apply ^Function mw registry)
+    :else                   (throw (IllegalArgumentException. "Wrong middleware kind"))))
 
 (defn- apply-middlewares [registry middlewares]
   (reduce apply-middleware
