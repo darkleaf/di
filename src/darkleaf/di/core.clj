@@ -187,18 +187,17 @@
       trivial
       (registry key))))
 
-(defn- apply-middleware [registry mw]
-  (cond
-    (nil? mw)               registry
-    (fn? mw)                (mw registry)
-    (map? mw)               (apply-map registry mw)
-    (instance? Function mw) (.apply ^Function mw registry)
-    :else                   (throw (IllegalArgumentException. "Wrong middleware kind"))))
-
 (defn- apply-middlewares [registry middlewares]
-  (reduce apply-middleware
-          registry
-          (flatten middlewares)))
+  (loop [registry                    registry
+         [mw & tail :as middlewares] middlewares]
+    (if (seq middlewares)
+      (cond
+        (fn? mw)                (recur (mw registry) tail)
+        (map? mw)               (recur (apply-map registry mw) tail)
+        (instance? Function mw) (recur (.apply ^Function mw registry) tail)
+        (seqable? mw)           (recur registry (concat mw tail))
+        :else                   (throw (IllegalArgumentException. "Wrong middleware kind")))
+      registry)))
 
 (declare var->factory)
 
