@@ -135,8 +135,6 @@
 ;; `darkleaf.di.protocols/Factory`
 (view-doc #'dip/dependencies)
 (view-doc #'dip/build)
-(view-doc #'dip/demolish)
-;; `darkleaf.di.protocols/FactoryDescription`
 (view-doc #'dip/description)
 
 

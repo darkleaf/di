@@ -22,6 +22,8 @@
 (defn seq-contains? [xs x]
   (not (neg? (index-of xs x))))
 
+(def conjv (fnil conj []))
+
 (defmacro try*
   "Macro to catch multiple exceptions with one catch body.
 

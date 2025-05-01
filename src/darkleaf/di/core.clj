@@ -83,15 +83,19 @@
      :declared-deps  deps
      :remaining-deps (seq deps)}))
 
-(defn- build-obj* [built-map head]
+(defn- ->add-stop [{:keys [*stop-list]}]
+  (fn [stop]
+    (swap! *stop-list conj stop)))
+
+(defn- build-obj* [ctx built-map head]
   (let [factory       (:factory head)
         declared-deps (:declared-deps head)
         built-deps    (select-keys built-map (keys declared-deps))]
-    (p/build factory built-deps)))
+    (p/build factory built-deps (->add-stop ctx))))
 
-(defn- build-obj [built-map stack]
+(defn- build-obj [ctx built-map stack]
   (try
-    (build-obj* built-map (peek stack))
+    (build-obj* ctx built-map (peek stack))
     (catch Exception ex
       (throw (ex-info "A failure occurred during the build process"
                       {:type  ::build-failure
@@ -102,7 +106,7 @@
                                     stack)}
                       ex)))))
 
-(defn- build [{:keys [registry *stop-list]} key]
+(defn- build [{:keys [registry] :as ctx} key]
   (loop [stack     (list (stack-frame key :required (registry key)))
          built-map {}]
     (if (empty? stack)
@@ -130,9 +134,7 @@
                    built-map))
 
           :else
-          (let [obj  (build-obj built-map stack)
-                stop #(p/demolish factory obj)]
-            (swap! *stop-list conj stop)
+          (let [obj (build-obj ctx built-map stack)]
             (case [obj dep-type]
               [nil :optional] (recur tail built-map)
               [nil :required] (missing-dependency! stack)
@@ -170,12 +172,9 @@
         (throw-many! exs)))))
 
 (def ^:private undefined-factory
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_])
-    (build [_ _] nil)
-    (demolish [_ _])
-    p/FactoryDescription
+    (build [_ _ _] nil)
     (description [_]
       {::kind :undefined})))
 
@@ -189,14 +188,12 @@
       (registry key))))
 
 (defn- apply-middleware [registry mw]
-  (->
-   (cond
-     (nil? mw)               registry
-     (fn? mw)                (mw registry)
-     (map? mw)               (apply-map registry mw)
-     (instance? Function mw) (.apply ^Function mw registry)
-     :else                   (throw (IllegalArgumentException. "Wrong middleware kind")))
-   (with-meta {::idx (-> registry meta (::idx 0) inc)})))
+  (cond
+    (nil? mw)               registry
+    (fn? mw)                (mw registry)
+    (map? mw)               (apply-map registry mw)
+    (instance? Function mw) (.apply ^Function mw registry)
+    :else                   (throw (IllegalArgumentException. "Wrong middleware kind"))))
 
 (defn- apply-middlewares [registry middlewares]
   (reduce apply-middleware
@@ -225,13 +222,10 @@
   [registry]
   (fn [key]
     (?? (when (string? key)
-          (reify
-            p/Factory
+          (reify p/Factory
             (dependencies [_])
-            (build [_ _]
+            (build [_ _ _]
               (System/getenv key))
-            (demolish [_ _])
-            p/FactoryDescription
             (description [_]
               {::kind :env})))
         (registry key))))
@@ -247,18 +241,12 @@
                                      (set (vals key))]
                       :else         [(->  key ref)
                                      #{key}])
-        factory (reify
-                  p/Factory
-                  p/FactoryDescription
+        factory (reify p/Factory
                   (dependencies [_]
-                    (into []
-                          cat
-                          [(p/dependencies factory)
-                           {::side-dependency :required}]))
-                  (build [_ deps]
-                    (p/build factory deps))
-                  (demolish [_ obj]
-                    (p/demolish factory obj))
+                    (concat (p/dependencies factory)
+                            {::side-dependency :required}))
+                  (build [_ deps add-stop]
+                    (p/build factory deps add-stop))
                   (description [_]
                     {::implementation-detail true}))]
     (fn [registry]
@@ -272,7 +260,9 @@
 (defn- with-internals [registry]
   (fn [key]
     (case key
-      ::side-dependency (reify p/FactoryDescription
+      ::side-dependency (reify p/Factory
+                          (dependencies [_])
+                          (build [_ _ _] '_)
                           (description [_]
                             {::implementation-detail true}))
       (registry key))))
@@ -419,15 +409,11 @@
 
 
 (defn- update-description [factory f & args]
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_]
       (p/dependencies factory))
-    (build [_ deps]
-      (p/build factory deps))
-    (demolish [_ obj]
-      (p/demolish factory obj))
-    p/FactoryDescription
+    (build [_ deps add-stop]
+      (p/build factory deps add-stop))
     (description [_]
       (apply f (p/description factory) args))))
 
@@ -469,17 +455,14 @@
   [form]
   ^{:type   ::template
     ::print form}
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_]
       (->> form
            (tree-seq coll? seq)
            (map ref/deps)
            (reduce combine-dependencies)))
-    (build [_ deps]
-      (w/postwalk #(ref/build % deps) form))
-    (demolish [_ _])
-    p/FactoryDescription
+    (build [_ deps add-stop]
+      (w/postwalk #(ref/build % deps add-stop) form))
     (description [_]
       {::kind    :template
        :template form})))
@@ -495,14 +478,11 @@
   [key f & args]
   {:pre [(key? key)
          (ifn? f)]}
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_]
       {key :optional})
-    (build [_ deps]
+    (build [_ deps _]
       (apply f (deps key) args))
-    (demolish [_ _])
-    p/FactoryDescription
     (description [_]
       {::kind :derive
        :key   key
@@ -595,54 +575,29 @@
   [target f & args]
   {:pre [(key? target)]}
   (fn [registry]
-    (let [idx             (-> registry meta ::idx)
-          prefix          (str (symbol target) "+di-update-key#" idx)
-          new-key         (symbol (str prefix "-target"))
-          f-key           (symbol (str prefix "-f"))
-          arg-keys        (for [i (-> args count range)]
-                            (symbol (str prefix "-arg#" i)))
-          new-factory     (reify
-                            p/Factory
-                            (dependencies [_]
-                              (zipmap (concat [new-key f-key] arg-keys)
-                                      (repeat :optional)))
-                            (build [_ deps]
-                              (let [t    (deps new-key)
-                                    f    (deps f-key)
-                                    args (map deps arg-keys)]
-                                (apply f t args)))
-                            (demolish [_ _])
-                            p/FactoryDescription
-                            (description [_]
-                              {::kind      :middleware
-                               :middleware ::update-key
-                               :target     target
-                               :new-target new-key
-                               :f          f-key
-                               :args       arg-keys}))
-          f-factory       (update-description f assoc
-                                              ::update-key {:target target
-                                                            :role   :f})
-          arg-factories   (for [arg args]
-                            (update-description arg assoc
-                                                ::update-key {:target target
-                                                              :role   :arg}))
-          own-registry    (zipmap (cons f-key     arg-keys)
-                                  (cons f-factory arg-factories))
-          target-factory* (registry target)
-          target-factory  (update-description target-factory* assoc
-                                              ::update-key {:target target
-                                                            :role   :target})]
-      (when (= undefined-factory target-factory*)
-        (throw (ex-info (str "Can't update non-existent key " target)
-                        {:type ::non-existent-key
-                         :key  target})))
+    (let [factory (registry target)
+          _       (when (= undefined-factory factory)
+                    (throw (ex-info (str "Can't update non-existent key " target)
+                                    {:type ::non-existent-key
+                                     :key  target})))
+          factory (reify p/Factory
+                    (dependencies [_]
+                      (concat (p/dependencies factory)
+                              (p/dependencies f)
+                              (mapcat p/dependencies args)))
+                    (build [_ deps add-stop]
+                      (let [t    (p/build factory deps add-stop)
+                            f    (p/build f       deps add-stop)
+                            args (for [arg args] (p/build arg deps add-stop))]
+                        (apply f t args)))
+                    (description [_]
+                      (-> (p/description factory)
+                          (update ::update-key u/conjv
+                                  (map p/description (cons f args))))))]
       (fn [key]
-        (condp = key
-          new-key target-factory
-          target  new-factory
-          (?? (own-registry key)
-              (registry key)))))))
+        (if (= target key)
+          factory
+          (registry key))))))
 
 (defn add-side-dependency
   "A registry middleware for adding side dependencies.
@@ -661,21 +616,15 @@
     (fn [key]
       (let [factory (registry key)]
         (condp = key
-          ::side-dependency (reify
-                              p/Factory
-                              p/FactoryDescription
+          ::side-dependency (reify p/Factory
                               (dependencies [_]
                                 ;; This is an incorrect implementation that does not preserve order.
                                 ;; (assoc (p/dependencies factory)
                                 ;;        dep-key :required)
-                                (into []
-                                      cat
-                                      [(p/dependencies factory)
-                                       {dep-key :required}]))
-                              (build [_ deps]
-                                (p/build factory (dissoc deps dep-key)))
-                              (demolish [_ obj]
-                                (p/demolish factory obj))
+                                (concat (p/dependencies factory)
+                                        {dep-key :required}))
+                              (build [_ deps add-stop]
+                                (p/build factory deps add-stop))
                               (description [_]
                                 (p/description factory)))
           dep-key           (update-description factory assoc ::side-dependency true)
@@ -707,57 +656,47 @@
 
 (defn- var->0-component [variable]
   (let [stop (stop-fn variable)]
-    (reify
-      p/Factory
+    (reify p/Factory
       (dependencies [_])
-      (build [_ _]
-        (doto (variable)
-          (validate-obj! variable)))
-      (demolish [_ obj]
-        (stop obj))
-      p/FactoryDescription
+      (build [_ _ add-stop]
+        (let [obj (variable)]
+          (validate-obj! obj variable)
+          (add-stop #(stop obj))
+          obj))
       (description [_]
         {::kind :component}))))
 
 (defn- var->1-component [variable]
   (let [deps (dependencies-fn variable)
         stop (stop-fn variable)]
-    (reify
-      p/Factory
+    (reify p/Factory
       (dependencies [_]
         deps)
-      (build [_ deps]
-        (doto (variable deps)
-          (validate-obj! variable)))
-      (demolish [_ obj]
-        (stop obj))
-      p/FactoryDescription
+      (build [_ deps add-stop]
+        (let [obj (variable deps)]
+          (validate-obj! obj variable)
+          (add-stop #(stop obj))
+          obj))
       (description [_]
         {::kind :component}))))
 
 (defn- service-factory [variable declared-deps]
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_]
       declared-deps)
-    (build [_ deps]
+    (build [_ deps _]
       (-> variable
           (partial deps)
           (with-meta {:type   ::service
                       ::print variable})))
-    (demolish [_ _])
-    p/FactoryDescription
     (description [_]
       {::kind :service})))
 
 (defn- var->0-service [variable]
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_])
-    (build [_ _]
+    (build [_ _ _]
       variable)
-    (demolish [_ _])
-    p/FactoryDescription
     (description [_]
       {::kind :service})))
 
@@ -802,26 +741,18 @@
 (extend-protocol p/Factory
   nil
   (dependencies [_] nil)
-  (build [_ _] nil)
-  (demolish [_ _] nil)
-
-  Object
-  (dependencies [_] nil)
-  (build [this _] this)
-  (demolish [_ _] nil))
-
-(extend-protocol p/FactoryDescription
-  nil
+  (build [_ _ _] nil)
   (description [this]
     {::kind :trivial
      :object nil})
 
   Object
+  (dependencies [_] nil)
+  (build [this _ _] this)
   (description [this]
-    (if (instance? (:on-interface p/Factory) this)
-      {}
-      {::kind  :trivial
-       :object this})))
+    {::kind  :trivial
+     :object this}))
+
 
 (c/derive ::root     ::instance)
 (c/derive ::template ::instance)
@@ -865,14 +796,11 @@
             key-name (name key)
             parser   (cmap key-ns)]
         (if (some? parser)
-          (reify
-            p/Factory
+          (reify p/Factory
             (dependencies [_]
               {key-name :optional})
-            (build [_ deps]
+            (build [_ deps _]
               (some-> key-name deps parser))
-            (demolish [_ _])
-            p/FactoryDescription
             (description [_]
               {::kind      :middleware
                :middleware ::env-parsing
@@ -929,14 +857,11 @@
                                      (map symbol))
               deps              (zipmap component-symbols
                                         (repeat :required))]
-          (reify
-            p/Factory
+          (reify p/Factory
             (dependencies [_this]
               deps)
-            (build [_this deps]
+            (build [_this deps _]
               (update-keys deps #(-> % name keyword)))
-            (demolish [_ _])
-            p/FactoryDescription
             (description [_]
               {::kind      :middleware
                :middleware ::ns-publics
@@ -980,19 +905,14 @@
       (let [factory (registry key)]
         (if (-> factory p/description ::implementation-detail)
           factory
-          (reify
-            p/Factory
-            p/FactoryDescription
+          (reify p/Factory
             (dependencies [_]
               (p/dependencies factory))
-            (build [_ deps]
-              (let [obj (p/build factory deps)]
+            (build [_ deps add-stop]
+              (let [obj (p/build factory deps add-stop)]
                 (after-build! {:key key :object obj})
+                (add-stop #(after-demolish! {:key key :object obj}))
                 obj))
-            (demolish [_ obj]
-              (p/demolish factory obj)
-              (after-demolish! {:key key :object obj})
-              nil)
             (description [_]
               (assoc (p/description factory)
                      ::log  {:will-be-logged true
@@ -1014,13 +934,12 @@
       (reify p/Factory
         (dependencies [_]
           declared-deps)
-        (build [_ deps]
+        (build [_ deps _]
           (into result
                 (comp
                  (mapcat val)
                  (distinct))
-                deps))
-        (demolish [_ obj])))))
+                deps))))))
 
 (defn inspect
   "Collects and returns a vector of keys along with their dependencies.

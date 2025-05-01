@@ -14,10 +14,8 @@
   p/Factory
   (dependencies [_]
     {key type})
-  (build [_ deps]
+  (build [_ deps _]
     (deps key))
-  (demolish [_ _])
-  p/FactoryDescription
   (description [_]
     {::di/kind :ref
      :key      key
@@ -34,9 +32,9 @@
     (p/dependencies object)
     nil))
 
-(defn build [object deps]
+(defn build [object deps add-stop]
   (if (instance? Ref object)
-    (p/build object deps)
+    (p/build object deps add-stop)
     object))
 
 (defmethod print-method Ref [o ^Writer w]

@@ -45,10 +45,10 @@
         (reify p/Factory
           (dependencies [_]
             (p/dependencies factory))
-          (build [_ deps]
-            (p/build factory deps))
-          (demolish [_ obj]
-            (p/demolish factory obj)))))))
+          (build [_ deps add-stop]
+            (p/build factory deps add-stop))
+          (description [_]
+            (p/description factory)))))))
 
 (t/deftest null-registry-middleware-test
   (with-open [root (di/start `root (null-registry-middleware))]
