@@ -1,3 +1,11 @@
+# 3.6.0
+
++ Breaking: Clojure 1.12
++ Breaking: `p/Factory` protocol was changed
++ Breaking: the description of some factories was changed
++ Breaking: internal keys were redacted
++ Add `->memoize`
+
 # 3.5.0
 
 + Remove `*next-id*`
