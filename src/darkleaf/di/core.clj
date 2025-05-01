@@ -587,14 +587,13 @@
                               (mapcat p/dependencies args)))
                     (build [_ deps add-stop]
                       (let [t    (p/build factory deps add-stop)
-                            f    (p/build f deps add-stop)
-                            args (map p/build args (repeat deps) (repeat add-stop))]
+                            f    (p/build f       deps add-stop)
+                            args (for [arg args] (p/build arg deps add-stop))]
                         (apply f t args)))
                     (description [_]
                       (-> (p/description factory)
                           (update ::update-key u/conjv
-                                  (cons (p/description f)
-                                        (map p/description args))))))]
+                                  (map p/description (cons f args))))))]
       (fn [key]
         (if (= target key)
           factory
