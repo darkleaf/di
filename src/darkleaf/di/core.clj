@@ -172,8 +172,7 @@
         (throw-many! exs)))))
 
 (def ^:private undefined-factory
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_])
     (build [_ _ _] nil)
     (description [_]
@@ -223,8 +222,7 @@
   [registry]
   (fn [key]
     (?? (when (string? key)
-          (reify
-            p/Factory
+          (reify p/Factory
             (dependencies [_])
             (build [_ _ _]
               (System/getenv key))
@@ -243,13 +241,10 @@
                                      (set (vals key))]
                       :else         [(->  key ref)
                                      #{key}])
-        factory (reify
-                  p/Factory
+        factory (reify p/Factory
                   (dependencies [_]
-                    (into []
-                          cat
-                          [(p/dependencies factory)
-                           {::side-dependency :required}]))
+                    (concat (p/dependencies factory)
+                            {::side-dependency :required}))
                   (build [_ deps add-stop]
                     (p/build factory deps add-stop))
                   (description [_]
@@ -267,8 +262,7 @@
     (case key
       ::side-dependency (reify p/Factory
                           (dependencies [_])
-                          (build [_ _ _]
-                            '_)
+                          (build [_ _ _] '_)
                           (description [_]
                             {::implementation-detail true}))
       (registry key))))
@@ -415,8 +409,7 @@
 
 
 (defn- update-description [factory f & args]
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_]
       (p/dependencies factory))
     (build [_ deps add-stop]
@@ -462,8 +455,7 @@
   [form]
   ^{:type   ::template
     ::print form}
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_]
       (->> form
            (tree-seq coll? seq)
@@ -486,8 +478,7 @@
   [key f & args]
   {:pre [(key? key)
          (ifn? f)]}
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_]
       {key :optional})
     (build [_ deps _]
@@ -589,17 +580,15 @@
                     (throw (ex-info (str "Can't update non-existent key " target)
                                     {:type ::non-existent-key
                                      :key  target})))
-          factory (reify
-                    p/Factory
+          factory (reify p/Factory
                     (dependencies [_]
-                      (into []
-                            (concat (p/dependencies factory)
-                                    (p/dependencies f)
-                                    (mapcat p/dependencies args))))
+                      (concat (p/dependencies factory)
+                              (p/dependencies f)
+                              (mapcat p/dependencies args)))
                     (build [_ deps add-stop]
                       (let [t    (p/build factory deps add-stop)
                             f    (p/build f deps add-stop)
-                            args (mapv p/build args (repeat deps) (repeat add-stop))]
+                            args (map p/build args (repeat deps) (repeat add-stop))]
                         (apply f t args)))
                     (description [_]
                       (-> (p/description factory)
@@ -628,16 +617,13 @@
     (fn [key]
       (let [factory (registry key)]
         (condp = key
-          ::side-dependency (reify
-                              p/Factory
+          ::side-dependency (reify p/Factory
                               (dependencies [_]
                                 ;; This is an incorrect implementation that does not preserve order.
                                 ;; (assoc (p/dependencies factory)
                                 ;;        dep-key :required)
-                                (into []
-                                      cat
-                                      [(p/dependencies factory)
-                                       {dep-key :required}]))
+                                (concat (p/dependencies factory)
+                                        {dep-key :required}))
                               (build [_ deps add-stop]
                                 (p/build factory (dissoc deps dep-key) add-stop))
                               (description [_]
@@ -671,8 +657,7 @@
 
 (defn- var->0-component [variable]
   (let [stop (stop-fn variable)]
-    (reify
-      p/Factory
+    (reify p/Factory
       (dependencies [_])
       (build [_ _ add-stop]
         (let [obj (variable)]
@@ -685,8 +670,7 @@
 (defn- var->1-component [variable]
   (let [deps (dependencies-fn variable)
         stop (stop-fn variable)]
-    (reify
-      p/Factory
+    (reify p/Factory
       (dependencies [_]
         deps)
       (build [_ deps add-stop]
@@ -698,8 +682,7 @@
         {::kind :component}))))
 
 (defn- service-factory [variable declared-deps]
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_]
       declared-deps)
     (build [_ deps _]
@@ -711,8 +694,7 @@
       {::kind :service})))
 
 (defn- var->0-service [variable]
-  (reify
-    p/Factory
+  (reify p/Factory
     (dependencies [_])
     (build [_ _ _]
       variable)
@@ -815,8 +797,7 @@
             key-name (name key)
             parser   (cmap key-ns)]
         (if (some? parser)
-          (reify
-            p/Factory
+          (reify p/Factory
             (dependencies [_]
               {key-name :optional})
             (build [_ deps _]
@@ -877,8 +858,7 @@
                                      (map symbol))
               deps              (zipmap component-symbols
                                         (repeat :required))]
-          (reify
-            p/Factory
+          (reify p/Factory
             (dependencies [_this]
               deps)
             (build [_this deps _]
@@ -926,8 +906,7 @@
       (let [factory (registry key)]
         (if (-> factory p/description ::implementation-detail)
           factory
-          (reify
-            p/Factory
+          (reify p/Factory
             (dependencies [_]
               (p/dependencies factory))
             (build [_ deps add-stop]
