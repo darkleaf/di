@@ -22,7 +22,8 @@
    (clojure.lang IDeref IFn Var Indexed ILookup)
    (java.io FileNotFoundException Writer)
    (java.lang AutoCloseable)
-   (java.util.function Function)))
+   (java.util.function Function)
+   (java.util.concurrent ConcurrentHashMap)))
 
 (set! *warn-on-reflection* true)
 
@@ -959,3 +960,56 @@
                                   (implicit-root key)
                                   with-inspect])]
     @components))
+
+
+(defn- first-mw? [registry]
+  (identical? registry initial-registry))
+
+(defn- add-factory-watch [factory f]
+  (when-some [var (-> factory p/description ::variable)]
+    ;; Every memoize instance has a new factory instance for a var.
+    ;; It is ok to pass a factory as a key.
+    (add-watch var factory (fn [_ _ _ _] (f)))))
+
+(defn- remove-factory-watch [factory]
+  (when-some [var (-> factory p/description ::variable)]
+    (remove-watch var factory)))
+
+(defn ->memoize
+  "Returns a statefull middleware that memoizes all registry build accesses.
+
+  To stop all memoized components use `(di/stop mem)`."
+  ^AutoCloseable [& middlewares]
+  (let [registry  (apply-middlewares initial-registry middlewares)
+        factories (ConcurrentHashMap.)
+        objs      (ConcurrentHashMap.)
+        ctx       {:*stop-list (atom '())}
+        add-stop  (->add-stop ctx)]
+    (reify
+      AutoCloseable
+      (close [this]
+        (doseq [[_ factory] factories]
+          (remove-factory-watch factory))
+        (.clear factories)
+        (.clear objs)
+        (try-stop-started ctx))
+      Function
+      (apply [this previous-registry]
+        (when-not (first-mw? previous-registry)
+          (throw (ex-info "A memoized registry should be the first middleware"
+                          {:type ::wrong-memoized-registry-position})))
+        (fn [key]
+          (let [factory (.computeIfAbsent factories key
+                                          (fn [_]
+                                            (let [factory (registry key)]
+                                              (add-factory-watch factory
+                                                                 #(.remove factories key factory))
+                                              factory)))]
+            (reify p/Factory
+              (dependencies [_]
+                (p/dependencies factory))
+              (build [_ deps _add-stop]
+                (.computeIfAbsent objs [factory deps]
+                                  (fn [_] (p/build factory deps add-stop))))
+              (description [_]
+                (p/description factory)))))))))
