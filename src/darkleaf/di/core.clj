@@ -625,7 +625,7 @@
                                 (concat (p/dependencies factory)
                                         {dep-key :required}))
                               (build [_ deps add-stop]
-                                (p/build factory (dissoc deps dep-key) add-stop))
+                                (p/build factory deps add-stop))
                               (description [_]
                                 (p/description factory)))
           dep-key           (update-description factory assoc ::side-dependency true)
