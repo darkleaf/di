@@ -191,15 +191,14 @@
 (defn- apply-middlewares [registry middlewares]
   (loop [registry                    registry
          [mw & tail :as middlewares] middlewares]
-    (if (seq middlewares)
-      (cond
-        (nil? mw)               (recur registry tail)
-        (fn? mw)                (recur (mw registry) tail)
-        (map? mw)               (recur (apply-map registry mw) tail)
-        (instance? Function mw) (recur (.apply ^Function mw registry) tail)
-        (sequential? mw)        (recur registry (concat mw tail))
-        :else                   (throw (IllegalArgumentException. "Wrong middleware kind")))
-      registry)))
+    (cond
+      (empty? middlewares)    registry
+      (nil? mw)               (recur registry tail)
+      (fn? mw)                (recur (mw registry) tail)
+      (map? mw)               (recur (apply-map registry mw) tail)
+      (instance? Function mw) (recur (.apply ^Function mw registry) tail)
+      (sequential? mw)        (recur registry (concat mw tail))
+      :else                   (throw (IllegalArgumentException. "Wrong middleware kind")))))
 
 (declare var->factory)
 
