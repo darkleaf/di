@@ -189,7 +189,7 @@
 
 (t/deftest update-key-test
   (t/is (= [{:key          `a
-             :dependencies (seq {`b :required})
+             :dependencies {`b :required}
              :description  {::di/kind :trivial
                             :object   :obj
                             ::di/root true

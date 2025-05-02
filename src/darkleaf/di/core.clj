@@ -34,8 +34,8 @@
 (defn combine-dependencies
   "Combines dependencies. Use it with `reduce`.
   Dependencies are a hash map of a key and a dependency type."
-  ([]
-   {})
+  ([] {})
+  ([a] a)
   ([a b]
    (merge-with (fn [x y]
                  (min-key dependency-type-priority x y))
@@ -583,9 +583,9 @@
                                      :key  target})))
           factory (reify p/Factory
                     (dependencies [_]
-                      (concat (p/dependencies factory)
-                              (p/dependencies f)
-                              (mapcat p/dependencies args)))
+                      (transduce (map p/dependencies)
+                                 combine-dependencies
+                                 (cons factory (cons f args))))
                     (build [_ deps add-stop]
                       (let [t    (p/build factory deps add-stop)
                             f    (p/build f       deps add-stop)
