@@ -638,12 +638,12 @@
   (-> variable arglists seq boolean))
 
 (defn- dependencies-fn [variable]
-  (->> variable
-       arglists
-       (map first)
-       (filter map?)
-       (map map/dependencies)
-       (reduce combine-dependencies)))
+  (transduce (comp
+              (map first)
+              (filter map?)
+              (map map/dependencies))
+             combine-dependencies
+             (arglists variable)))
 
 (defn- stop-fn [variable]
   (-> variable meta (::stop (fn no-op [_]))))
