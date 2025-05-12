@@ -21,22 +21,6 @@
      :key      key
      :type     type}))
 
-;; в шаблонах нельзя использовать все фабрики
-;; если испльзовать var, то будут не уникальные инстансы
-;; плюс у меня все заточено на отображение ключа в объект
-;; а тут получается отображение фабрики в объект,
-;; а фабрики не получится сравнивать (?) т.к. reify.
-
-(defn deps [object]
-  (if (instance? Ref object)
-    (p/dependencies object)
-    nil))
-
-(defn build [object deps add-stop]
-  (if (instance? Ref object)
-    (p/build object deps add-stop)
-    object))
-
 (defmethod print-method Ref [o ^Writer w]
   (.write w "#darkleaf.di.core/")
   (.write w (case (:type o)

@@ -457,11 +457,11 @@
     ::print form}
   (reify p/Factory
     (dependencies [_]
-      (transduce (map ref/deps)
+      (transduce (map p/dependencies)
                  combine-dependencies
                  (tree-seq coll? seq form)))
     (build [_ deps add-stop]
-      (w/postwalk #(ref/build % deps add-stop) form))
+      (w/postwalk #(p/build % deps add-stop) form))
     (description [_]
       {::kind    :template
        :template form})))
