@@ -806,20 +806,28 @@
                :cmap       cmap}))
           (registry key))))))
 
-;; (defn rename-deps [target rmap]
-;;   (let [inverted-rmap (set/map-invert rmap)]
-;;     (fn [registry]
-;;       (fn [key]
-;;         (let [factory (registry key)]
-;;           (if (= target key)
-;;             (reify p/Factory
-;;               (dependencies [_]
-;;                 (let [deps (p/dependencies factory)]
-;;                   (set/rename-keys deps rmap)))
-;;               (build [this deps]
-;;                 (let [deps (set/rename-keys deps inverted-rmap)]
-;;                   (p/build factory deps))))
-;;             factory))))))
+(defn redefine-deps [target & {:as mapping}]
+  (fn [registry]
+    (fn [key]
+      (let [factory (registry key)]
+        (if (= target key)
+          (reify p/Factory
+            (dependencies [_]
+              (let [deps         (into {}
+                                       (remove (fn [[k _]] (contains? mapping k)))
+                                       (p/dependencies factory))
+                    mapping-deps (transduce (map p/dependencies)
+                                            combine-dependencies
+                                            (vals mapping))]
+                (combine-dependencies deps mapping-deps)))
+            (build [_ deps add-stop]
+              (let [mapping-deps (update-vals mapping #(p/build % deps add-stop))
+                    deps         (merge deps mapping-deps)]
+                (p/build factory deps add-stop)))
+            (description [_]
+              ;; todo: add description
+              (p/description factory)))
+          factory)))))
 
 
 (defn- usefull-var? [var]
