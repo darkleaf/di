@@ -19,7 +19,7 @@
    [darkleaf.di.ref :as ref]
    [darkleaf.di.utils :as u :refer [?? try*]])
   (:import
-   (clojure.lang IDeref IFn Var Indexed ILookup)
+   (clojure.lang IDeref IFn Var Var$Unbound Indexed ILookup)
    (java.io FileNotFoundException Writer)
    (java.lang AutoCloseable)
    (java.util.function Function)
@@ -405,7 +405,10 @@
 (defn stop
   "Stops the root of a system"
   [^AutoCloseable root]
-  (.close root))
+  (cond
+    (nil? root)                  nil
+    (instance? Var$Unbound root) nil
+    :else                        (.close root)))
 
 
 (defn- update-description [factory f & args]
