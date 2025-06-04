@@ -48,8 +48,8 @@
    (.addSuppressed a b)
    a))
 
-(def ^:private remove-implementation-details
-  (remove #(-> % :factory p/description ::implementation-detail)))
+(defn- implementation-detail? [frame]
+  (-> frame :factory p/description ::implementation-detail))
 
 (defn- missing-dependency! [stack]
   (let [key (-> stack peek :key)]
@@ -57,7 +57,7 @@
                     {:type  ::missing-dependency
                      :stack (into []
                                   (comp
-                                   remove-implementation-details
+                                   (remove implementation-detail?)
                                    (map :key))
                                   stack)}))))
 
@@ -67,7 +67,7 @@
                     {:type  ::circular-dependency
                      :stack (into []
                                   (comp
-                                   remove-implementation-details
+                                   (remove implementation-detail?)
                                    (map :key))
                                   stack)}))))
 
@@ -102,7 +102,7 @@
                       {:type  ::build-failure
                        :stack (into []
                                     (comp
-                                     remove-implementation-details
+                                     (remove implementation-detail?)
                                      (map :key))
                                     stack)}
                       ex)))))
