@@ -224,6 +224,23 @@
               [:stop `invalidation-a]]
              @log))))
 
+(t/deftest side-dependency-test
+  (defn- side-dependency
+    {::di/kind :component}
+    [{calls ::calls}]
+    (swap! calls inc)
+    :ok)
+
+  (let [calls (atom 0)
+        mem (di/->memoize {::param :param
+                           ::calls calls}
+                          (di/add-side-dependency `side-dependency))]
+    (di/start `a mem)
+    (di/start `a mem)
+    (t/is (= 2 @calls))
+    (di/stop mem)))
+
+
 (comment
 
   (require '[clj-async-profiler.core :as prof])

@@ -1000,17 +1000,23 @@
           (throw (ex-info "A memoized registry should be the first middleware"
                           {:type ::wrong-memoized-registry-position})))
         (fn [key]
-          (let [factory (.computeIfAbsent factories key
-                                          (fn [_]
-                                            (let [factory (registry key)]
-                                              (add-factory-watch factory
-                                                                 #(.remove factories key factory))
-                                              factory)))]
-            (reify p/Factory
-              (dependencies [_]
-                (p/dependencies factory))
-              (build [_ deps _add-stop]
-                (.computeIfAbsent objs [factory deps]
-                                  (fn [_] (p/build factory deps add-stop))))
-              (description [_]
-                (p/description factory)))))))))
+          (let [factory     (.computeIfAbsent factories key
+                                              (fn [_]
+                                                (let [factory (registry key)]
+                                                  (add-factory-watch factory
+                                                                     #(.remove factories key factory))
+                                                  factory)))
+                description (p/description factory)]
+            (cond
+              (::side-dependency description)
+              factory
+
+              :else
+              (reify p/Factory
+                (dependencies [_]
+                  (p/dependencies factory))
+                (build [_ deps _add-stop]
+                  (.computeIfAbsent objs [factory deps]
+                                    (fn [_] (p/build factory deps add-stop))))
+                (description [_]
+                  (p/description factory))))))))))
