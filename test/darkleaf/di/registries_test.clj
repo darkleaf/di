@@ -1,4 +1,5 @@
 (ns darkleaf.di.registries-test
+  {:nextjournal.clerk/error-on-missing-vars :off}
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]
