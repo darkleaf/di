@@ -53,3 +53,11 @@
 (t/deftest null-registry-middleware-test
   (with-open [root (di/start `root (null-registry-middleware))]
     (t/is (= 'root @root))))
+
+
+(declare unbound-var)
+
+(t/deftest unboud-var-test
+  (t/is (thrown-with-msg? IllegalArgumentException
+                          #"\AWrong middleware kind: Unbound: #'darkleaf.di.registries-test/unbound-var\z"
+                          (di/start `root unbound-var))))

@@ -198,7 +198,8 @@
       (map? mw)               (recur (apply-map registry mw) tail)
       (instance? Function mw) (recur (.apply ^Function mw registry) tail)
       (sequential? mw)        (recur registry (concat mw tail))
-      :else                   (throw (IllegalArgumentException. "Wrong middleware kind")))))
+      :else                   (throw (IllegalArgumentException.
+                                      (str "Wrong middleware kind: " mw))))))
 
 (declare var->factory)
 
