@@ -15,12 +15,12 @@
   nil)
 
 (t/deftest nil-component-0-arity-test
-  (let [ex (catch-some (di/start `nil-component-0-arity))]
-    (t/is (= ::di/nil-return (-> ex ex-cause ex-data :type)))))
+  (let [root (di/start `nil-component-0-arity)]
+    (t/is (= ::di/nil @root))))
 
 (t/deftest nil-component-1-arity-test
-  (let [ex (catch-some (di/start `nil-component-1-arity))]
-    (t/is (= ::di/nil-return (-> ex ex-cause ex-data :type)))))
+  (let [root (di/start `nil-component-1-arity)]
+    (t/is (= ::di/nil @root))))
 
 
 (defn component-2-arity
