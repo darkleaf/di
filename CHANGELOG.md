@@ -1,10 +1,16 @@
 # 3.6.0
 
 + Breaking: Clojure 1.12
-+ Breaking: `p/Factory` protocol was changed
++ Breaking: `p/Factory` protocol was changed (#58)
 + Breaking: the description of some factories was changed
-+ Breaking: internal keys were redacted
-+ Add `->memoize`
++ Breaking: internal keys were redacted (#52, #60)
++ Feature: Add `->memoize` (#54)  🎉
++ Feature: clarify an error message in case of wrong middleware kind. fixes #62
++ Feature: Allow to return `nil` from a `defn` of a component (#64)
++ Feature: `di/stop` can accept `nil` and `Unbound`
++ Refactoring: Simplify `add-side-dependency` (#50)
++ Refactoring: Internal refactor to transducers
++ Refactoring: Various minor refactorings; see commit history for details.
 
 # 3.5.0
 
