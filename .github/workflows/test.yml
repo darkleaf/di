@@ -4,10 +4,10 @@ on: [push]
 jobs:
   tests:
     runs-on: ubuntu-latest
-    container: clojure:temurin-17-tools-deps-1.11.1.1165
+    container: clojure:temurin-21-tools-deps
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             /root/.m2
@@ -16,7 +16,7 @@ jobs:
           restore-keys: test-
       - run: clojure -X:dev:test
       - run: clojure -X:dev:doc
-      - uses: peaceiris/actions-gh-pages@v3
+      - uses: peaceiris/actions-gh-pages@v4
         if: ${{ github.ref == 'refs/heads/master' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
