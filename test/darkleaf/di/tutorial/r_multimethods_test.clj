@@ -8,7 +8,7 @@
    [darkleaf.di.core :as di]))
 
 ;; You can use `defmulti` like `defn` to define a service.
-;; Instead of `defn`, there is no way to get a definition of dependencies
+;; Unlike `defn`, there is no way to get a definition of dependencies
 ;; and we have to define them as `::di/deps` on metadata.
 
 (defmulti service

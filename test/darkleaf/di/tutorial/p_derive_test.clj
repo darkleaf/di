@@ -7,7 +7,7 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-;; In some cases, your components may have a complex structure or require transfromation.
+;; In some cases, your components may have a complex structure or require transformation.
 ;; You can use `di/derive` to transform a component.
 
 ;; The first way

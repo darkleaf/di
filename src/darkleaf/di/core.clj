@@ -356,36 +356,36 @@
 
   key is a name of the system root.
   Use symbols for var names, keywords for abstract dependencies,
-  and strings for environments variables.
+  and strings for environment variables.
 
   key is looked up in a registry.
   By default registry uses Clojure namespaces and system env
   to resolve symbols and strings, respectively.
 
   You can extend it with registry middlewares.
-  Each middleware can be one of the following form:
+  Each middleware can be one of the following forms:
 
   - a function `registry -> key -> Factory`
   - a map of key and `p/Factory` instance
   - nil, as no-op middleware
   - a sequence of the previous forms
 
-  Middlewares also allows you to instrument built objects.
+  Middlewares also allow you to instrument built objects.
   It's useful for logging, schema validation, AOP, etc.
   See `update-key`.
 
   ```clojure
   (di/start `root
-            {:my-abstraction implemntation
+            {:my-abstraction implementation
              `some-key replacement
              \"LOG_LEVEL\" \"info\"}
-            [dev-middlwares test-middlewares]
+            [dev-middlewares test-middlewares]
             (if dev-routes?
               (di/update-key `route-data conj `dev-route-data)
             (di/instrument `log))
   ```
 
-  Returns a container contains started root of the system.
+  Returns a container containing the started root of the system.
   The container implements `AutoCloseable`, `IDeref`, `IFn`, `Indexed` and `ILookup`.
 
   Use `with-open` in tests to stop the system reliably.
@@ -424,7 +424,7 @@
 (def ^:private key? (some-fn symbol? keyword? string?))
 
 (defn ref
-  "Returns a factory referencing to a key.
+  "Returns a factory referring to a key.
 
   ```clojure
   (def port (di/ref \"PORT\"))
@@ -440,7 +440,7 @@
   (ref/->Ref key :required))
 
 (defn opt-ref
-  "Returns a factory referencing to a possible undefined key.
+  "Returns a factory referring to a possibly undefined key.
   Produces nil in that case.
 
   See `template`, `ref`, `derive`."
@@ -494,7 +494,7 @@
 
 ;; We currently don't need this middleware.
 ;; It should be rewritten as `update-key`.
-;; Also it has a poor documentation and a test coverage.
+;; Also it has poor documentation and test coverage.
 ;; We might add a new implementation later.
 #_
 (defn instrument
@@ -502,7 +502,7 @@
   Use it for logging, schema checking, AOP, etc.
 
   f and args are keys.
-  Also f can be a function in term of `ifn?`.
+  Also f can be a function in terms of `ifn?`.
 
   A resolved f must be a function of `[object key & args] -> new-object`.
   f should not return a non-trivial instance of `p/Stoppable`.
@@ -511,10 +511,10 @@
   to avoid circular dependencies.
 
   ```clojure
-  (defn stateful-instrumentaion [{state :some/state} key object arg1 arg2] ...)
+  (defn stateful-instrumentation [{state :some/state} key object arg1 arg2] ...)
   (di/start ::root (di/instrument `stateful-instrumentation `arg1 ::arg2 \"arg3\")))
 
-  (defn stateless-instrumentaion [key object arg1 arg2 arg3] ...)
+  (defn stateless-instrumentation [key object arg1 arg2 arg3] ...)
   (di/start ::root (di/instrument   stateless-instrumentation `arg1 ::arg2 \"arg3\"))
   (di/start ::root (di/instrument #'stateless-instrumentation `arg1 ::arg2 \"arg3\"))
   ```
@@ -564,7 +564,7 @@
   "A registry middleware for updating built objects.
 
   target is a key to update.
-  f and args are intances of `p/Factory`.
+  f and args are instances of `p/Factory`.
   For example, a factory can be a regular object or `(di/ref key)`.
 
   ```clojure
@@ -818,7 +818,7 @@
 ;;             factory))))))
 
 
-(defn- usefull-var? [var]
+(defn- useful-var? [var]
   (and (bound? var)
        (some? @var)))
 
@@ -828,14 +828,14 @@
 
   The key of a component is a keyword with the namespace `:ns-publics`
   and a name containing the name of a target ns.
-  For example `:ns-publics/io.gihub.my.ns`.
+  For example `:ns-publics/io.github.my.ns`.
 
   This enables access to all public components, which is useful for testing.
 
   See the test darkleaf.di.tutorial.x-ns-publics-test.
 
   ```clojure
-  (di/start :ns-publics/io.gihub.my.ns (di/ns-publics))
+  (di/start :ns-publics/io.github.my.ns (di/ns-publics))
   ```"
   []
   (fn [registry]
@@ -848,7 +848,7 @@
                                   (c/ns-publics component-ns))
               component-symbols (->> component-vars
                                      vals
-                                     (filter usefull-var?)
+                                     (filter useful-var?)
                                      (map symbol))
               deps              (zipmap component-symbols
                                         (repeat :required))]
@@ -970,7 +970,7 @@
     (remove-watch var factory)))
 
 (defn ->memoize
-  "Returns a statefull middleware that memoizes all registry build accesses.
+  "Returns a stateful middleware that memoizes all registry build accesses.
 
   To stop all memoized components use `(di/stop mem)`."
   ^AutoCloseable [& middlewares]

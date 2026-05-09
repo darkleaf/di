@@ -36,7 +36,7 @@
   (with-open [root (di/start `root)]
     (t/is (= [:root ::a ::default {`a ::a}] @root))))
 
-;; `di/start` can accepts additional arguments.
+;; `di/start` can accept additional arguments.
 ;; In the following example the argument is a map registry.
 ;; I use it to define local keys.
 ;; In general they are middlewares but I'll describe it later.
@@ -46,7 +46,7 @@
     (t/is (= [:root ::a ::b {`a ::a `b ::b}] @root))))
 
 ;; Dependencies are required by default.
-;; There is no defenition of `a'` so DI will throw an exception.
+;; There is no definition of `a'` so DI will throw an exception.
 
 (defn root'
   {::di/kind :component}

@@ -35,7 +35,7 @@
 
 
 ;; To avoid using `(apply di/start ...)`,
-;; we can use an seqable value as a single registry.
+;; we can use a seqable value as a single registry.
 ;; See `clojure.core/seqable?`.
 (t/deftest seqable-registry
   (with-open [root (di/start `value [{`dep-a :a}

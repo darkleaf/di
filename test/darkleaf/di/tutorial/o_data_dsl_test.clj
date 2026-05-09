@@ -7,7 +7,7 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-;; It is often to use data-DSLs in Clojure, such as reitit routing,
+;; It is common to use data-DSLs in Clojure, such as reitit routing,
 ;; and DI offers tools to handle them easily.
 ;; Here they are: `di/template` and `di/ref`.
 

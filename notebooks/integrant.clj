@@ -189,7 +189,7 @@
 ;; ### Using DI to Extend Routes
 ;;
 ;; With `di/update-key`,
-;; you can extend base route-data with specific one in each subsystem.
+;; you can extend base route-data with a specific one in each subsystem.
 
 (def subsystem-a-route-data
   [["/subsystem-a/" '...]])

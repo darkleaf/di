@@ -58,7 +58,7 @@
 
 (declare unbound-var)
 
-(t/deftest unboud-var-test
+(t/deftest unbound-var-test
   (t/is (thrown-with-msg? IllegalArgumentException
                           #"\AWrong middleware kind: Unbound: #'darkleaf.di.registries-test/unbound-var\z"
                           (di/start `root unbound-var))))

@@ -11,7 +11,7 @@
    (java.time Instant)))
 
 ;; Let's start.
-;; In this chapter I'll show you how to deal with compoonents.
+;; In this chapter I'll show you how to deal with components.
 
 ;; ## Trivial system
 
@@ -33,7 +33,7 @@
 
 ;; A root implements `AutoCloseable`
 ;; so in tests we should use `with-open` macro
-;; for propperly stopping.
+;; for properly stopping.
 
 (t/deftest a'-test
   (with-open [root (di/start `a)]
@@ -42,7 +42,7 @@
 ;; ## Component
 
 ;; A component definition is a function of 0 or 1 arity
-;; with `{::di/kind :componnent}` meta.
+;; with `{::di/kind :component}` meta.
 
 (defn b
   {::di/kind :component}
@@ -55,10 +55,10 @@
 
 ;; ## Dependencies
 
-;; To define a component dependes from other components
+;; To define a component that depends on other components,
 ;; define a function of one argument.
-;; DI will parse associative destructuing to get dependencides of the component.
-;; We'll condider compoenent dependencies in the next chapter.
+;; DI will parse associative destructuring to get dependencies of the component.
+;; We'll consider component dependencies in the next chapter.
 ;; But now we will use placeholder.
 
 (defn c

@@ -8,7 +8,7 @@
    [darkleaf.di.core :as di]))
 
 ;; Like symbols and keywords, you can also use strings for keys.
-;; String keys are resolved into values of  environment variables.
+;; String keys are resolved into values of environment variables.
 
 (defn root
   {::di/kind :component}

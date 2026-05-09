@@ -44,7 +44,7 @@
 + [Added log middleware](https://github.com/darkleaf/di/commit/cd52e5089d791b06004c669e6092eb98b040ef66)
 + [Added `di/with-open`](https://github.com/darkleaf/di/commit/7633474f3a2ed31cd810f73b7e703f7212114dd5)
 
-+ [Added `di/*next-id*` to use it instead of `gensym` ](https://github.com/darkleaf/di/commit/b8ec1887fa5cd669af7663d74e03b2cfd2f0c58c)
++ [Added `di/*next-id*` to use it instead of `gensym`](https://github.com/darkleaf/di/commit/b8ec1887fa5cd669af7663d74e03b2cfd2f0c58c)
 
 
 + [Added print-method for services](https://github.com/darkleaf/di/commit/b2868860c9b2a8149903345aebbb404d817c7ce2)
@@ -70,7 +70,7 @@
 
 Use `{::di/kind :component}` to mark a component.
 
-A zero arity service are not a component of zero arity function now.
+A zero-arity service is no longer a component but a zero-arity function now.
 
 
 ```clojure
@@ -128,9 +128,9 @@ The `di/fmap` factory constructor was removed.
 
 Use `di/derive` instead.
 
-### `di/instument` removing
+### `di/instrument` removing
 
-The `di/instument` registry middleware was removed. Maybe there will be a rewrited version.
+The `di/instrument` registry middleware was removed. Maybe there will be a rewritten version.
 
 # 2.4.2
 
@@ -140,7 +140,7 @@ The `di/instument` registry middleware was removed. Maybe there will be a rewrit
 
 ## Fixing `di/add-side-dependency`
 
-When root had eight dependencies a system with side depencency started up in the wrong order.
+When root had eight dependencies a system with side dependency started up in the wrong order.
 
 # 2.4.0
 

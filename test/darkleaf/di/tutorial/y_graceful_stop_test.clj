@@ -11,7 +11,7 @@
 ;; The DI tries to stop components that are already started
 ;; if another component fails while it is starting.
 
-;; It throws with original exception.
+;; It throws the original exception.
 ;; All other possible exceptions are added as suppressed.
 
 (defn root

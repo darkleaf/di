@@ -6,8 +6,8 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-;; In some cases, you may need multiple systems and sharing a subsystem between them.
-;; In that case just pass specify the subsystem in registry.
+;; In some cases, you may need multiple systems and to share a subsystem between them.
+;; In that case, just pass the subsystem in the registry.
 
 ;; To get a value of the subsystem, you should `deref` it as you would for a regular system root.
 ;; Also you should manually stop systems in reverse order.
