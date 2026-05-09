@@ -40,7 +40,7 @@
 ;;   (jetty/run-jetty handler {:join? false, :port port}))
 ;;
 ;; (di/start `jetty
-;;           (di/env-parsing :env/long parse-long)
+;;           (di/env-parsing :env.long parse-long)
 ;;           {::handler           (di/ref `reitit/handler)
 ;;            ::reitit/route-data (di/ref `reitit/data)
 ;;            ::db/datasource     (di/ref `hikari/datasource)
@@ -80,7 +80,7 @@
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/m_abstractions_test")} "Abstractions"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/n_env_test")} "Env"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/o_data_dsl_test")} "Data DSL"]]
-  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/p_fmap_test")} "Fmap"]]
+  [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/p_derive_test")} "Derive"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/q_starting_many_keys_test")} "Starting many keys"]]
   [:li [:a {:href (clerk/doc-url "test/darkleaf/di/tutorial/r_multimethods_test")} "Multimethods"]]])
 
