@@ -19,7 +19,7 @@
                     :exec-args {:index    "notebooks/index.clj"
                                 :paths    ["notebooks/*.clj" "test/**/*.clj"]
                                 :out-path "public"
-                                :ssr      true}}}}
+                                #_#_:ssr  true}}}}
 
 ;; clj -T:dev:build
 ;; clj -T:dev:deploy
