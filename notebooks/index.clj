@@ -54,7 +54,7 @@
 ;; [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.darkleaf/di.svg)](https://clojars.org/org.clojars.darkleaf/di)
 
 ;; ```edn
-;; {:deps {org.clojars.darkleaf/di {:mvn/version "2.0.0"}}}
+;; {:deps {org.clojars.darkleaf/di {:mvn/version "3.6.0"}}}
 ;; ;; or
 ;; {:deps {org.clojars.darkleaf/di {:git/url "https://github.com/darkleaf/di.git"
 ;;                                  :sha     "%SHA%"}}}
