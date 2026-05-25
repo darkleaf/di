@@ -173,6 +173,15 @@
     (t/is (= 0 (count (.getWatches #'orphan-watch-var))))))
 
 
+(t/deftest close-propagates-stop-exceptions-test
+  (defn failing-stop-component
+    {::di/stop (fn [_] (throw (ex-info "boom" {})))}
+    []
+    :_)
+  (with-open [mem (di/->memoize)]
+    (di/start `failing-stop-component mem)
+    (t/is (some? (catch-some (di/stop mem))))))
+
 
 (t/deftest invalidation-log-test
   (let [log    (atom [])

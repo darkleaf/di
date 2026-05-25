@@ -989,7 +989,8 @@
           (remove-factory-watch factory))
         (.clear factories)
         (.clear objs)
-        (try-stop-started ctx))
+        (->> (try-stop-started ctx)
+             (throw-many!)))
       Function
       (apply [this previous-registry]
         (when-not (first-mw? previous-registry)
