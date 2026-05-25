@@ -963,7 +963,10 @@
   (when-some [var (-> factory p/description ::variable)]
     ;; Every memoize instance has a new factory instance for a var.
     ;; It is ok to pass a factory as a key.
-    (add-watch var factory (fn [_ _ _ _] (f)))))
+    ;; The watch removes itself so orphan watches don't accumulate across var redefs.
+    (add-watch var factory (fn [_ _ _ _]
+                             (remove-watch var factory)
+                             (f)))))
 
 (defn- remove-factory-watch [factory]
   (when-some [var (-> factory p/description ::variable)]

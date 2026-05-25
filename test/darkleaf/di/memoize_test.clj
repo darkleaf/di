@@ -164,6 +164,15 @@
   (t/is (= {} (.getWatches #'remove-watch-var))))
 
 
+(t/deftest no-orphan-watches-test
+  (def orphan-watch-var :_)
+  (with-open [mem (di/->memoize)]
+    (dotimes [_ 3]
+      (with-open [_ (di/start `orphan-watch-var mem)])
+      (alter-var-root #'orphan-watch-var (constantly :_)))
+    (t/is (= 0 (count (.getWatches #'orphan-watch-var))))))
+
+
 
 (t/deftest invalidation-log-test
   (let [log    (atom [])
