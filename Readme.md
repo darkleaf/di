@@ -45,7 +45,7 @@ It is just a short snippet, please see [example app](https://github.com/darkleaf
 ## Install
 
 ```edn
-{:deps {org.clojars.darkleaf/di {:mvn/version "%TAG%"}}}
+{:deps {org.clojars.darkleaf/di {:mvn/version "3.6.2"}}}
 ;; or
 {:deps {org.clojars.darkleaf/di {:git/url "https://github.com/darkleaf/di.git"
                                  :sha     "%SHA%"}}}
