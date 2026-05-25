@@ -2,7 +2,7 @@
 .cpcache
 .nrepl-port
 /target
-/.clerk
-/public
+/pom.xml
+/doc/tutorial/
 .clj-kondo/
 .lsp/

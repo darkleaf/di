@@ -4,7 +4,7 @@
    [clojure.string :as str]))
 
 (def lib 'org.clojars.darkleaf/di)
-(def version "3.6.0")
+(def version (or (System/getenv "RELEASE_VERSION") "DEV-SNAPSHOT"))
 (def class-dir "target/classes")
 (def basis (b/create-basis {:project "deps.edn"}))
 (def jar-file (format "target/%s.jar" (name lib)))
@@ -38,11 +38,6 @@
   (b/jar {:class-dir class-dir
           :jar-file  jar-file}))
 
-(defn sync-pom [_]
-  (b/copy-file {:src    (str class-dir "/META-INF/maven/org.clojars.darkleaf/di/pom.xml")
-                :target "pom.xml"}))
-
 (defn all [_]
   (clean nil)
-  (jar nil)
-  (sync-pom nil))
+  (jar nil))

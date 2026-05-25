@@ -3,12 +3,61 @@
 
 # Dependency injection
 
-DI is a dependency injection framework that allows you to define dependencies as easily as you define function arguments.
+[DI](https://github.com/darkleaf/di) is a dependency injection framework
+that allows you to define dependencies as easily as you define function arguments.
 
-* [Documentation](https://darkleaf.github.io/di/)
-* [Example app](example/src/example/core.clj)
-* [Clj doc](https://cljdoc.org/d/org.clojars.darkleaf/di)
-* [Tests](test/darkleaf/di)
+It uses plain clojure functions and [associative destructuring](https://clojure.org/guides/destructuring#_associative_destructuring)
+to define a graph of functions and stateful objects.
+
+```clojure
+(ns app.core
+  (:require
+   [darkleaf.di.core :as di]
+   [ring.adapter.jetty :as jetty]
+   [app.adapters.reitit :as-alias reitit]
+   [app.adapters.hikari :as-alias hikari]
+   [app.adapters.db     :as-alias db]))
+
+(defn show-user [{ds ::db/datasource} req]
+  ...)
+
+(def route-data
+  (di/template
+    [["/users/:id" {:get {:handler (di/ref `show-user)}}]]))
+
+(defn jetty
+  {::di/stop (memfn stop)}
+  [{handler ::handler
+    port    :env.long/PORT
+    :or     {port 8080}}]
+  (jetty/run-jetty handler {:join? false, :port port}))
+
+(di/start `jetty
+          (di/env-parsing :env.long parse-long)
+          {::handler           (di/ref `reitit/handler)
+           ::reitit/route-data (di/ref `reitit/data)
+           ::db/datasource     (di/ref `hikari/datasource)
+           "PORT"              "9090"})
+```
+
+It is just a short snippet, please see [example app](https://github.com/darkleaf/di/tree/master/example).
+
+## Install
+
+```edn
+{:deps {org.clojars.darkleaf/di {:mvn/version "%TAG%"}}}
+;; or
+{:deps {org.clojars.darkleaf/di {:git/url "https://github.com/darkleaf/di.git"
+                                 :sha     "%SHA%"}}}
+```
+
+## Documentation
+
+Full documentation, tutorials, and API reference are available on
+[cljdoc](https://cljdoc.org/d/org.clojars.darkleaf/di/CURRENT).
+
+See also the [example app](https://github.com/darkleaf/di/tree/master/example),
+starting with [user.clj](https://github.com/darkleaf/di/blob/master/example/dev/user.clj).
 
 ## Versions
 

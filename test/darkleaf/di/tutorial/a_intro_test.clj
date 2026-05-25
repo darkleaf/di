@@ -1,9 +1,6 @@
 ;; # Intro
 
-^{:nextjournal.clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.a-intro-test
-  {:nextjournal.clerk/visibility {:result :hide}
-   :nextjournal.clerk/toc        true}
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di])

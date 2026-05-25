@@ -1,3 +1,9 @@
+# 3.6.1
+
++ Fix: Propagate stop exceptions from `memoize` close
++ Fix: Fix orphan watch leak in `memoize` on var redefs
++ Docs: Migrated from Clerk to cljdoc; release pipeline now publishes to Clojars on tag push
+
 # 3.6.0
 
 + Breaking: Clojure 1.12

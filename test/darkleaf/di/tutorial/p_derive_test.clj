@@ -1,8 +1,6 @@
 ;; # Derive
 
-^{:nextjournal.clerk/visibility {:code :hide}}
 (ns darkleaf.di.tutorial.p-derive-test
-  {:nextjournal.clerk/visibility {:result :hide}}
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

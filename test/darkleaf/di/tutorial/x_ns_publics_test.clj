@@ -3,11 +3,9 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-;; excluded
-(def nil-component nil)
+(def nil-component nil) ; excluded
 
-;; excluded
-(def unbound-component)
+(def unbound-component) ; excluded
 
 (defn component
   {::di/kind :component}
