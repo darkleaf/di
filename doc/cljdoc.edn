@@ -22,4 +22,5 @@
     ["Multi arity service"   {:file "doc/tutorial/y_multi_arity_service_test.md"}]
     ["Multi system"          {:file "doc/tutorial/z_multi_system_test.md"}]
     ["Two Databases"         {:file "doc/tutorial/z_two_databases_test.md"}]]]
+  ["Example app" {:file "doc/example.md"}]
   ["Integrant vs DI" {:file "doc/integrant.md"}]]}
