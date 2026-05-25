@@ -53,4 +53,4 @@ user=> (stop)
 
 Redefine `example.core/root-handler` at the REPL and re-evaluate — the
 running system picks up the new implementation without a restart, as
-described in the [Intro](doc/tutorial/a_intro_test.md) chapter.
+described in the [Intro](tutorial/a_intro_test.md) chapter.
