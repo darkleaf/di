@@ -1,3 +1,8 @@
+# 3.6.3
+
++ Fix: Declare `org.clojure/clojure 1.12.0` in published pom so cljdoc-analyzer
+  uses a Clojure that understands `:as-alias` (3.6.2 was unbuildable on cljdoc)
+
 # 3.6.2
 
 + Fix: Propagate stop exceptions from `memoize` close
