@@ -14,7 +14,7 @@ We'll explore their differences through code examples and discuss the pros and c
 
 - All code is written in a single file.
 - Short namespaces like `:jetty/server` are used instead of `::jetty/server`.
-- Real dependencies are omitted for brevity. For a complete example, see [the example app](https://github.com/darkleaf/di/tree/master/example).
+- Real dependencies are omitted for brevity. For a complete example, see [the example app](/doc/example.md).
 
 ## Code Examples
 
