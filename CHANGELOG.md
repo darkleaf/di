@@ -1,8 +1,10 @@
-# 3.6.1
+# 3.6.2
 
 + Fix: Propagate stop exceptions from `memoize` close
 + Fix: Fix orphan watch leak in `memoize` on var redefs
 + Docs: Migrated from Clerk to cljdoc; release pipeline now publishes to Clojars on tag push
+
+(3.6.1 was burned on Clojars due to a failed deploy with a missing license; 3.6.2 is the same content.)
 
 # 3.6.0
 
