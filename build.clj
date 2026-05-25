@@ -32,7 +32,11 @@
                 :scm       {:tag                 (sha nil)
                             :connection          (str "scm:git:" scm-url)
                             :developerConnection (str "scm:git:" scm-url)
-                            :url                 scm-url}})
+                            :url                 scm-url}
+                :pom-data  [[:licenses
+                             [:license
+                              [:name "Eclipse Public License 2.0"]
+                              [:url "https://www.eclipse.org/legal/epl-2.0/"]]]]})
   (b/copy-dir {:src-dirs   ["src" "resources"]
                :target-dir class-dir})
   (b/jar {:class-dir class-dir
