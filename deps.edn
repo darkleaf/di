@@ -12,7 +12,8 @@
            :build  {:exec-fn build/all}
            :deploy {:exec-fn   deps-deploy.deps-deploy/deploy
                     :exec-args {:installer :remote
-                                :artifact  "target/di.jar"}}}}
+                                :artifact  "target/di.jar"
+                                :pom-file  "target/classes/META-INF/maven/org.clojars.darkleaf/di/pom.xml"}}}}
 
 ;; clj -T:dev:build
 ;; clj -T:dev:deploy
