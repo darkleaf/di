@@ -1,3 +1,8 @@
+# Unreleased
+
++ Docs: Backtick code references in public API docstrings so cljdoc
+  renders them as inline code.
+
 # 3.6.3
 
 + Fix: Declare `org.clojure/clojure 1.12.0` in published pom so cljdoc-analyzer
