@@ -354,11 +354,11 @@
 (defn start
   "Starts a system of dependent objects.
 
-  key is a name of the system root.
+  `key` is a name of the system root.
   Use symbols for var names, keywords for abstract dependencies,
   and strings for environment variables.
 
-  key is looked up in a registry.
+  `key` is looked up in a registry.
   By default registry uses Clojure namespaces and system env
   to resolve symbols and strings, respectively.
 
@@ -424,7 +424,7 @@
 (def ^:private key? (some-fn symbol? keyword? string?))
 
 (defn ref
-  "Returns a factory referring to a key.
+  "Returns a factory referring to a `key`.
 
   ```clojure
   (def port (di/ref \"PORT\"))
@@ -440,8 +440,8 @@
   (ref/->Ref key :required))
 
 (defn opt-ref
-  "Returns a factory referring to a possibly undefined key.
-  Produces nil in that case.
+  "Returns a factory referring to a possibly undefined `key`.
+  Produces `nil` in that case.
 
   See `template`, `ref`, `derive`."
   [key]
@@ -563,8 +563,8 @@
 (defn update-key
   "A registry middleware for updating built objects.
 
-  target is a key to update.
-  f and args are instances of `p/Factory`.
+  `target` is a key to update.
+  `f` and `args` are instances of `p/Factory`.
   For example, a factory can be a regular object or `(di/ref key)`.
 
   ```clojure
@@ -768,9 +768,9 @@
   "A registry middleware for parsing environment variables.
   You can define a dependency of env as a string key like \"PORT\",
   and its value will be a string.
-  With this middleware, you can define it as a qualified keyword like :env.long/PORT,
+  With this middleware, you can define it as a qualified keyword like `:env.long/PORT`,
   and its value will be a number.
-  cmap is a map of prefixes and parsers.
+  `cmap` is a map of prefixes and parsers.
 
   ```clojure
   (defn root [{port :env.long/PORT}]
@@ -832,7 +832,7 @@
 
   This enables access to all public components, which is useful for testing.
 
-  See the test darkleaf.di.tutorial.x-ns-publics-test.
+  See the test `darkleaf.di.tutorial.x-ns-publics-test`.
 
   ```clojure
   (di/start :ns-publics/io.github.my.ns (di/ns-publics))
@@ -866,9 +866,9 @@
 (defmacro with-open
   "A `c/with-open` variant that supports destructuring in bindings.
 
-  bindings => [name init ...]
-  Evaluates body in a try expression with names bound to the values
-  of the inits, and a finally clause that calls (.close name) on each
+  `bindings` => `[name init ...]`
+  Evaluates `body` in a try expression with names bound to the values
+  of the inits, and a finally clause that calls `(.close name)` on each
   name in reverse order."
   {:clj-kondo/lint-as 'clojure.core/with-open}
   [bindings & body]
