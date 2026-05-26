@@ -1,5 +1,14 @@
 # Project notes for Claude
 
+## Workflow
+
+- **Do not `git push origin master` automatically.** Commit locally and
+  wait for the user to push. `master` is protected (PRs required) and
+  direct pushes only work via admin bypass, so each one is a deliberate
+  choice the user makes.
+- Always include the `Co-Authored-By: Claude Opus 4.7 (1M context)
+  <noreply@anthropic.com>` trailer in commits authored together.
+
 ## cljdoc
 
 Docs are published on cljdoc.org. Source articles live in `doc/`:
