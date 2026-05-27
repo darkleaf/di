@@ -979,9 +979,67 @@
     (remove-watch var factory)))
 
 (defn ->memoize
-  "Returns a stateful middleware that memoizes all registry build accesses.
+  "Returns a stateful middleware that caches built components across
+  multiple `di/start` calls.
 
-  To stop all memoized components use `(di/stop mem)`."
+  Useful in REPL workflows and test fixtures where the same subsystem
+  is started repeatedly — expensive resources like database connections
+  or HTTP servers are built once and reused.
+
+  Builds accumulate. When a dependency is overridden or its var is
+  redefined, `di/start` builds a new component while keeping the old
+  one cached. `(di/stop mem)` shuts them all down.
+
+  ```clojure
+  ;; jetty depends on handler, handler on a datasource
+  (di/start `jetty mem)                  ;; builds datasource, handler, jetty
+  (di/start `jetty mem {\"PORT\" \"9090\"})  ;; rebuilds jetty; reuses handler and datasource
+
+  ;; shut down both jetty instances, the handler, and the datasource
+  (di/stop mem)
+  ```
+
+  REPL workflow and test fixtures:
+
+  ```clojure
+  ;; REPL: restart the system without leaking the Jetty port
+  (def mem (di/->memoize dev-middlewares))
+  (def sys (di/start `root mem))
+  (di/stop sys)
+
+  ;; redefine a component — on next start it and everything that
+  ;; depends on it will be rebuilt; the rest is reused from mem
+  (defn some-component
+    {::di/kind :component}
+    [...]
+    ...)
+
+  (def sys (di/start `root mem))
+
+  ;; release everything held in mem
+  (di/stop mem)
+
+  ;; Tests: def the memoized registry so each deftest can start
+  ;; its own subsystem against it
+  (def mem (di/->memoize test-middlewares))
+
+  (t/deftest sample
+    (with-open [sys (di/start `root mem)]
+      ...))
+
+  ;; tear down at the end of the suite
+  (di/stop mem)
+  ```
+
+  `mem` must come before any other middleware:
+
+  ```clojure
+  (di/start `root mem {::override :x})   ;; ok
+  (di/start `root {::override :x} mem)   ;; throws ::wrong-memoized-registry-position
+  ```
+
+  `mem` is `AutoCloseable`. Stop it with `(di/stop mem)` to release all
+  memoized components."
   ^AutoCloseable [& middlewares]
   (let [registry  (apply-middlewares initial-registry middlewares)
         factories (ConcurrentHashMap.)
