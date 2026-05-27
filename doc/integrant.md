@@ -273,7 +273,7 @@ sometimes you need to add extra behavior to existing components
 With Integrant, there's no convenient way to update an existing component.
 You'd need to [rename the component key](https://github.com/weavejester/integrant/issues/58) and reconfigure dependent components.
 
-With DI, you can use `di/update-key` and `di/instrument` to modify components.
+With DI, you can use `di/update-key` to modify components.
 
 ---
 
