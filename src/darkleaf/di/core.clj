@@ -32,8 +32,14 @@
    :optional 2})
 
 (defn combine-dependencies
-  "Combines dependencies. Use it with `reduce`.
-  Dependencies are a hash map of a key and a dependency type."
+  "Merges dependency maps.
+
+  A dependency map associates a key with a dependency type, either
+  `:required` or `:optional`. When the same key appears in both inputs,
+  `:required` wins over `:optional`.
+
+  A reducing function (0/1/2-arity) suitable for `reduce` and `transduce`.
+  Use when implementing `p/dependencies` for a custom `p/Factory`."
   ([] {})
   ([a] a)
   ([a b]
