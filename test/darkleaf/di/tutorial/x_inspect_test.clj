@@ -1,3 +1,5 @@
+;; # Inspect
+
 (ns darkleaf.di.tutorial.x-inspect-test
   (:require
    [clojure.test :as t]
@@ -5,12 +7,28 @@
    [darkleaf.di.protocols :as p]
    [darkleaf.di.tutorial.x-ns-publics-test :as x-ns-publics-test]))
 
+;; `di/inspect` takes the same arguments as `di/start` but builds
+;; nothing. It walks the registry and returns a vector describing
+;; every factory the runtime would visit — keys, their declared
+;; dependencies, and the `description` map each `Factory` exposes.
+
+;; Reach for it when you want to verify how middlewares reshape the
+;; system, debug a wiring mismatch, or feed a dependency-graph
+;; visualizer.
+
+;; ## Environment variables
+
+;; A string key resolves to an environment variable. The root of the
+;; inspected graph is always marked with `::di/root true`.
+
 (t/deftest env-test
   (t/is (= [{:key         "FOO"
              :description {::di/kind :env
                            ::di/root true}}]
            (di/inspect "FOO"))))
 
+;; A map middleware overrides the lookup — the description shifts from
+;; `:env` to `:trivial` because the value now comes from the literal map.
 
 (t/deftest fixed-env-test
   (t/is (= [{:key         "FOO"
@@ -19,6 +37,11 @@
                            ::di/root true}}]
            (di/inspect "FOO" {"FOO" "value"}))))
 
+;; ## Vars
+
+;; A symbol key resolves to a Clojure var. A plain `def` is reported
+;; as a trivial factory whose `:object` is the var's value. The var
+;; itself appears under `::di/variable`.
 
 (def variable :obj)
 
@@ -30,6 +53,9 @@
                            ::di/variable #'variable}}]
            (di/inspect `variable))))
 
+;; When a var holds a `Factory` instance, `inspect` calls that
+;; factory's own `description` method. An empty description still
+;; leaves `::di/variable` in place.
 
 (def variable+factory
   (reify p/Factory
@@ -43,6 +69,7 @@
                            ::di/variable #'variable+factory}}]
            (di/inspect `variable+factory))))
 
+;; A custom description is passed through unchanged.
 
 (def variable+description
   (reify p/Factory
@@ -58,6 +85,7 @@
                            ::di/variable #'variable+description}}]
            (di/inspect `variable+description))))
 
+;; The same applies to a `di/template` stored in a var.
 
 (def variable+template
   (di/template [42]))
@@ -70,6 +98,11 @@
                            ::di/variable #'variable+template}}]
            (di/inspect `variable+template))))
 
+;; ## Components and services
+
+;; A `defn` becomes a `:component` when it carries `{::di/kind
+;; :component}` metadata and a `:service` otherwise. Arity doesn't
+;; affect what `inspect` reports.
 
 (defn component-0-arity
   {::di/kind :component}
@@ -122,6 +155,8 @@
                            ::di/variable #'service-n-arity}}]
            (di/inspect `service-n-arity))))
 
+;; Multimethods follow the same rules — `::di/deps` declares their
+;; dependencies.
 
 (defmulti multimethod-service
   {::di/deps []}
@@ -134,6 +169,12 @@
                            ::di/variable #'multimethod-service}}]
            (di/inspect `multimethod-service))))
 
+;; ## Refs, templates, and derives
+
+;; The composite factories built by `di/ref`, `di/template`, and
+;; `di/derive` expose their inner shape under `:description`, alongside
+;; the keys they pull in under `:dependencies`. Unresolved keys show
+;; up as `:undefined`.
 
 (t/deftest ref-test
   (t/is (= [{:key          `foo
@@ -170,6 +211,10 @@
              :description {::di/kind :undefined}}]
            (di/inspect `foo {`foo (di/derive `bar str "arg")}))))
 
+;; ## Trivial values
+
+;; Anything that isn't a `Factory` becomes a trivial wrapper. The
+;; original value lives under `:object`.
 
 (t/deftest trivial-nil-test
   (t/is (= [{:key         `foo
@@ -186,6 +231,14 @@
                            ::di/root true}}]
            (di/inspect `foo {`foo str}))))
 
+;; ## Middlewares modify descriptions
+
+;; Many middlewares attach extra fields to the factories they wrap.
+;; `inspect` surfaces all of them, which is the easiest way to confirm
+;; that the wiring matches your intent.
+
+;; `di/update-key` records the chain of modifications under
+;; `::di/update-key`.
 
 (t/deftest update-key-test
   (t/is (= [{:key          `a
@@ -210,6 +263,8 @@
                        (di/update-key `a str (di/ref `b))
                        (di/update-key `a identity)))))
 
+;; `di/add-side-dependency` marks the pulled-in keys with
+;; `::di/side-dependency true`.
 
 (t/deftest add-side-dependency-test
   (t/is (= [{:key         `a
@@ -231,6 +286,8 @@
                        (di/add-side-dependency `side-dep-1)
                        (di/add-side-dependency `side-dep-2)))))
 
+;; `di/ns-publics` and `di/env-parsing` show up as standalone
+;; `:middleware` factories standing in front of the keys they expose.
 
 (t/deftest ns-publics-test
   (t/is (= [{:key          :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
@@ -270,6 +327,7 @@
                        (di/env-parsing :env.long parse-long)
                        {"PORT" "8080"}))))
 
+;; `di/log` adds `::di/log` to every factory it wraps.
 
 (t/deftest log-test
   (t/is (= [{:key         `foo
@@ -293,6 +351,10 @@
   (t/is (= :ok
            @(di/start `variable-factory-regression))))
 
+;; ## Multiple roots
+
+;; Pass a vector or a map as the first argument to inspect several
+;; roots at once.
 
 (t/deftest vector-test
   (t/is (= [{:key "A"
