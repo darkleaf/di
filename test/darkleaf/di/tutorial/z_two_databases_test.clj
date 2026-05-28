@@ -21,7 +21,9 @@
          user-key     :required
          password-key :required})
       (build [_ deps _]
-        [::db (deps url-key) (deps user-key) (deps password-key)]))))
+        [::db (deps url-key) (deps user-key) (deps password-key)])
+      (description [_]
+        {}))))
 
 (def db-a (db-factory :a))
 (def db-b (db-factory :b))
