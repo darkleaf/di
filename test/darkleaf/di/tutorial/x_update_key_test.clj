@@ -1,4 +1,4 @@
-;; # Update key
+;; # Composition with `update-key`
 
 (ns darkleaf.di.tutorial.x-update-key-test
   (:require
@@ -6,26 +6,25 @@
    [darkleaf.di.core :as di]))
 
 ;; `di/update-key` rewires an existing key: the original value is
-;; built first, your function transforms it, and the result is what
-;; every dependent sees. Multiple `update-key` calls on the same
-;; target apply in registration order — each transforms the result of
-;; the previous.
+;; built first, your function transforms it, and the result is
+;; what every dependent sees. Multiple `update-key` calls on the
+;; same target apply in registration order — each transforms the
+;; result of the previous.
 
-;; This is the main tool for composing across namespaces — the
-;; namespace that owns a key doesn't need to know about the modules
-;; that decorate or extend it. It covers the two cases Integrant has
-;; no clean answer for: AOP-style wrappers around components and
-;; shared registries assembled from independent modules (see
-;; [Integrant vs DI](/doc/integrant.md)).
+;; This is the main tool for cross-namespace composition: the
+;; namespace that owns a key does not need to know about the
+;; modules that decorate or extend it. Two patterns below cover
+;; most uses — wrapping a value with extra behaviour, and
+;; extending a shared collection.
 
 ;; ## Decorate the built value
 
-;; `(di/update-key target f & args)` applies `f` to the built value
-;; of `target`, threading it as the first argument. The classic case
-;; is the decorator pattern: wrap the original in something with the
-;; same shape that delegates to it, adding behaviour. In Clojure this
-;; is usually a higher-order `wrap-X` — takes the thing, returns a
-;; wrapped thing of the same kind.
+;; `(di/update-key target f & args)` applies `f` to the built
+;; value of `target`, threading it as the first argument. The
+;; classic case is the decorator pattern: wrap the original in
+;; something with the same shape that delegates to it, adding
+;; behaviour. In Clojure this is usually a higher-order `wrap-X`
+;; — takes the thing, returns a wrapped thing of the same kind.
 
 (defn handler [-deps req]
   {:status 200 :body (:uri req)})
@@ -46,10 +45,10 @@
 ;; ## Extend a collection
 
 ;; Any argument after `f` is itself a factory and gets built. This
-;; lets each module attach itself to a shared registry: it owns its
-;; handler and the route entry that wires the handler in, then hooks
-;; the entry onto `routes` with `di/ref`. The namespace that defines
-;; `routes` never references any of the modules.
+;; lets each module attach itself to a shared registry: it owns
+;; its handler and the route entry that wires the handler in,
+;; then hooks the entry onto `routes` with `di/ref`. The namespace
+;; that defines `routes` never references any of the modules.
 
 (defn user-handler [-deps -req]
   :user)
@@ -73,3 +72,11 @@
               ["/orders" :order]]
              (for [[path handler] @root]
                [path (handler :req)])))))
+
+;; (Under the hood `di/update-key` is a registry middleware — see
+;; [Middleware types](/doc/reference/middleware_types_test.md)
+;; for what that means. For everyday use you just need to know
+;; what update-key does.)
+
+;; The next chapter shows what DI does when a component throws
+;; halfway through start.

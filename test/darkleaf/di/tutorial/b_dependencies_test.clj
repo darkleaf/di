@@ -3,22 +3,25 @@
 (ns darkleaf.di.tutorial.b-dependencies-test
   (:require
    [clojure.test :as t]
-   [darkleaf.di.core :as di])
-  (:import
-   (clojure.lang ExceptionInfo)))
+   [darkleaf.di.core :as di]
+   [darkleaf.di.utils :as u]))
 
-;; DI uses associative destructuring syntax to define dependencies of a component.
-;; https://clojure.org/guides/destructuring#_associative_destructuring
+;; The previous chapter built a single component on its own. Real
+;; systems are graphs: components depend on other components. This
+;; chapter shows how a component declares its dependencies and how
+;; DI resolves them at start.
 
-;; There is a mapping between keys and components.
-;; A key can be symbol, keyword, or string.
-;; In this chapter we'll use only symbols.
+;; ## Declaring dependencies
 
-;; If we use symbols DI will try to resolve a component's var.
+;; DI uses Clojure's
+;; [associative destructuring](https://clojure.org/guides/destructuring#_associative_destructuring)
+;; to read a component's dependencies. Keys can be symbols,
+;; keywords, or strings — this chapter uses only symbols, which DI
+;; resolves to vars by name.
 
-;; In the following example the `root` component depends on
-;; the `a` and `b` and the `b` is optional.
-;; You also can get all component dependencies by the `deps` binding.
+;; `root` below depends on `a` and `b`. `b` is optional via `:or`
+;; with `::default` as fallback. The full dependency map is also
+;; available through `:as deps`.
 
 (defn root
   {::di/kind :component}
@@ -34,17 +37,33 @@
   (with-open [root (di/start `root)]
     (t/is (= [:root ::a ::default {`a ::a}] @root))))
 
-;; `di/start` can accept additional arguments.
-;; In the following example the argument is a map registry.
-;; I use it to define local keys.
-;; In general they are middlewares but I'll describe it later.
+;; Two equivalent forms in the destructuring map: ``{a `a}`` binds
+;; the value of key `` `a `` to the local `a`. `::syms [b]` is a
+;; shorthand for several symbols at once. Use whichever reads
+;; better.
+
+;; ## Substituting a dependency
+
+;; `di/start` accepts a second argument — a map that supplies or
+;; overrides values by key:
 
 (t/deftest root-with-extra-deps-test
   (with-open [root (di/start `root {`b ::b})]
     (t/is (= [:root ::a ::b {`a ::a `b ::b}] @root))))
 
-;; Dependencies are required by default.
-;; There is no definition of `a'` so DI will throw an exception.
+;; This map is called a *registry*. Use it to override what DI
+;; would otherwise resolve from a var — a fake datasource in
+;; tests, a different implementation in dev, and so on.
+;; Registries are covered in detail in
+;; [Registries](/doc/tutorial/l_registries_test.md).
+
+;; ## Required by default
+
+;; Dependencies are required unless `:or` declares a default. A
+;; missing required dependency makes `di/start` throw. The
+;; exception carries enough info to find the gap: the failure
+;; `:type` and a `:stack` of keys DI was resolving — from the
+;; missing key (head) up through its parents to the root.
 
 (defn root'
   {::di/kind :component}
@@ -52,6 +71,12 @@
   [::root a])
 
 (t/deftest root'-test
-  (t/is (thrown-with-msg? ExceptionInfo
-                          #"Missing dependency darkleaf.di.tutorial.b-dependencies-test/a'"
-                          (di/start `root'))))
+  (let [ex (u/catch-some (di/start `root'))]
+    (t/is (= "Missing dependency darkleaf.di.tutorial.b-dependencies-test/a'"
+             (ex-message ex)))
+    (t/is (= {:type  ::di/missing-dependency
+              :stack [`a' `root']}
+             (ex-data ex)))))
+
+;; The next chapter covers how a component cleans up when the
+;; system stops.

@@ -1,12 +1,22 @@
-;; # Stop
+;; # Stopping components
 
 (ns darkleaf.di.tutorial.c-stop-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-;; To stop a component, you should teach DI how to do it.
-;; Use `::di/stop` to define a stop function.
+;; By default, a component is built once at start and discarded on
+;; stop — DI does nothing else with it. When a component owns a
+;; resource (a connection, a thread pool, a file handle), attach
+;; a stop function via metadata. DI calls it with the built value
+;; when the system shuts down.
+
+;; ## Declaring a stop function
+
+;; `::di/stop` is just another function attached as metadata. It
+;; receives the built value and its return value is ignored. Below,
+;; the component returns an atom, and the stop function flips it to
+;; `true` — the test asserts the flip happened.
 
 (defn root
   {::di/stop #(reset! % true)}
@@ -19,12 +29,24 @@
       (t/is (= false @@root)))
     (t/is @*stopped?)))
 
-;; In most cases, a component will be a Java class.
-;; To prevent reflection calls use `memfn`
+;; ## Stopping Java objects
+
+;; In real systems, a stateful component is often a Java object —
+;; a connection pool, a server, a queue — with a `close` or
+;; `shutdown` method. Use a qualified method value (Clojure 1.12+)
+;; or `memfn` to call it without reflection:
+
 ;; ```clojure
-;; (defn- connection-manager
-;;   {::di/stop (memfn ^AutoCloseable close)}
-;;   [{max-conn :env.long/CONNECTION_MANAGER_MAX_CONN
-;;     :or {max-conn 50}}]
-;;   (ConnectionManager. max-conn))
+;; (defn connection-pool
+;;   {::di/stop ConnectionPool/.close}
+;;   [{max-conn :env.long/MAX_CONN}]
+;;   (ConnectionPool. max-conn))
+;;
+;; (defn connection-pool
+;;   {::di/stop (memfn ^ConnectionPool close)}
+;;   [{max-conn :env.long/MAX_CONN}]
+;;   (ConnectionPool. max-conn))
 ;; ```
+
+;; The next chapter covers the REPL workflow — redefining functions
+;; on a running system without restarting.

@@ -1,4 +1,4 @@
-;; # Intro
+;; # Your first system
 
 (ns darkleaf.di.tutorial.a-intro-test
   (:require
@@ -7,39 +7,43 @@
   (:import
    (java.time Instant)))
 
-;; Let's start.
-;; In this chapter I'll show you how to deal with components.
+;; By the end of this chapter you can start a small system, stop
+;; it, and see the difference between a component and a service.
+;; The rest of the tutorial builds on these terms.
 
-;; ## Trivial system
 
-;; The following test describes the most trivial system that
-;; contains the most trivial component.
+;; ## The smallest system
+
+;; A system is one or more components connected by their
+;; dependencies. The smallest one has a single component — a
+;; trivial value stored in a var.
 
 (def a ::a)
 
-;; `root` is a system root.
-;; To get root's value deref it.
-;; To stop a system use `di/stop`.
+;; `di/start` builds the system. It takes a key, looks it up, and
+;; returns the system root. Deref the root with `@` to get the
+;; built value. `di/stop` shuts the system down.
 
 (t/deftest a-test
   (let [root (di/start `a)]
     (t/is (= ::a @root))
     (di/stop root)))
 
-;; ## AutoCloseable
+;; ## Stopping safely
 
-;; A root implements `AutoCloseable`
-;; so in tests we should use `with-open` macro
-;; for properly stopping.
+;; The root implements `AutoCloseable`, so in tests use `with-open`
+;; instead of calling `di/stop` by hand. If a test fails midway,
+;; the system is still stopped.
 
 (t/deftest a'-test
   (with-open [root (di/start `a)]
     (t/is (= ::a @root))))
 
-;; ## Component
+;; ## Components
 
-;; A component definition is a function of 0 or 1 arity
-;; with `{::di/kind :component}` meta.
+;; A component is a function of zero or one argument with
+;; `{::di/kind :component}` metadata. DI calls it once during start
+;; and uses the returned value.
 
 (defn b
   {::di/kind :component}
@@ -50,13 +54,10 @@
   (with-open [root (di/start `b)]
     (t/is (inst? @root))))
 
-;; ## Dependencies
-
-;; To define a component that depends on other components,
-;; define a function of one argument.
-;; DI will parse associative destructuring to get dependencies of the component.
-;; We'll consider component dependencies in the next chapter.
-;; But now we will use placeholder.
+;; The argument, when present, carries the component's
+;; dependencies. DI reads the destructuring map to figure out what
+;; to inject. Declaring real dependencies is the next chapter; for
+;; now we just use a placeholder name.
 
 (defn c
   {::di/kind :component}
@@ -69,17 +70,22 @@
 
 ;; ## Services
 
-;; A service is a function with or without dependencies.
+;; A service is a plain `defn` — no metadata. DI does not call it
+;; during start; the function itself is the component.
 
 (defn d []
   ::d)
 
-;; `root` is a wrapper, and it implements `clojure.lang.IFn`, just like `clojure.lang.Var`.
-;; So you can just call `root`.
+;; The root implements `clojure.lang.IFn`, so you can call it
+;; directly — `(root)` invokes the underlying function, just like
+;; you would invoke a var.
 
 (t/deftest d-test
   (with-open [root (di/start `d)]
     (t/is (= ::d (@root) (root)))))
+
+;; A service can also take dependencies. As with a component, the
+;; first argument is the dependency map (placeholder for now).
 
 (defn d* [-deps]
   ::d)
@@ -88,6 +94,9 @@
   (with-open [root (di/start `d*)]
     (t/is (= ::d (@root) (root)))))
 
+;; Arguments after the dependency map are the service's own
+;; arguments, supplied by the caller.
+
 (defn e [-deps arg]
   [::e arg])
 
@@ -95,23 +104,7 @@
   (with-open [root (di/start `e)]
     (t/is (= [::e 42] (root 42)))))
 
-;; ## Interactive Development
+;; That's the vocabulary: system, root, components, and services.
+;; The next chapter wires components together through real
+;; dependencies.
 
-;; You don't need to restart the whole system if you redefine a service.
-;; Just redefine a Var.
-;; It's very helpful for interactive development.
-
-;; It does not work if you change definition of dependencies,
-;; so in this case you have to restart the system.
-
-;; The new implementation of a service will receive the same dependencies.
-;; To check that, I have to look a little ahead and define component with a dependency.
-;; As I said we consider deps in the next chapter.
-
-(t/deftest f-test
-  (defn f [{x ::x} arg]
-    [::f x arg])
-  (with-open [root (di/start `f {::x :x})]
-    (defn f [deps arg]
-      [::new-f (deps ::x) arg])
-    (t/is (= [::new-f :x 42] (root 42)))))
