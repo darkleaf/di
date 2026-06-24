@@ -18,7 +18,7 @@
    ["Advanced"
     ["Tips"                  {:file "doc/how_to/tips_test.md"}]
     ["Side dependencies"     {:file "doc/how_to/side_dependencies_test.md"}]
-    ["Log"                   {:file "doc/tutorial/x_log_test.md"}]
+    ["Logging system lifecycle" {:file "doc/how_to/log_test.md"}]
     ["Inspect"               {:file "doc/tutorial/x_inspect_test.md"}]
     ["Multimethods"          {:file "doc/how_to/multimethods_test.md"}]
     ["Multi-arity services"  {:file "doc/how_to/multi_arity_service_test.md"}]
