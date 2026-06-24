@@ -74,7 +74,7 @@
                [path (handler :req)])))))
 
 ;; (Under the hood `di/update-key` is a registry middleware — see
-;; [Middleware types](/doc/reference/middleware_types_test.md)
+;; [Middleware types](/doc/reference/middleware_types.md)
 ;; for what that means. For everyday use you just need to know
 ;; what update-key does.)
 

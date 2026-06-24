@@ -63,7 +63,7 @@
     (t/is (= [:value :a :b] @root))))
 
 ;; The map form is one of several registry shapes — see
-;; [Middleware types](/doc/reference/middleware_types_test.md)
+;; [Middleware types](/doc/reference/middleware_types.md)
 ;; for the full picture. The tutorial only needs the map form.
 
 ;; The next chapter introduces keyword keys — a way to decouple

@@ -61,7 +61,7 @@
 ;; anything.
 
 ;; (`di/env-parsing` is one of several registry shapes — see
-;; [Middleware types](/doc/reference/middleware_types_test.md)
+;; [Middleware types](/doc/reference/middleware_types.md)
 ;; for the wider picture.)
 
 ;; ## Required vs optional
