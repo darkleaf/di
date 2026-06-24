@@ -1,6 +1,6 @@
 ;; # Composition with `update-key`
 
-(ns darkleaf.di.tutorial.x-update-key-test
+(ns darkleaf.di.tutorial.k-composition-with-update-key-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

@@ -1,6 +1,6 @@
 ;; # Environment variables
 
-(ns darkleaf.di.tutorial.n-env-test
+(ns darkleaf.di.tutorial.g-environment-variables-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

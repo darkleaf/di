@@ -55,7 +55,7 @@
 ;; would otherwise resolve from a var — a fake datasource in
 ;; tests, a different implementation in dev, and so on.
 ;; Registries are covered in detail in
-;; [Registries](/doc/tutorial/l_registries_test.md).
+;; [Registries](/doc/tutorial/e_registries_test.md).
 
 ;; ## Required by default
 

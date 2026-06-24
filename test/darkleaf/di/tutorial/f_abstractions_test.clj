@@ -1,6 +1,6 @@
 ;; # Abstractions
 
-(ns darkleaf.di.tutorial.m-abstractions-test
+(ns darkleaf.di.tutorial.f-abstractions-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]

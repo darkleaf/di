@@ -1,6 +1,6 @@
 ;; # Transforming values
 
-(ns darkleaf.di.tutorial.p-derive-test
+(ns darkleaf.di.tutorial.j-transforming-values-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
@@ -38,7 +38,7 @@
     (t/is (= 8080 @root))))
 
 ;; Use whichever reads better. For env vars specifically,
-;; [`di/env-parsing`](/doc/tutorial/n_env_test.md) is usually
+;; [`di/env-parsing`](/doc/tutorial/g_environment_variables_test.md) is usually
 ;; nicer — it registers a parser once for a whole keyword
 ;; namespace (`:env.long`, `:env.json`). `di/derive` is the
 ;; general tool, useful when the transformation does not fit the

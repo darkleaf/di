@@ -1,6 +1,6 @@
 ;; # Stopping components
 
-(ns darkleaf.di.tutorial.c-stop-test
+(ns darkleaf.di.tutorial.c-stopping-components-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))

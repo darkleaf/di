@@ -1,6 +1,6 @@
 ;; # Starting many keys
 
-(ns darkleaf.di.tutorial.q-starting-many-keys-test
+(ns darkleaf.di.tutorial.h-starting-many-keys-test
   (:require
    [darkleaf.di.core :as di]
    [clojure.test :as t]))

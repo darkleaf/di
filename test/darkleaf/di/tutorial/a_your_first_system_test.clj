@@ -1,6 +1,6 @@
 ;; # Your first system
 
-(ns darkleaf.di.tutorial.a-intro-test
+(ns darkleaf.di.tutorial.a-your-first-system-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di])

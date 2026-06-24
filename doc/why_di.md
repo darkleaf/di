@@ -135,5 +135,5 @@ lost.
 
 ---
 
-The [tutorial](/doc/tutorial/a_intro_test.md) walks through each of
+The [tutorial](/doc/tutorial/a_your_first_system_test.md) walks through each of
 these, one chapter at a time.

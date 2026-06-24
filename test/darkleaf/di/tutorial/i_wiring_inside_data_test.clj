@@ -1,6 +1,6 @@
 ;; # Wiring inside data
 
-(ns darkleaf.di.tutorial.o-data-dsl-test
+(ns darkleaf.di.tutorial.i-wiring-inside-data-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
