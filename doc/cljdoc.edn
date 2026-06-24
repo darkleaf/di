@@ -14,7 +14,7 @@
     ["Wiring inside data"          {:file "doc/tutorial/o_data_dsl_test.md"}]
     ["Transforming values"         {:file "doc/tutorial/p_derive_test.md"}]
     ["Composition with update-key" {:file "doc/tutorial/x_update_key_test.md"}]
-    ["Graceful failures"           {:file "doc/tutorial/y_graceful_stop_test.md"}]
+    ["Handling start failures"     {:file "doc/tutorial/y_graceful_stop_test.md"}]
     ["Multimethods"                {:file "doc/tutorial/r_multimethods_test.md"}]]
    ["Advanced"
     ["Tips"                  {:file "doc/how_to/tips_test.md"}]
