@@ -5,7 +5,7 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]
    [darkleaf.di.protocols :as p]
-   [darkleaf.di.tutorial.x-ns-publics-test :as x-ns-publics-test]))
+   [darkleaf.di.how-to.ns-publics-test :as x-ns-publics-test]))
 
 ;; `di/inspect` takes the same arguments as `di/start` but builds
 ;; nothing. It walks the registry and returns a vector describing
@@ -290,13 +290,13 @@
 ;; `:middleware` factories standing in front of the keys they expose.
 
 (t/deftest ns-publics-test
-  (t/is (= [{:key          :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
+  (t/is (= [{:key          :ns-publics/darkleaf.di.how-to.ns-publics-test
              :dependencies {`x-ns-publics-test/service   :required
                             `x-ns-publics-test/component :required
                             `x-ns-publics-test/ok-test   :required}
              :description  {::di/kind   :middleware
                             :middleware ::di/ns-publics
-                            :ns         'darkleaf.di.tutorial.x-ns-publics-test
+                            :ns         'darkleaf.di.how-to.ns-publics-test
                             ::di/root   true}}
             {:key          `x-ns-publics-test/service
              :dependencies {`x-ns-publics-test/component :required}
@@ -309,7 +309,7 @@
              :description {::di/kind     :trivial
                            :object       x-ns-publics-test/ok-test
                            ::di/variable #'x-ns-publics-test/ok-test}}]
-           (di/inspect :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
+           (di/inspect :ns-publics/darkleaf.di.how-to.ns-publics-test
                        (di/ns-publics)))))
 
 

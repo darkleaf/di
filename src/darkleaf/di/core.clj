@@ -838,7 +838,7 @@
 
   This enables access to all public components, which is useful for testing.
 
-  See the test `darkleaf.di.tutorial.x-ns-publics-test`.
+  See the test `darkleaf.di.how-to.ns-publics-test`.
 
   ```clojure
   (di/start :ns-publics/io.github.my.ns (di/ns-publics))
