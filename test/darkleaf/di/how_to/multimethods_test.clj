@@ -1,13 +1,13 @@
 ;; # Multimethods
 
-(ns darkleaf.di.tutorial.r-multimethods-test
+(ns darkleaf.di.how-to.multimethods-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-;; You can use `defmulti` like `defn` to define a service.
-;; Unlike `defn`, there is no way to get a definition of dependencies
-;; and we have to define them as `::di/deps` on metadata.
+;; A `defmulti` can be a service, but DI cannot read its argument
+;; list the way it reads a `defn`. Declare the dependencies in
+;; metadata under `::di/deps`.
 
 (defmulti service
   {::di/deps [::x]}
@@ -20,9 +20,11 @@
   (with-open [root (di/start `service {::x :value})]
     (t/is (= [:kind :value] (root :kind)))))
 
-;; `::di/deps` defines only required dependencies, mostly for simplicity.
-;; If you need to use an optional dependency,
-;; simply convert it to a required dependency by adding a default value.
+;; ## Optional dependencies
+
+;; `::di/deps` only declares required dependencies. To make a
+;; dependency optional, wrap it with `di/derive` and supply a
+;; fallback:
 
 (defn- wrap-default [x default]
   (if (some? x) x default))
