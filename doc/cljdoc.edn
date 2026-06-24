@@ -23,7 +23,7 @@
     ["Multimethods"                 {:file "doc/how_to/multimethods_test.md"}]
     ["All public vars as a component" {:file "doc/how_to/ns_publics_test.md"}]
     ["Multi-arity services"  {:file "doc/how_to/multi_arity_service_test.md"}]
-    ["Multi system"          {:file "doc/tutorial/z_multi_system_test.md"}]
+    ["Multiple systems"      {:file "doc/how_to/multiple_systems_test.md"}]
     ["Two Databases"         {:file "doc/tutorial/z_two_databases_test.md"}]]]
   ["Reference"
    ["Middleware types" {:file "doc/reference/middleware_types_test.md"}]]

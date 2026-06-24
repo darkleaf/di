@@ -1,14 +1,16 @@
-;; # Multi system
-(ns darkleaf.di.tutorial.z-multi-system-test
+;; # Multiple systems
+
+(ns darkleaf.di.how-to.multiple-systems-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-;; In some cases, you may need multiple systems and to share a subsystem between them.
-;; In that case, just pass the subsystem in the registry.
-
-;; To get a value of the subsystem, you should `deref` it as you would for a regular system root.
-;; Also you should manually stop systems in reverse order.
+;; Sometimes you need several running systems that share a
+;; subsystem — for example a few independent web apps backed by
+;; the same database pool. Start the shared subsystem first,
+;; deref it for its built value, and pass that value through the
+;; registry of each downstream system. Stop them in reverse
+;; order when you are done.
 
 (defn shared
   {::di/kind :component}
@@ -29,4 +31,5 @@
                                         ::name  :b})]
     (t/is (= :a (first @a)))
     (t/is (= :b (first @b)))
+    ;; both servers see the same shared instance
     (t/is (identical? (second @a) (second @b)))))
