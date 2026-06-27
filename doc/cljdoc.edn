@@ -26,6 +26,6 @@
     ["Multiple systems"      {:file "doc/how_to/multiple_systems_test.md"}]
     ["Two Databases"         {:file "doc/tutorial/z_two_databases_test.md"}]]]
   ["Reference"
-   ["Middleware types" {:file "doc/reference/middleware_types.md"}]]
+   ["The middleware argument" {:file "doc/reference/middleware_argument.md"}]]
   ["Example app" {:file "doc/example.md"}]
   ["Integrant vs DI" {:file "doc/integrant.md"}]]}
