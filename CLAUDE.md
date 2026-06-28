@@ -124,9 +124,12 @@ chapter-by-chapter rationale.
 ### Terminology
 
 - **Do not use the word "middleware"** in tutorial or how-to
-  chapters. Refer readers to `doc/reference/middleware_types.md`
+  chapters. Refer readers to `doc/reference/middleware_argument.md`
   when the concept is unavoidable. Talk about "arguments to
   `di/start`" instead.
+- **A key names a "component" of the system, never a "node".**
+  The parts of a system are its components. Do not call them nodes
+  (or "things") in docs.
 - **Math-style names** (`a`, `b`, `c`, …) are the project's
   authorial style. Keep them — don't substitute concrete names
   without a reason.
@@ -172,6 +175,46 @@ regressions don't slip through.
   patterns, design history, pitfall lists, aggregations across
   multiple sources.
 - Avoid duplicating the docstring 1-for-1.
+
+### Recurring mistakes to avoid
+
+Lessons paid for during the design-doc work. The cross-cutting
+failure mode is *confident-but-wrong*: smooth prose that isn't
+grounded in the code or in the author's actual model. Guard against
+each of these.
+
+1. **Author's model over clever framing.** Don't reach for an
+   impressive abstraction (category theory, neat dualities,
+   phase taxonomies) before checking how the maintainer actually
+   thinks about it. Examples that were wrong: "a system is a
+   key→object map" (it is the built root object), "compile/build/run
+   time" (you don't write components at compile time), the monad
+   gloss (cut). State the simplest *true* thing.
+2. **No unverified claims, especially superlatives.** Check the
+   code before writing "always / never / cannot / static". Wrong
+   ones shipped: "Ring middleware always delegates" (it can
+   short-circuit), "dependencies is the static schema" (it may be
+   computed; the rule is that it is pure and stable). Prefer a
+   precise weak claim over a strong vague one.
+3. **Use the project's settled terms.** A key names a **component**,
+   never a "node". No "middleware" in tutorial/how-to prose. Avoid
+   off-register words ("schemas") and idioms ("earns its keep" —
+   non-native readers). Persist any terminology correction to this
+   file immediately so it does not recur.
+4. **No duplication or padding.** Re-read your own output for ideas
+   repeated in adjacent paragraphs, comments that restate a bullet
+   list, and enumerations that add no information.
+5. **Hold one altitude.** A design doc explains *how it is built and
+   why*, not *how to use it*. Don't mix in API/usage notes at equal
+   weight, and make every example serve the section's actual point.
+6. **Run a mechanical pass before "done".** No `;` in prose;
+   fix links after any file rename; put backtick-quoted symbols
+   (`` `foo ``) in fenced blocks, not inline (they break Markdown).
+7. **Step back, don't only polish.** For an important doc, do the
+   grounding up front — read the code, tests, git history, relevant
+   PRs, and reference docs from respected libraries — and
+   periodically question the whole structure instead of line-editing
+   a local optimum.
 
 ## Release/build gotchas (not cljdoc-specific but related)
 
