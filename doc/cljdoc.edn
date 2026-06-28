@@ -1,6 +1,7 @@
 {:cljdoc.doc/tree
  [["Readme" {:file "Readme.md"}]
   ["Changelog" {:file "CHANGELOG.md"}]
+  ["Design" {:file "doc/design.md"}]
   ["Tutorial"
    ["Base"
     ["Your first system"           {:file "doc/tutorial/a_your_first_system_test.md"}]
