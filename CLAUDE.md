@@ -19,10 +19,15 @@ Docs are published on cljdoc.org. Source articles live in `doc/`:
   matching `test/darkleaf/di/{tutorial,how_to}/*.clj` files by
   `script/tutorial-to-md.sh`. Paths are gitignored; the files only
   exist in CI-built release commits.
-- `doc/reference/*.md` — **plain tracked markdown**, not generated.
-  Reference pages are descriptive prose; verified examples for
-  whatever the page describes live in regular tests
-  (e.g. `dependency_types_test.clj` for the Factory protocol page).
+- `doc/reference/*.md` comes in two flavours:
+  - `doc/reference/<slug>_test.md` — **generated** from
+    `test/darkleaf/di/reference/<slug>_test.clj` by the same script
+    (e.g. `inspect_test.md`). Gitignored via `/doc/reference/*_test.md`;
+    exists only in CI-built release commits.
+  - `doc/reference/<slug>.md` (no `_test` suffix) — **plain tracked
+    markdown**, not generated. Descriptive prose; verified examples
+    live in regular tests (e.g. `dependency_types_test.clj` for the
+    Factory protocol page).
 - Planning artifacts from the v6 docs restructure live in
   `doc/_journey.md` (chapter-by-chapter audit) and
   `doc/_structure.md` (final TOC + rationale).
@@ -145,8 +150,12 @@ chapter-by-chapter rationale.
   Letter prefix `a..l` matches chapter order (1–12) alphabetically.
 - How-to recipes: `test/darkleaf/di/how_to/<slug>_test.clj`. No
   order prefix.
-- Reference pages: `doc/reference/<slug>.md` — plain markdown,
-  tracked.
+- Reference pages: either plain tracked markdown at
+  `doc/reference/<slug>.md`, or generated from
+  `test/darkleaf/di/reference/<slug>_test.clj` (output
+  `doc/reference/<slug>_test.md`, gitignored). Use a generated page
+  when the reference is example-heavy and the examples should be
+  verified by the test suite (e.g. `inspect`).
 - When adding a new doc subdirectory, also update
   `script/tutorial-to-md.sh` (it iterates `tutorial`, `how_to`,
   `reference`) and the `git add -f` line in

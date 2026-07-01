@@ -14,7 +14,7 @@
 ;; build or demolish step, or stream lifecycle events into your
 ;; logging system. To analyze build and teardown order without
 ;; actually running the system, use
-;; [`di/inspect`](/doc/tutorial/x_inspect_test.md) instead.
+;; [`di/inspect`](/doc/reference/inspect_test.md) instead.
 
 ;; Put `di/log` last when you call `di/start`. `log` reports
 ;; every factory before it in the argument list. Anything after

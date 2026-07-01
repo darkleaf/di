@@ -196,7 +196,7 @@ If you do want the topology as data, `di/inspect` takes the same
 arguments as `di/start` and returns the resolved graph as a vector of
 `{:key … :dependencies … :description …}` maps without running
 anything. Feed it to a graph visualiser, diff between deployments, or
-assert a structure in tests — see the [Inspect tutorial](/doc/tutorial/x_inspect_test.md).
+assert a structure in tests — see the [Inspect reference](/doc/reference/inspect_test.md).
 
 
 ## Real Applications

@@ -21,13 +21,13 @@
     ["Tips"                  {:file "doc/how_to/tips_test.md"}]
     ["Side dependencies"     {:file "doc/how_to/side_dependencies_test.md"}]
     ["Logging system lifecycle" {:file "doc/how_to/log_test.md"}]
-    ["Inspect"               {:file "doc/tutorial/x_inspect_test.md"}]
     ["Multimethods"                 {:file "doc/how_to/multimethods_test.md"}]
     ["All public vars as a component" {:file "doc/how_to/ns_publics_test.md"}]
     ["Multi-arity services"  {:file "doc/how_to/multi_arity_service_test.md"}]
     ["Multiple systems"      {:file "doc/how_to/multiple_systems_test.md"}]
     ["Two Databases"         {:file "doc/tutorial/z_two_databases_test.md"}]]]
   ["Reference"
+   ["Inspect"                 {:file "doc/reference/inspect_test.md"}]
    ["The middleware argument" {:file "doc/reference/middleware_argument.md"}]]
   ["Example app" {:file "doc/example.md"}]
   ["Integrant vs DI" {:file "doc/integrant.md"}]]}

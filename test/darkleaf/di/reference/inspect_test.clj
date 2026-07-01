@@ -1,6 +1,6 @@
 ;; # Inspect
 
-(ns darkleaf.di.tutorial.x-inspect-test
+(ns darkleaf.di.reference.inspect-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]
@@ -339,17 +339,6 @@
            (di/inspect `foo
                        {`foo :obj}
                        (di/log)))))
-
-
-(def variable-factory-regression
-  (reify p/Factory
-    (dependencies [_])
-    (build [_ _ _] :ok)
-    (description [_])))
-
-(t/deftest variable-factory-regression-test
-  (t/is (= :ok
-           @(di/start `variable-factory-regression))))
 
 ;; ## Multiple roots
 

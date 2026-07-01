@@ -5,6 +5,7 @@
 /pom.xml
 /doc/tutorial/
 /doc/how_to/
+/doc/reference/*_test.md
 #/doc/_*.md
 .clj-kondo/
 .lsp/
