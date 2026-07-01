@@ -5,7 +5,7 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-;; Symbols resolve to vars; keywords to abstractions in the
+;; Symbols resolve to vars, keywords to abstractions in the
 ;; registry. The third kind of key — a string — resolves to an
 ;; environment variable. This is how you plug a system into the
 ;; environment it runs in: container env, .env file, shell, CI
@@ -60,8 +60,8 @@
 ;; namespaces as you need: `:env.long`, `:env.bool`, `:env.json`,
 ;; anything.
 
-;; (`di/env-parsing` is one of several registry shapes — see
-;; [Middleware types](/doc/reference/middleware_types.md)
+;; (`di/env-parsing` is a middleware — see
+;; [The middleware argument](/doc/reference/middleware_argument.md)
 ;; for the wider picture.)
 
 ;; ## Required vs optional

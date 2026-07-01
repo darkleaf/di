@@ -13,9 +13,9 @@
 
 ;; Sometimes the dependency does not belong to any one namespace —
 ;; a database connection, a session source, a config map. There
-;; is no var to point at; the value comes from outside the code.
-;; For these, use a keyword key. DI does not try to resolve it;
-;; the registry must supply it.
+;; is no var to point at. The value comes from outside the code.
+;; For these, use a keyword key. DI does not try to resolve it.
+;; The registry must supply it.
 
 ;; ## A worked example
 
@@ -42,17 +42,17 @@
 
 ;; Notice the mix: `get-user` and `get-current-user` are symbol
 ;; deps (they have real vars). `::datasource` and `::session` are
-;; keyword deps (no vars; supplied at start). Both kinds sit side
+;; keyword deps (no vars, supplied at start). Both kinds sit side
 ;; by side in the same destructuring map.
 
 ;; ## When to pick which
 
 ;; **Symbol** points at a specific var. You are naming the
 ;; implementation directly. This is the default for code you
-;; write — no extra wiring needed; DI resolves the var.
+;; write — no extra wiring needed. DI resolves the var.
 
 ;; **Keyword** does not point at anything. It names an abstract
-;; role; the registry decides which implementation fills it. Use
+;; role. The registry decides which implementation fills it. Use
 ;; a keyword when you have explicitly decided to abstract a
 ;; dependency — most commonly in a reusable library or an
 ;; internal module that declares what it needs without naming

@@ -28,9 +28,6 @@ Docs are published on cljdoc.org. Source articles live in `doc/`:
     markdown**, not generated. Descriptive prose; verified examples
     live in regular tests (e.g. `dependency_types_test.clj` for the
     Factory protocol page).
-- Planning artifacts from the v6 docs restructure live in
-  `doc/_journey.md` (chapter-by-chapter audit) and
-  `doc/_structure.md` (final TOC + rationale).
 
 ### Release flow
 
@@ -104,8 +101,7 @@ articles.
 
 ## Documentation conventions
 
-Settled during the v6 restructure. See `doc/_structure.md` for the
-chapter-by-chapter rationale.
+Settled during the v6 restructure.
 
 ### Audience
 
@@ -128,10 +124,18 @@ chapter-by-chapter rationale.
 
 ### Terminology
 
-- **Do not use the word "middleware"** in tutorial or how-to
-  chapters. Refer readers to `doc/reference/middleware_argument.md`
-  when the concept is unavoidable. Talk about "arguments to
-  `di/start`" instead.
+- **"Middleware"** is introduced once, in the tutorial's Registries
+  chapter (`e_registries_test`), with a one-line definition and a
+  link to `doc/reference/middleware_argument.md`. After that point,
+  use the word plainly wherever it is the natural term. The first
+  four chapters (A–D) pass no such arguments, so the word does not
+  come up there. In how-to recipes use it freely, linking to the
+  reference on first use because recipes are read out of order.
+  (An earlier draft banned the word outright. That backfired: it
+  forced vague paraphrases like "shapes `di/start` accepts", and it
+  contradicted the reference page's own title, "The middleware
+  argument". Naming the concept once and then using it is clearer
+  for non-native readers than paraphrasing around it.)
 - **A key names a "component" of the system, never a "node".**
   The parts of a system are its components. Do not call them nodes
   (or "things") in docs.
@@ -215,7 +219,8 @@ each of these.
    computed; the rule is that it is pure and stable). Prefer a
    precise weak claim over a strong vague one.
 3. **Use the project's settled terms.** A key names a **component**,
-   never a "node". No "middleware" in tutorial/how-to prose. Avoid
+   never a "node". Introduce "middleware" once (Registries chapter),
+   then use it plainly — do not paraphrase around it. Avoid
    off-register words ("schemas") and idioms ("earns its keep" —
    non-native readers). Persist any terminology correction to this
    file immediately so it does not recur.

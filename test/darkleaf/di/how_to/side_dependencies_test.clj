@@ -48,7 +48,7 @@
 
 ;; The usual pattern: applications are split into subsystems, and
 ;; each subsystem ships its own `registry` function that
-;; contributes components and middlewares. A subsystem that owns
+;; contributes components and middleware. A subsystem that owns
 ;; migrations declares its side dependency inside its own
 ;; registry. The root never mentions it.
 

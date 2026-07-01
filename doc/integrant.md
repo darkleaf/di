@@ -25,7 +25,7 @@ handles dependencies, REPL workflow, composition, and failure.
 ## Assumptions
 
 - All snippets share the namespace shown above.
-- Library calls (Jetty, Reitit) are stubbed; the [example app](/doc/example.md) has runnable wiring.
+- Library calls (Jetty, Reitit) are stubbed. The [example app](/doc/example.md) has runnable wiring.
 
 ## Code Examples
 
@@ -296,7 +296,7 @@ disappears from the registry:
 ```
 
 The registry function is the single place where deployment decisions
-live. Turning a flag off means deleting one line; the subsystem's own
+live. Turning a flag off means deleting one line. The subsystem's own
 namespace stays untouched. Tests pass whatever flags map they want —
 no env-var mocking, no global state.
 

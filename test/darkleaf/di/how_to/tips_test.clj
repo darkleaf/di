@@ -1,7 +1,6 @@
 ;; # Tips
 
-;; TODO: collection of small DI tricks and lesser-known features.
-;; More to come — add new ones here as we run into them.
+;; A collection of small DI tricks and lesser-known features.
 
 (ns darkleaf.di.how-to.tips-test
   (:require
@@ -28,16 +27,17 @@
     (di/stop root)
     (t/is (= :stopped @a))))
 
-;; ## Group registries into one argument
+;; ## Pass a vector instead of `apply`
 
-;; A seqable value counts as a single registry argument — handy
-;; when registries come from helper functions and you'd otherwise
-;; need `(apply di/start ...)`.
+;; When your registries come from a helper that returns a
+;; collection, you might reach for `(apply di/start ...)`. You do
+;; not need to. `di/start` treats a seqable value as a single
+;; argument, so pass the collection directly.
 
 (t/deftest grouped-registry-test
-  ;; instead of:
-  ;; (di/start ::root {::root :first} {::root :replacement})
-  ;; ... pass them grouped:
+  ;; registries from a helper — instead of:
+  ;;   (apply di/start ::root registries)
+  ;; pass them as one vector:
   (with-open [r (di/start ::root [{::root :first}
                                   {::root :replacement}])]
     (t/is (= :replacement @r))))

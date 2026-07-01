@@ -58,7 +58,7 @@ hooks itself onto the central routes:
   [(di/update-key `app.web/routes conj (di/ref `users-routes))])
 ```
 
-The main system composes registries from every subsystem; `app.web`
+The main system composes registries from every subsystem. `app.web`
 never imports `app.users`. A third subsystem is a third file with
 its own `registry`.
 

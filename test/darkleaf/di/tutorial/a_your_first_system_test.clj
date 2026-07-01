@@ -56,7 +56,7 @@
 
 ;; The argument, when present, carries the component's
 ;; dependencies. DI reads the destructuring map to figure out what
-;; to inject. Declaring real dependencies is the next chapter; for
+;; to inject. Declaring real dependencies is the next chapter. For
 ;; now we just use a placeholder name.
 
 (defn c
@@ -71,7 +71,7 @@
 ;; ## Services
 
 ;; A service is a plain `defn` — no metadata. DI does not call it
-;; during start; the function itself is the component.
+;; during start. The function itself is the component.
 
 (defn d []
   ::d)

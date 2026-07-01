@@ -7,7 +7,7 @@
 
 ;; Many Clojure libraries are configured via data — reitit routes,
 ;; scheduler tables, connection-pool maps. DI lets you embed
-;; `(di/ref ...)` directly inside that data; `di/template` walks
+;; `(di/ref ...)` directly inside that data. `di/template` walks
 ;; the structure on start and replaces each ref with the value it
 ;; points at.
 

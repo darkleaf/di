@@ -73,8 +73,8 @@
              (for [[path handler] @root]
                [path (handler :req)])))))
 
-;; (Under the hood `di/update-key` is a registry middleware — see
-;; [Middleware types](/doc/reference/middleware_types.md)
+;; (Under the hood `di/update-key` is a middleware — see
+;; [The middleware argument](/doc/reference/middleware_argument.md)
 ;; for what that means. For everyday use you just need to know
 ;; what update-key does.)
 

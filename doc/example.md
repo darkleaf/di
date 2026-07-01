@@ -38,7 +38,7 @@ covered in the tutorial:
   migrations run before the server starts, even though nothing
   references the migrator directly.
 - **Registry composition** — `base-registry` returns a vector of maps
-  and middlewares; `dev-registry` layers dev-only env values on top.
+  and middlewares. `dev-registry` layers dev-only env values on top.
 
 ## Running it
 

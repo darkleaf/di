@@ -62,9 +62,13 @@
                                      [{`dep-b :b}]])]
     (t/is (= [:value :a :b] @root))))
 
-;; The map form is one of several registry shapes — see
-;; [Middleware types](/doc/reference/middleware_types.md)
-;; for the full picture. The tutorial only needs the map form.
+;; A map is the simplest form of this argument. The API calls the
+;; whole variadic argument `middlewares`, and it accepts more than
+;; maps — most importantly a function that wraps the registry, which
+;; is how built-ins like `di/env-parsing` and `di/update-key` work.
+;; Later chapters call these arguments middleware. See
+;; [The middleware argument](/doc/reference/middleware_argument.md)
+;; for the full list.
 
 ;; The next chapter introduces keyword keys — a way to decouple
 ;; a component from any specific var.

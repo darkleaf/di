@@ -3,7 +3,7 @@
 `di/start`, `di/inspect` and `di/->memoize` all take a variadic
 `middlewares` argument. A middleware wraps a registry to produce a
 new one — see
-[Design](/doc/design.md#middleware-wrapping-the-registry) for the
+[Design](/doc/design.md#middleware) for the
 concept. This page describes the values the argument accepts: a
 function, a map, a sequence, `nil`, or a
 `java.util.function.Function`.
