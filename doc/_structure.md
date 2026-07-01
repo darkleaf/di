@@ -173,16 +173,25 @@ detection циклов). Эту мини-фабрику использую ка�
 
 ---
 
-## Reference — 3 страницы
+## Reference — 2 страницы
 
 | Страница            | Источник                                   |
 |---------------------|---------------------------------------------|
-| The Factory protocol| Docstring `protocols.clj` + `dependency_types_test.clj` |
 | Inspect             | `x_inspect`                                 |
 | Middleware types    | Из docstrings `core.clj` (новая)            |
 
-- **Factory protocol** — docstring и тест есть; собираем страницу
-  «когда и как реализовать кастомную фабрику».
+- **~~Factory protocol~~ — вычеркнут (v7).** Планировалась страница
+  «когда и как реализовать кастомную фабрику» на базе docstring
+  `protocols.clj` + `dependency_types_test.clj`. Статья **Design**
+  (`doc/design.md`, добавлена позже плана) уже покрывает контракт
+  протокола, «most things are already factories», историю
+  `demolish` → `add-stop`, ловушку с `nil` и декоратор-обёртку —
+  ровно тот материал, что оправдывал бы отдельную Reference-страницу.
+  Писать её сверх Design = дублировать Design и docstring, что
+  запрещено конвенциями. Единственный непокрытый кусок — матрица
+  required/optional × present/missing/**circular** из
+  `dependency_types_test.clj`; про циклы место в главе Dependencies,
+  а не на странице про фабрику.
 - **Inspect** — текущая глава `x_inspect` (377 строк перечисления
   форм `:description`). Текст уже неплохой — переносим в Reference,
   меняется только роль и навигация.
@@ -206,11 +215,12 @@ detection циклов). Эту мини-фабрику использую ка�
   (повышение из Advanced).
 - Tutorial: **Multi-arity** повышается из Advanced.
 - Новая How-to: **Visualizing your system**.
-- Новый раздел: **Reference** (3 страницы).
+- Новый раздел: **Reference** (2 страницы; Factory вычеркнут — см. выше).
 
 **Переезжает:**
 - `Inspect` Advanced → Reference.
-- `Two databases` Advanced → How-to (Factory выносим в Reference).
+- `Two databases` Advanced → How-to. (Кастомный `Factory` из неё
+  разбирается в статье Design, отдельную Reference-страницу не делаем.)
 - Остальные Advanced → How-to.
 
 **Не сливаем:**
