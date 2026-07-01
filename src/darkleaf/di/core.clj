@@ -943,17 +943,40 @@
                 deps))))))
 
 (defn inspect
-  "Collects and returns a vector of keys along with their dependencies.
-  Useful for inspecting enabled components and services.
-  Evaluates all registries with middlewares applied.
+  "Walks the registry like `start`, but builds nothing.
 
-  Expects the same arguments as `start` and returns a vector of keys with dependencies e.g.:
+  Expects the same arguments as `start` — a `key` and registry
+  middlewares — and returns the dependency graph as a vector of maps,
+  one per factory the walk visits. The graph is walked exactly as
+  `start` would walk it — middlewares applied, overrides in place — so
+  the report matches the system you would get.
+
+  Each map holds up to three entries:
+
+  - `:key` — the key naming the factory.
+  - `:dependencies` — a map of each dependency key to `:required` or
+    `:optional`. Absent when the factory depends on nothing.
+  - `:description` — a diagnostic map from the factory's own
+    `description` method. See [[darkleaf.di.protocols/Factory]].
+
+  Two markers come from the walk itself. `::di/root true` marks each
+  key you asked for. A key that no registry resolves is reported as
+  `{::di/kind :undefined}`.
 
   ```clojure
-  [{:key `root :dependencies {`foo :required `bar :optional}}
-   {:key `foo}
-   {:key `bar}]
-  ```"
+  (di/inspect `root)
+  ;; => [{:key `root
+  ;;      :dependencies {`foo :required, `bar :optional}
+  ;;      :description  {::di/kind :service, ::di/root true}}
+  ;;     {:key `foo :description {::di/kind :trivial, :object 42}}
+  ;;     {:key `bar :description {::di/kind :undefined}}]
+  ```
+
+  Pass a vector or a map as the first argument to inspect many roots
+  at once.
+
+  Reach for it to verify how middlewares reshape a system, debug a
+  wiring mismatch, or feed a dependency-graph visualizer."
   [key & middlewares]
   (with-open [components (start* ::implicit-root
                                  [middlewares
