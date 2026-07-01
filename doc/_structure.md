@@ -153,7 +153,7 @@ detection циклов). Эту мини-фабрику использую ка�
 | Multiple of the same thing      | `z_two_databases`                        |
 | All public vars as a component  | `x_ns_publics`                           |
 | Logging system lifecycle        | `x_log`                                  |
-| Visualizing your system         | новая, на основе `inspect` + Graphviz    |
+| Visualizing your system         | ✅ `visualizing_test.clj` (`inspect` + Graphviz) |
 
 - **Starting many keys** — описание расширяем: это не только
   тесты, а любая система с несколькими корнями (webserver +
@@ -213,20 +213,33 @@ detection циклов). Эту мини-фабрику использую ка�
 
 ## Что меняется относительно текущего
 
+**Статус на 2026-07-01: всё реализовано.** Детали ниже.
+
 **Добавляется:**
-- Новая глава Tutorial: **Why DI?**.
-- Новая глава Tutorial: **Interactive development**.
-- Новая глава Tutorial: **Composition with `update-key`**
-  (повышение из Advanced).
-- Tutorial: **Multi-arity** повышается из Advanced.
-- Новая How-to: **Visualizing your system**.
-- Новый раздел: **Reference** (2 страницы; Factory вычеркнут — см. выше).
+- ✅ Новая глава Tutorial: **Why DI?** (`doc/why_di.md`).
+- ✅ Новая глава Tutorial: **Interactive development**
+  (`d_interactive_development_test.clj`).
+- ✅ Новая глава Tutorial: **Composition with `update-key`**
+  (повышение из Advanced, `k_composition_with_update_key_test.clj`).
+- ✅ Tutorial: **Multi-arity** — в итоге оставлен как How-to
+  (`multi_arity_service_test.clj`), см. изменение v4 → v5 выше.
+- ✅ Новая How-to: **Visualizing your system**
+  (`visualizing_test.clj`).
+- ✅ Новый раздел: **Reference**. «Inspect» — есть. Вторую
+  страницу сделали как **«The middleware argument»**
+  (`middleware_argument.md`): разбирает *формы* аргумента
+  (Function/Map/Sequence/nil/Order/why-cond). Плановый каталог
+  встроенных middleware (`update-key`, `add-side-dependency`,
+  `env-parsing`, `ns-publics`, `log`) по 2-3 строки в неё **не
+  вошёл** — они упомянуты вскользь. Дописать или считать scope
+  сознательно суженным — открыто.
 
 **Переезжает:**
-- `Inspect` Advanced → Reference.
-- `Two databases` Advanced → How-to. (Кастомный `Factory` из неё
-  разбирается в статье Design, отдельную Reference-страницу не делаем.)
-- Остальные Advanced → How-to.
+- ✅ `Inspect` Advanced → Reference (генерируемая страница).
+- ✅ `Two databases` Advanced → How-to, переработана в
+  **«One factory, many keys»** (`one_factory_many_keys_test.clj`).
+  Кастомный `Factory` разбирается в статье Design.
+- ✅ Остальные Advanced → How-to.
 
 **Не сливаем:**
 - `Custom stop` (гл.4) и `Graceful failures` (гл.12) — разные

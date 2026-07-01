@@ -160,6 +160,15 @@ chapter-by-chapter rationale.
   `script/tutorial-to-md.sh` (it iterates `tutorial`, `how_to`,
   `reference`) and the `git add -f` line in
   `.github/workflows/ci.yml` release job.
+- `*.clj.disabled` files (e.g.
+  `test/darkleaf/di/tutorial/x_instrument_test.clj.disabled`,
+  `x_override_deps_test.clj.disabled`) are **parked drafts** —
+  intentionally out of the build and unpublished. Leave them
+  alone: do not re-enable, edit, delete, or generate docs from
+  them unless the user explicitly asks.
+- Images referenced from articles go in `doc/images/` (a tracked
+  directory, unlike the gitignored generated subdirs). Reference
+  them root-relative, e.g. `/doc/images/<name>.svg`.
 
 ### Test idioms in chapter files
 
