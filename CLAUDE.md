@@ -2,12 +2,14 @@
 
 ## Workflow
 
+- **Commit only when the user asks.** Finish the work, report the
+  result, and leave the changes in the working tree. This includes
+  amends.
 - **Do not `git push origin master` automatically.** Commit locally and
   wait for the user to push. `master` is protected (PRs required) and
   direct pushes only work via admin bypass, so each one is a deliberate
   choice the user makes.
-- Always include the `Co-Authored-By: Claude Opus 4.7 (1M context)
-  <noreply@anthropic.com>` trailer in commits authored together.
+- Always include the `Co-Authored-By: <% ACTUAL MODEL %> <noreply@anthropic.com>` trailer in commits authored together.
 
 ## cljdoc
 
