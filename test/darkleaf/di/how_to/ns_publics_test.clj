@@ -44,4 +44,5 @@
 ;; covered the same ground with less ceremony — each test starts
 ;; just the keys it touches against a shared cache. `ns-publics`
 ;; still works as documented, but `->memoize` is the preferred
-;; way to do that now.
+;; way to do that now. See
+;; [Reusing components between tests](/doc/how_to/reusing_components_between_tests_test.md).

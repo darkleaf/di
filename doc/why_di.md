@@ -124,7 +124,8 @@ built in one test are reused by the next — DI caches them across
 tests via
 [`di/->memoize`](https://cljdoc.org/d/org.clojars.darkleaf/di/CURRENT/api/darkleaf.di.core#->memoize).
 The whole suite runs as fast as a single system start. Teardown
-happens once, at the end.
+happens once, at the end. The recipe:
+[Reusing components between tests](/doc/how_to/reusing_components_between_tests_test.md).
 
 ## Partial start failures are contained
 

@@ -26,6 +26,7 @@
    ["All public vars as a component" {:file "doc/how_to/ns_publics_test.md"}]
    ["Multi-arity services"  {:file "doc/how_to/multi_arity_service_test.md"}]
    ["Multiple systems"      {:file "doc/how_to/multiple_systems_test.md"}]
+   ["Reusing components between tests" {:file "doc/how_to/reusing_components_between_tests_test.md"}]
    ["One factory, many keys" {:file "doc/how_to/one_factory_many_keys_test.md"}]
    ["Visualizing your system" {:file "doc/how_to/visualizing_test.md"}]]
   ["Reference"
