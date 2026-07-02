@@ -29,6 +29,75 @@ Docs are published on cljdoc.org. Source articles live in `doc/`:
     live in regular tests (e.g. `dependency_types_test.clj` for the
     Factory protocol page).
 
+### Local preview
+
+cljdoc renders locally via its Docker image (verified 2026-07-01).
+The steps, and the gotchas that cost time:
+
+1. Build and install the jar to `~/.m2` — cljdoc reads API
+   docstrings from there:
+
+   ```
+   clojure -T:dev:build              # produces target/di.jar + pom (DEV-SNAPSHOT)
+   clojure -X:dev:deploy :installer :local   # installs DEV-SNAPSHOT to ~/.m2
+   ```
+
+2. **cljdoc reads articles from a git revision, not the working
+   tree.** The generated `*_test.md` are gitignored, so a normal
+   commit does not contain them and the preview shows a TOC with no
+   article bodies. Make a throwaway commit that force-adds them
+   (mirrors the CI `git add -f`), ingest that SHA, then reset it
+   away afterwards — never push it:
+
+   ```
+   bash script/tutorial-to-md.sh
+   git add -f doc/tutorial doc/how_to doc/reference
+   git -c commit.gpgsign=false commit -m "TEMP preview (do not push)"
+   ```
+
+3. Start the server, then ingest the temp SHA:
+
+   ```
+   docker run -d --name cljdoc-preview -p 8000:8000 \
+     -v "$HOME/.m2:/root/.m2" -v /tmp/cljdoc-preview:/app/data \
+     --platform linux/amd64 cljdoc/cljdoc
+
+   docker run --rm -v "$(pwd):/repo-to-import" \
+     -v "$HOME/.m2:/root/.m2" -v /tmp/cljdoc-preview:/app/data \
+     --platform linux/amd64 --entrypoint clojure cljdoc/cljdoc \
+     -Sforce -M:cli ingest --project org.clojars.darkleaf/di \
+     --version DEV-SNAPSHOT --git /repo-to-import --rev "$(git rev-parse HEAD)"
+   ```
+
+   Read it at `http://localhost:8000/d/org.clojars.darkleaf/di/DEV-SNAPSHOT`
+   (`/d/...` 302-redirects to the first article — that is normal).
+
+4. Clean up: `git reset --soft <real-commit>` then
+   `git restore --staged doc/tutorial doc/how_to doc/reference`
+   (returns the generated md to gitignored/untracked), and
+   `docker rm -f cljdoc-preview`.
+
+**Images did not render under a local-path ingest** (observed
+2026-07-01). Whether that is a cljdoc bug or intended behaviour I did
+not confirm — worth checking upstream before relying on it. What was
+observed: cljdoc rewrites a root-relative `/doc/images/x.svg` to the
+SCM's raw URL (`cljdoc.util.scm/rev-raw-base-url` → `<url>/raw/<rev>/…`).
+With `--git /repo-to-import` that `<url>` is the local path, so the
+`<img>` resolved to `/repo-to-import/raw/<sha>/…`, which the server
+did not serve (404). The rewrite target on cljdoc.org would instead be
+the GitHub repo from the pom (`https://github.com/darkleaf/di/raw/<sha>/…`),
+which should load once the commit is pushed — but this was not
+verified end-to-end. The markdown reference (`![](/doc/images/…)`)
+follows convention and the file is valid, so the local 404 is at
+least not caused by the docs themselves. To preview an image locally,
+try ingesting with `--git https://github.com/darkleaf/di` on an
+already-pushed rev.
+
+Inlining the image is **not** an option: cljdoc's HTML sanitizer
+(`cljdoc.render.sanitize`) allows `<img>` only with an `http`/`https`
+`src` (no `data:` URIs) and does not allow the `<svg>` tag at all.
+An image must be an http(s) URL.
+
 ### Release flow
 
 `git push origin X.Y.Z` triggers `.github/workflows/ci.yml` → `release` job:
