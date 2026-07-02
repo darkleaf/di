@@ -4,7 +4,9 @@
 
 - **Commit only when the user asks.** Finish the work, report the
   result, and leave the changes in the working tree. This includes
-  amends.
+  amends. Don't announce the default — no "not committing" /
+  "waiting for your command" disclaimers in every reply; mention
+  git state only when it is surprising or the user asks.
 - **Do not `git push origin master` automatically.** Commit locally and
   wait for the user to push. `master` is protected (PRs required) and
   direct pushes only work via admin bypass, so each one is a deliberate
@@ -309,6 +311,62 @@ each of these.
    PRs, and reference docs from respected libraries — and
    periodically question the whole structure instead of line-editing
    a local optimum.
+8. **Real motivations, not plausible ones.** When prose explains
+   *why* a pattern exists, state the actual operational reason —
+   what it saves the user or the operator — not an invented
+   technical-sounding one. Shipped wrong: "the geoip database is
+   too heavy to build" where the real point was "a disabled
+   feature must not force the operator to download the database
+   and configure the app". The same lens applies to assertions:
+   say what a check buys in operation ("a lite deployment does not
+   have to provide the variable"), not just what it checks. If the
+   reason is not known from the source project, ask — don't fill
+   the gap with smooth text.
+9. **Name things at first mention.** "The paid plan enables two
+   features" makes the reader ask *which?* — enumerate in the same
+   sentence. Every vague forward reference costs the reader a
+   question.
+10. **Show structure, don't label it.** When layout should carry
+    the message — a null object belongs next to the real
+    component, sections map to namespaces — arrange the code and
+    sections so the reader sees it. A bare token like "In a real
+    project — `app.shop`" explains nothing; one full sentence up
+    front describing the whole split beats a label per section.
+    A disclaimer is a structural defect: whenever prose excuses
+    code for sitting in an unnatural place ("in a real project
+    this lives in the geoip namespace"), check whether a
+    rearrangement removes the excuse instead of writing it.
+    Example: a protocol was hoisted above its subsystem's section
+    with exactly that disclaimer; putting the provider section
+    before its consumer let the protocol sit at home and the
+    disclaimer was deleted.
+11. **A review comment names an instance, not the whole disease.**
+    After fixing the flagged spot, re-read the entire piece for
+    the same failure mode and fix all occurrences — including ones
+    the fix itself is about to introduce. Repeated comments from
+    the maintainer mean the previous fix stayed local.
+12. **Advice must survive real scale.** Never recommend a
+    technique that only works in the toy example. Shipped wrong:
+    "assert on the whole key set of the plan — cheap to maintain"
+    (a real app has far too many keys, and the test breaks on
+    every new component; the actual recipe — aggregate the inspect
+    report to namespaces — was already written two paragraphs
+    below). Before writing advice, ask "does this survive
+    thousands of keys?", label the toy scale explicitly ("the
+    example system is a handful of keys, so..."), and check
+    whether the text already contains the real solution further
+    down — the fix is to reorder, not to add.
+13. **Demonstrate through the natural structure, not scaffolding.**
+    Shipped wrong: passing geoip to `di/inspect` as an artificial
+    extra root so the lite plan would still show the null object,
+    plus a sentence explaining the trick. Routes already
+    reach geoip in the full plan; inspecting from the real root
+    made the lite plan collapse to the empty route table — the
+    honest and stronger claim (a disabled feature is not in the
+    system at all). If an assertion needs an extra root, extra
+    wiring, or a sentence explaining the odd setup, the assertion
+    is aimed at the wrong thing — same tell as the disclaimer in
+    item 10.
 
 ## Release/build gotchas (not cljdoc-specific but related)
 

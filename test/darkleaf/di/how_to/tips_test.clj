@@ -41,3 +41,24 @@
   (with-open [r (di/start ::root [{::root :first}
                                   {::root :replacement}])]
     (t/is (= :replacement @r))))
+
+;; ## Conditional registry entries
+
+;; A registry function can wrap each contribution in `when` and
+;; return the vector unconditionally. A disabled entry becomes
+;; `nil`, and `nil` is a valid middleware — a no-op
+;; ([The middleware argument](/doc/reference/middleware_argument.md)).
+;; So one vector holds any number of conditional entries. The
+;; [Feature flags](/doc/how_to/feature_flags_test.md) recipe uses
+;; this shape for subsystem registries.
+
+(defn features-registry [{:keys [alpha-enabled beta-enabled]}]
+  [(when alpha-enabled {::alpha :on})
+   (when beta-enabled  {::beta  :on})
+   {::gamma :on}])
+
+(t/deftest conditional-entries-test
+  (let [registry (features-registry {:alpha-enabled true
+                                     :beta-enabled  false})]
+    (with-open [root (di/start ::alpha registry)]
+      (t/is (= :on @root)))))
