@@ -31,7 +31,8 @@
    ["Reusing components between tests" {:file "doc/how_to/reusing_components_between_tests_test.md"}]
    ["One factory, many keys" {:file "doc/how_to/one_factory_many_keys_test.md"}]
    ["Visualizing your system" {:file "doc/how_to/visualizing_test.md"}]
-   ["Documenting environment variables" {:file "doc/how_to/env_docs.md"}]]
+   ["Documenting environment variables" {:file "doc/how_to/env_docs.md"}]
+   ["Instrumenting services" {:file "doc/how_to/instrumenting_services.md"}]]
   ["Reference"
    ["Inspect"                 {:file "doc/reference/inspect_test.md"}]
    ["The middleware argument" {:file "doc/reference/middleware_argument.md"}]]]}
