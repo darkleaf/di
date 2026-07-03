@@ -2,56 +2,44 @@
 
 ## Workflow
 
-- **Commit only when the user asks.** Finish the work, report the
-  result, and leave the changes in the working tree. This includes
-  amends. Don't announce the default — no "not committing" /
-  "waiting for your command" disclaimers in every reply; mention
-  git state only when it is surprising or the user asks.
-- **Do not `git push origin master` automatically.** Commit locally and
-  wait for the user to push. `master` is protected (PRs required) and
-  direct pushes only work via admin bypass, so each one is a deliberate
-  choice the user makes.
-- Always include the `Co-Authored-By: <% ACTUAL MODEL %> <noreply@anthropic.com>` trailer in commits authored together.
+- **Commit only when the user asks** (amends included). Finish the
+  work, leave changes in the working tree, and don't announce this
+  default — mention git state only when surprising or asked.
+- **Never `git push origin master` yourself.** `master` is protected
+  (PRs required); direct pushes work only via the user's admin bypass,
+  so each one is their deliberate choice.
+- Commit trailer: `Co-Authored-By: <% ACTUAL MODEL %> <noreply@anthropic.com>`.
 
 ## cljdoc
 
-Docs are published on cljdoc.org. Source articles live in `doc/`:
+Docs are published on cljdoc.org. Sources in `doc/`:
 
 - `doc/cljdoc.edn` — navigation tree (`{:cljdoc.doc/tree ...}`).
-- `doc/integrant.md`, `doc/example.md` — checked-in articles.
-- `doc/tutorial/*.md` and `doc/how_to/*.md` — **generated** from the
-  matching `test/darkleaf/di/{tutorial,how_to}/*.clj` files by
-  `script/tutorial-to-md.sh`. Paths are gitignored; the files only
-  exist in CI-built release commits.
-- `doc/reference/*.md` comes in two flavours:
-  - `doc/reference/<slug>_test.md` — **generated** from
-    `test/darkleaf/di/reference/<slug>_test.clj` by the same script
-    (e.g. `inspect_test.md`). Gitignored via `/doc/reference/*_test.md`;
-    exists only in CI-built release commits.
-  - `doc/reference/<slug>.md` (no `_test` suffix) — **plain tracked
-    markdown**, not generated. Descriptive prose; verified examples
-    live in regular tests (e.g. `dependency_types_test.clj` for the
-    Factory protocol page).
+- `doc/integrant.md`, `doc/example.md` — tracked articles.
+- `doc/tutorial/*.md`, `doc/how_to/*.md`, `doc/reference/<slug>_test.md`
+  — **generated** from the matching `test/darkleaf/di/...` files by
+  `script/tutorial-to-md.sh`. Gitignored; exist only in CI-built
+  release commits.
+- `doc/reference/<slug>.md` (no `_test` suffix) — plain tracked
+  markdown. Descriptive prose; verified examples live in regular tests
+  (e.g. `dependency_types_test.clj` for the Factory protocol page).
 
 ### Local preview
 
-cljdoc renders locally via its Docker image (verified 2026-07-01).
-The steps, and the gotchas that cost time:
+Via the cljdoc Docker image (verified 2026-07-01):
 
-1. Build and install the jar to `~/.m2` — cljdoc reads API
-   docstrings from there:
+1. Build and install the jar to `~/.m2` (cljdoc reads docstrings
+   from there):
 
    ```
-   clojure -T:dev:build              # produces target/di.jar + pom (DEV-SNAPSHOT)
-   clojure -X:dev:deploy :installer :local   # installs DEV-SNAPSHOT to ~/.m2
+   clojure -T:dev:build
+   clojure -X:dev:deploy :installer :local
    ```
 
 2. **cljdoc reads articles from a git revision, not the working
-   tree.** The generated `*_test.md` are gitignored, so a normal
-   commit does not contain them and the preview shows a TOC with no
-   article bodies. Make a throwaway commit that force-adds them
-   (mirrors the CI `git add -f`), ingest that SHA, then reset it
-   away afterwards — never push it:
+   tree**, and the generated `*_test.md` are gitignored — so make a
+   throwaway commit that force-adds them (mirrors CI), ingest that
+   SHA, reset it away afterwards, never push it:
 
    ```
    bash script/tutorial-to-md.sh
@@ -59,7 +47,7 @@ The steps, and the gotchas that cost time:
    git -c commit.gpgsign=false commit -m "TEMP preview (do not push)"
    ```
 
-3. Start the server, then ingest the temp SHA:
+3. Start the server and ingest:
 
    ```
    docker run -d --name cljdoc-preview -p 8000:8000 \
@@ -73,71 +61,53 @@ The steps, and the gotchas that cost time:
      --version DEV-SNAPSHOT --git /repo-to-import --rev "$(git rev-parse HEAD)"
    ```
 
-   Read it at `http://localhost:8000/d/org.clojars.darkleaf/di/DEV-SNAPSHOT`
-   (`/d/...` 302-redirects to the first article — that is normal).
+   Read at `http://localhost:8000/d/org.clojars.darkleaf/di/DEV-SNAPSHOT`
+   (302 to the first article is normal).
 
-4. Clean up: `git reset --soft <real-commit>` then
-   `git restore --staged doc/tutorial doc/how_to doc/reference`
-   (returns the generated md to gitignored/untracked), and
-   `docker rm -f cljdoc-preview`.
+4. Clean up: `git reset --soft <real-commit>`, then
+   `git restore --staged doc/tutorial doc/how_to doc/reference`,
+   and `docker rm -f cljdoc-preview`.
 
-**Images did not render under a local-path ingest** (observed
-2026-07-01). Whether that is a cljdoc bug or intended behaviour I did
-not confirm — worth checking upstream before relying on it. What was
-observed: cljdoc rewrites a root-relative `/doc/images/x.svg` to the
-SCM's raw URL (`cljdoc.util.scm/rev-raw-base-url` → `<url>/raw/<rev>/…`).
-With `--git /repo-to-import` that `<url>` is the local path, so the
-`<img>` resolved to `/repo-to-import/raw/<sha>/…`, which the server
-did not serve (404). The rewrite target on cljdoc.org would instead be
-the GitHub repo from the pom (`https://github.com/darkleaf/di/raw/<sha>/…`),
-which should load once the commit is pushed — but this was not
-verified end-to-end. The markdown reference (`![](/doc/images/…)`)
-follows convention and the file is valid, so the local 404 is at
-least not caused by the docs themselves. To preview an image locally,
-try ingesting with `--git https://github.com/darkleaf/di` on an
-already-pushed rev.
-
-Inlining the image is **not** an option: cljdoc's HTML sanitizer
-(`cljdoc.render.sanitize`) allows `<img>` only with an `http`/`https`
-`src` (no `data:` URIs) and does not allow the `<svg>` tag at all.
-An image must be an http(s) URL.
+**Images 404 under a local-path ingest** (observed 2026-07-01).
+cljdoc rewrites root-relative `/doc/images/x.svg` to `<scm-url>/raw/<rev>/…`;
+with `--git /repo-to-import` that URL is a local path the server does
+not serve. On cljdoc.org the rewrite target is the GitHub raw URL from
+the pom, which should work once pushed (not verified end-to-end). To
+preview an image locally, ingest with `--git https://github.com/darkleaf/di`
+on a pushed rev. Inlining is not an option: cljdoc's sanitizer allows
+`<img>` only with http(s) `src` (no `data:` URIs, no `<svg>`).
 
 ### Release flow
 
-`git push origin X.Y.Z` triggers `.github/workflows/ci.yml` → `release` job:
+`git push origin X.Y.Z` triggers `.github/workflows/ci.yml` → `release`:
 
 1. Runs the tutorial-to-md script.
 2. Substitutes `%TAG%` in `Readme.md` with the tag name.
 3. Commits the result on a detached HEAD.
-4. Tags that commit `cljdoc-X.Y.Z` and pushes the tag (only the tag; the
-   commit itself is not on any branch).
+4. Tags that commit `cljdoc-X.Y.Z` and pushes only the tag (the commit
+   is on no branch).
 5. Builds the jar with `RELEASE_VERSION=X.Y.Z` and deploys to Clojars.
 
-The deployed pom's `<scm><tag>` is the SHA of the detached commit, so
-cljdoc fetches docs from there (not from `master`).
+The deployed pom's `<scm><tag>` is the detached commit's SHA, so
+cljdoc fetches docs from there, not from `master`.
 
 ### Updating docs without a new release
 
-cljdoc supports a `cljdoc-<VERSION>` tag override: it imports articles and
-`cljdoc.edn` from that tag instead of the SCM commit. This affects only
-articles and TOC — docstrings still come from the published jar.
+cljdoc imports articles and `cljdoc.edn` from a `cljdoc-<VERSION>` tag
+override (docstrings still come from the jar).
 
-**Critical gotcha:** the new commit you tag MUST be a descendant of the
-original CI-generated `cljdoc-<VERSION>` commit (whose SHA is hard-coded
-in the deployed pom). If you make the new commit on top of `master`,
-GitHub eventually GCs the orphaned SCM SHA, cljdoc clone fails with
-`unknown-revision`, and the build silently produces a docs page with no
-articles.
-
-Correct procedure:
+**Critical gotcha:** the new tagged commit MUST be a descendant of the
+original CI-generated `cljdoc-<VERSION>` commit (its SHA is hard-coded
+in the deployed pom). A commit on top of `master` orphans that SHA;
+GitHub GCs it, cljdoc clone fails with `unknown-revision`, and the
+build silently loses all articles.
 
 ```
-# 1. Make the article changes on master (so they live in repo history)
-git commit -m "..."
-git push origin master
+# 1. Land the article changes on master (repo history)
+git commit -m "..." && git push origin master
 
-# 2. Rebuild the cljdoc-<VERSION> commit on top of the prior one
-git worktree add --detach /tmp/wt cljdoc-X.Y.Z   # or the prior SHA
+# 2. Rebuild the cljdoc commit on top of the prior one
+git worktree add --detach /tmp/wt cljdoc-X.Y.Z
 cp doc/<changed-files> /tmp/wt/doc/
 (cd /tmp/wt && git add . && \
    git -c commit.gpgsign=false commit -m "..." && \
@@ -153,250 +123,148 @@ Then trigger a rebuild on `https://cljdoc.org/d/org.clojars.darkleaf/di/X.Y.Z`.
 
 ### Article cross-links
 
-cljdoc rewrites markdown links between articles. Use either:
-
-- relative to the source file: `tutorial/a_your_first_system_test.md` (from `doc/example.md`)
-- root-relative: `/doc/tutorial/a_your_first_system_test.md`
-
-A bare `doc/tutorial/a_your_first_system_test.md` (no leading slash)
-is **not** recognised and renders as a broken external link.
-
-For an article-to-API-var link, use the full cljdoc URL with the
-`CURRENT` placeholder — cljdoc rewrites `CURRENT` to the version
-the reader is viewing:
-
-```
-[`di/->memoize`](https://cljdoc.org/d/org.clojars.darkleaf/di/CURRENT/api/darkleaf.di.core#->memoize)
-```
-
-Wikilinks (`[[ns/var]]`) only work inside docstrings, not in
-articles.
+- Between articles: relative to the source file
+  (`tutorial/a_your_first_system_test.md`) or root-relative
+  (`/doc/tutorial/...md`). A bare `doc/...` path (no leading slash)
+  renders as a broken external link.
+- Article → API var: full cljdoc URL with the `CURRENT` version
+  placeholder, e.g.
+  `https://cljdoc.org/d/org.clojars.darkleaf/di/CURRENT/api/darkleaf.di.core#->memoize`.
+- Wikilinks (`[[ns/var]]`) work only in docstrings, not articles.
 
 ## Documentation conventions
 
 Settled during the v6 restructure.
 
-### Audience
+### Audience and voice
 
 - Primary: a Clojure developer familiar with Integrant or Component.
-- Secondary: a Clojure developer who has never used a DI framework.
-  Don't assume Integrant knowledge in chapter bodies.
-- Many readers are non-native English speakers. Optimise prose
-  for them: short sentences, no English `;` in prose (use
-  periods), no obscure idioms (`slip past it` is the kind that
-  trips people up; everyday phrasing like *side effect* or
-  *before any traffic* is fine).
-
-### Voice
-
-- Matter-of-fact, declarative. Match `doc/integrant.md` and
-  Stuart Sierra's *Reloaded Workflow* tone. No marketing language.
-- No comparisons to other DI libraries inside tutorial or how-to
-  chapters. The Integrant comparison lives in `doc/integrant.md`
-  on its own.
+  Secondary: one who has never used a DI framework — don't assume
+  Integrant knowledge in chapter bodies.
+- Many readers are non-native English speakers: short sentences, no
+  `;` in prose (use periods), no obscure idioms.
+- Matter-of-fact, declarative; match `doc/integrant.md` and Stuart
+  Sierra's *Reloaded Workflow* tone. No marketing language.
+- No comparisons to other DI libraries in tutorial or how-to chapters;
+  the Integrant comparison lives only in `doc/integrant.md`.
 
 ### Terminology
 
 - **"Middleware"** is introduced once, in the tutorial's Registries
-  chapter (`e_registries_test`), with a one-line definition and a
-  link to `doc/reference/middleware_argument.md`. After that point,
-  use the word plainly wherever it is the natural term. The first
-  four chapters (A–D) pass no such arguments, so the word does not
-  come up there. In how-to recipes use it freely, linking to the
-  reference on first use because recipes are read out of order.
-  (An earlier draft banned the word outright. That backfired: it
-  forced vague paraphrases like "shapes `di/start` accepts", and it
-  contradicted the reference page's own title, "The middleware
-  argument". Naming the concept once and then using it is clearer
-  for non-native readers than paraphrasing around it.)
-- **A key names a "component" of the system, never a "node".**
-  The parts of a system are its components. Do not call them nodes
-  (or "things") in docs.
-- **Math-style names** (`a`, `b`, `c`, …) are the project's
-  authorial style. Keep them — don't substitute concrete names
-  without a reason.
-- **Keyword vs symbol** is about *intent*, not swap-ability. Both
-  can be substituted via the registry. A keyword means the author
-  decided to abstract the dependency (most commonly inside a
-  library or reusable internal module). A symbol points at a
-  specific var.
+  chapter (`e_registries_test`), with a one-line definition and a link
+  to `doc/reference/middleware_argument.md`; after that use it plainly.
+  Chapters A–D pass no such arguments, so it does not come up there.
+  In how-to recipes use it freely, linking the reference on first use
+  (recipes are read out of order). Banning the word backfired — it
+  forced vague paraphrases; naming a concept once beats paraphrasing.
+- **A key names a "component"** of the system, never a "node" or
+  "thing".
+- **Math-style names** (`a`, `b`, `c`, …) are the authorial style —
+  keep them.
+- **Keyword vs symbol** is about *intent*, not swap-ability (both are
+  substitutable via the registry). A keyword means the author chose to
+  abstract the dependency; a symbol points at a specific var.
 
 ### Directory layout
 
-- Tutorial chapters: `test/darkleaf/di/tutorial/[a-l]_<slug>_test.clj`.
-  Letter prefix `a..l` matches chapter order (1–12) alphabetically.
-- How-to recipes: `test/darkleaf/di/how_to/<slug>_test.clj`. No
-  order prefix.
-- Reference pages: either plain tracked markdown at
-  `doc/reference/<slug>.md`, or generated from
-  `test/darkleaf/di/reference/<slug>_test.clj` (output
-  `doc/reference/<slug>_test.md`, gitignored). Use a generated page
-  when the reference is example-heavy and the examples should be
-  verified by the test suite (e.g. `inspect`).
-- When adding a new doc subdirectory, also update
-  `script/tutorial-to-md.sh` (it iterates `tutorial`, `how_to`,
-  `reference`) and the `git add -f` line in
-  `.github/workflows/ci.yml` release job.
-- `*.clj.disabled` files (e.g.
-  `test/darkleaf/di/tutorial/x_instrument_test.clj.disabled`,
-  `x_override_deps_test.clj.disabled`) are **parked drafts** —
-  intentionally out of the build and unpublished. Leave them
-  alone: do not re-enable, edit, delete, or generate docs from
-  them unless the user explicitly asks.
-- Images referenced from articles go in `doc/images/` (a tracked
-  directory, unlike the gitignored generated subdirs). Reference
-  them root-relative, e.g. `/doc/images/<name>.svg`.
+- Tutorial: `test/darkleaf/di/tutorial/[a-l]_<slug>_test.clj` — letter
+  prefix matches chapter order.
+- How-to: `test/darkleaf/di/how_to/<slug>_test.clj`, no prefix.
+- Reference: tracked `doc/reference/<slug>.md`, or generated from
+  `test/darkleaf/di/reference/<slug>_test.clj` when example-heavy and
+  the examples should be test-verified (e.g. `inspect`).
+- A new doc subdirectory also needs `script/tutorial-to-md.sh` (its
+  directory list) and the `git add -f` line in the ci.yml release job.
+- `*.clj.disabled` files are **parked drafts** — leave them alone
+  unless the user explicitly asks.
+- Images go in tracked `doc/images/`; reference root-relative
+  (`/doc/images/<name>.svg`).
 
 ### Test idioms in chapter files
 
-These conventions apply to tutorial and how-to chapter `.clj`
-files. Regular tests under `test/darkleaf/di/*_test.clj` should
-stay strict — prefer object-identity comparison there so subtle
-regressions don't slip through.
+Applies to tutorial/how-to chapters. Regular tests stay strict
+(object-identity comparison).
 
-- Use `darkleaf.di.utils/catch-some` plus `ex-message` / `ex-data`
-  for exception assertions. Compare messages and structured data,
-  not exception objects by identity.
-- Inline `(ex-info "..." {})` constructions where they fire — do
-  not pass exceptions through the registry just to assert on
-  them later.
-- Add `;; ...` comments above non-obvious assertions to explain
-  what they verify.
+- `darkleaf.di.utils/catch-some` + `ex-message`/`ex-data` for
+  exception assertions; compare messages and data, not identity.
+- Inline `(ex-info "..." {})` where it fires — don't pass exceptions
+  through the registry to assert later.
+- `;; ...` comments above non-obvious assertions.
 
 ### Reference pages
 
-- A Reference page earns its keep when it adds material the
-  docstring does not: decision-trees, walks through code-level
-  patterns, design history, pitfall lists, aggregations across
-  multiple sources.
-- Avoid duplicating the docstring 1-for-1.
+Earn their place by adding what the docstring lacks: decision-trees,
+code-level patterns, design history, pitfall lists, aggregations.
+Never duplicate the docstring 1-for-1.
 
 ### Recurring mistakes to avoid
 
-Lessons paid for during the design-doc work. The cross-cutting
-failure mode is *confident-but-wrong*: smooth prose that isn't
-grounded in the code or in the author's actual model. Guard against
-each of these.
+Cross-cutting failure mode: *confident-but-wrong* — smooth prose not
+grounded in the code or the maintainer's actual model.
 
-1. **Author's model over clever framing.** Don't reach for an
-   impressive abstraction (category theory, neat dualities,
-   phase taxonomies) before checking how the maintainer actually
-   thinks about it. Examples that were wrong: "a system is a
+1. **Author's model over clever framing.** Check how the maintainer
+   thinks before reaching for an abstraction. Wrong: "a system is a
    key→object map" (it is the built root object), "compile/build/run
-   time" (you don't write components at compile time), the monad
-   gloss (cut). State the simplest *true* thing.
-2. **No unverified claims, especially superlatives.** Check the
-   code before writing "always / never / cannot / static". Wrong
-   ones shipped: "Ring middleware always delegates" (it can
-   short-circuit), "dependencies is the static schema" (it may be
-   computed; the rule is that it is pure and stable). Prefer a
-   precise weak claim over a strong vague one.
-3. **Use the project's settled terms.** A key names a **component**,
-   never a "node". Introduce "middleware" once (Registries chapter),
-   then use it plainly — do not paraphrase around it. Avoid
-   off-register words ("schemas") and idioms ("earns its keep" —
-   non-native readers). Persist any terminology correction to this
-   file immediately so it does not recur.
-4. **No duplication or padding.** Re-read your own output for ideas
-   repeated in adjacent paragraphs, comments that restate a bullet
-   list, and enumerations that add no information.
+   time", a monad gloss. State the simplest *true* thing.
+2. **No unverified claims, especially superlatives.** Check the code
+   before "always / never / cannot / static". Prefer a precise weak
+   claim over a strong vague one.
+3. **Use the settled terms** (see Terminology). Avoid off-register
+   words ("schemas") and idioms ("earns its keep"). Persist any
+   terminology correction to this file immediately.
+4. **No duplication or padding.** Re-read output for ideas repeated in
+   adjacent paragraphs and enumerations that add nothing.
 5. **Hold one altitude.** A design doc explains *how it is built and
-   why*, not *how to use it*. Don't mix in API/usage notes at equal
-   weight, and make every example serve the section's actual point.
-6. **Run a mechanical pass before "done".** No `;` in prose;
-   fix links after any file rename; put backtick-quoted symbols
-   (`` `foo ``) in fenced blocks, not inline (they break Markdown).
-7. **Step back, don't only polish.** For an important doc, do the
-   grounding up front — read the code, tests, git history, relevant
-   PRs, and reference docs from respected libraries — and
-   periodically question the whole structure instead of line-editing
-   a local optimum.
-8. **Real motivations, not plausible ones.** When prose explains
-   *why* a pattern exists, state the actual operational reason —
-   what it saves the user or the operator — not an invented
-   technical-sounding one. Shipped wrong: "the geoip database is
-   too heavy to build" where the real point was "a disabled
-   feature must not force the operator to download the database
-   and configure the app". The same lens applies to assertions:
-   say what a check buys in operation ("a lite deployment does not
-   have to provide the variable"), not just what it checks. If the
-   reason is not known from the source project, ask — don't fill
-   the gap with smooth text.
-9. **Name things at first mention.** "The paid plan enables two
-   features" makes the reader ask *which?* — enumerate in the same
-   sentence. Every vague forward reference costs the reader a
-   question.
-10. **Show structure, don't label it.** When layout should carry
-    the message — a null object belongs next to the real
-    component, sections map to namespaces — arrange the code and
-    sections so the reader sees it. A bare token like "In a real
-    project — `app.shop`" explains nothing; one full sentence up
-    front describing the whole split beats a label per section.
-    A disclaimer is a structural defect: whenever prose excuses
-    code for sitting in an unnatural place ("in a real project
-    this lives in the geoip namespace"), check whether a
-    rearrangement removes the excuse instead of writing it.
-    Example: a protocol was hoisted above its subsystem's section
-    with exactly that disclaimer; putting the provider section
-    before its consumer let the protocol sit at home and the
-    disclaimer was deleted.
-11. **A review comment names an instance, not the whole disease.**
-    After fixing the flagged spot, re-read the entire piece for
-    the same failure mode and fix all occurrences — including ones
-    the fix itself is about to introduce. Repeated comments from
-    the maintainer mean the previous fix stayed local.
-12. **Advice must survive real scale.** Never recommend a
-    technique that only works in the toy example. Shipped wrong:
-    "assert on the whole key set of the plan — cheap to maintain"
-    (a real app has far too many keys, and the test breaks on
-    every new component; the actual recipe — aggregate the inspect
-    report to namespaces — was already written two paragraphs
-    below). Before writing advice, ask "does this survive
-    thousands of keys?", label the toy scale explicitly ("the
-    example system is a handful of keys, so..."), and check
-    whether the text already contains the real solution further
-    down — the fix is to reorder, not to add.
+   why*, not *how to use it*; every example serves its section's point.
+6. **Mechanical pass before "done".** No `;` in prose; fix links after
+   renames; backtick-quoted symbols go in fenced blocks, not inline.
+7. **Step back, don't only polish.** Ground in code, tests, git
+   history, and respected references up front; periodically question
+   the whole structure instead of line-editing a local optimum.
+8. **Real motivations, not plausible ones.** State the actual
+   operational reason a pattern exists — what it saves the user or
+   operator (wrong: "geoip db too heavy to build"; right: "a disabled
+   feature must not force the operator to download and configure it").
+   Same for assertions: say what the check buys in operation. If the
+   reason is unknown, ask — don't fill the gap with smooth text.
+9. **Name things at first mention.** "Enables two features" — which?
+   Enumerate in the same sentence.
+10. **Show structure, don't label it.** Arrange code and sections so
+    layout carries the message. A disclaimer excusing code's location
+    ("in a real project this lives in ...") is a structural defect —
+    rearrange to remove the excuse instead of writing it.
+11. **A review comment names an instance, not the disease.** After
+    fixing the flagged spot, sweep the whole piece for the same
+    failure mode — including ones the fix itself introduces.
+12. **Advice must survive real scale.** Ask "does this survive
+    thousands of keys?" (wrong: "assert on the whole key set of the
+    plan"). Label toy scale explicitly, and check whether the text
+    already contains the real solution further down — reorder, don't
+    add.
 13. **Demonstrate through the natural structure, not scaffolding.**
-    Shipped wrong: passing geoip to `di/inspect` as an artificial
-    extra root so the lite plan would still show the null object,
-    plus a sentence explaining the trick. Routes already
-    reach geoip in the full plan; inspecting from the real root
-    made the lite plan collapse to the empty route table — the
-    honest and stronger claim (a disabled feature is not in the
-    system at all). If an assertion needs an extra root, extra
-    wiring, or a sentence explaining the odd setup, the assertion
-    is aimed at the wrong thing — same tell as the disclaimer in
-    item 10.
+    If an assertion needs an extra root, extra wiring, or a sentence
+    explaining the odd setup, it is aimed at the wrong thing (wrong:
+    passing geoip to `di/inspect` as an artificial extra root;
+    inspecting from the real root made the stronger, honest claim).
 
-## Release/build gotchas (not cljdoc-specific but related)
+## Release/build gotchas
 
-- `build.clj` reads version from `RELEASE_VERSION` env var. Local builds
-  produce a `DEV-SNAPSHOT` jar.
-- The published pom must declare `org.clojure/clojure` explicitly in root
-  `:deps` of `deps.edn`. Otherwise tools.build's basis inherits Clojure
-  1.10.3 from the system `deps.edn`, the pom advertises 1.10.3, and the
-  cljdoc analyzer launches with 1.10.3 — which does not understand
-  `:as-alias` and fails with a fake cyclic-load error.
-- The published pom must include a `<licenses>` block (Clojars rejects
-  uploads without one with `403 Forbidden`). Done via `:pom-data` in
-  `b/write-pom`; requires `tools.build` ≥ 0.10.
-- `deps-deploy` reads the pom from the filesystem, not from inside the
-  jar. The `:deploy` alias passes `:pom-file
-  "target/classes/META-INF/maven/org.clojars.darkleaf/di/pom.xml"` so it
-  finds the one `b/write-pom` produced.
-- Local git config has `tag.gpgsign=true`. To make a release-style
-  lightweight tag, override per-command:
-  `git -c tag.gpgsign=false tag X.Y.Z`.
-- Branch `master` is protected (PRs required). Direct pushes work
-  because the user has admin bypass, but each one logs a "Bypassed rule
-  violations" entry.
+- `build.clj` reads the version from `RELEASE_VERSION`; local builds
+  produce `DEV-SNAPSHOT`.
+- Root `:deps` of `deps.edn` must declare `org.clojure/clojure`
+  explicitly — otherwise the pom inherits 1.10.3 from the system
+  deps.edn and the cljdoc analyzer fails on `:as-alias` with a fake
+  cyclic-load error.
+- The pom must include a `<licenses>` block (Clojars rejects with 403).
+  Done via `:pom-data` in `b/write-pom`; needs `tools.build` ≥ 0.10.
+- `deps-deploy` reads the pom from the filesystem: the `:deploy` alias
+  passes `:pom-file "target/classes/META-INF/maven/org.clojars.darkleaf/di/pom.xml"`.
+- Local git has `tag.gpgsign=true`; for release-style lightweight tags
+  use `git -c tag.gpgsign=false tag X.Y.Z`.
 
 ## Clojars
 
-Once a non-snapshot version is deployed, it cannot be re-deployed even
-if the previous attempt failed validation. A burned version (`3.6.1`
-was an example: missing license blew up after the upload) requires
-bumping to a fresh version, not re-attempting the same tag.
-
-A deploy token is required (not the account password). Stored in
-GitHub Actions secrets as `CLOJARS_USERNAME` / `CLOJARS_PASSWORD`.
+- A non-snapshot version can never be re-deployed, even after a failed
+  validation (`3.6.1` was burned this way) — bump to a fresh version.
+- Deploys need a token (not the account password), stored in GitHub
+  Actions secrets `CLOJARS_USERNAME` / `CLOJARS_PASSWORD`.
