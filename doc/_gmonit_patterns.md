@@ -36,7 +36,11 @@ registry-функции подсистем (`when → nil`), null-object под�
   `collector/src/gmonit/grafana/incident_manager/core.clj:29-32`;
 - bootstrap: `collector/src/gmonit/system.clj:200-213`.
 
-### 3. Fail-fast проверки при старте
+### 3. Fail-fast проверки при старте — ✔ сделано
+
+Реализовано статьёй
+`test/darkleaf/di/how_to/startup_checks_test.clj`
+(«Startup checks» в навигации).
 
 Из `collector/src/gmonit/requirements.clj`:
 
@@ -48,7 +52,13 @@ registry-функции подсистем (`when → nil`), null-object под�
   версию Redis и возвращает компонент нетронутым:
   `requirements.clj:40-64`.
 
-### 4. Декоратор со своими зависимостями
+### 4. Декоратор со своими зависимостями — ✔ сделано
+
+Реализовано расширением туториала K
+(`test/darkleaf/di/tutorial/k_composition_with_update_key_test.clj`):
+абзац прозы перед заключением — все параметры `update-key`
+фабрики, `f` включительно; примеры с `di/ref` (обёртка со своими
+зависимостями) и `di/template` (собранная системой карта опций).
 
 Самое неочевидное из 1c-agent:
 

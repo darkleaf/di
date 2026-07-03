@@ -73,6 +73,17 @@
              (for [[path handler] @root]
                [path (handler :req)])))))
 
+;; Everything `update-key` takes is a factory — the function
+;; included. Plain values like `wrap-log`, `conj`, or `*log` above
+;; are constants and pass through as is, but any position accepts
+;; any factory — `di/ref` or `di/template`, for example. With
+;; ``(di/update-key `handler (di/ref `wrap-metrics))`` the
+;; decorator itself is built by the system and receives
+;; dependencies of its own — say, a stateful metrics registry.
+;; And an argument can be assembled too: pass plain `wrap-cache`
+;; with ``(di/template {:store (di/ref `redis)})``, and the
+;; wrapper receives an options map with the started store inside.
+
 ;; (Under the hood `di/update-key` is a middleware — see
 ;; [The middleware argument](/doc/reference/middleware_argument.md)
 ;; for what that means. For everyday use you just need to know
