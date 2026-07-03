@@ -90,3 +90,38 @@
 ;; each other at load time. Reloading gets lighter, and two
 ;; namespaces whose components use each other do not form a
 ;; require cycle.
+
+;; ## An EDN file instead of dotenv
+
+;; Development and tests need a dozen environment variables:
+;; ports, database URLs, tokens. The usual answer is dotenv
+;; tooling — a `.env` file plus a library or a shell hook that
+;; loads it. With DI you don't need any of that: put the
+;; variables in an EDN file and read it into the registry.
+
+;; ```clojure
+;; ;; env_dev.edn
+;; {"PORT"           "8081"
+;;  "DATABASE_URL"   "jdbc:postgresql://localhost/app"
+;;  ;; comments work, and #_ turns an entry off:
+;;  #_#_"BASIC_AUTH" "admin"}
+;; ```
+
+;; ```clojure
+;; (di/start ::root
+;;           [(base-registry)
+;;            (-> "env_dev.edn" slurp edn/read-string)])
+;; ```
+
+;; This works because an environment variable is just a string
+;; key, and a map is a middleware that overrides the keys it
+;; lists — components can't tell the difference. The last
+;; registry element is the outermost, so the file wins over both
+;; the registries before it and the real environment; a key that
+;; is not in the file falls through to `System/getenv` as usual
+;; ([The middleware argument](/doc/reference/middleware_argument.md)).
+
+;; Note that the values are strings, exactly what `System/getenv`
+;; would return. The file is not a second configuration system —
+;; it is another source for the same contract, so `di/env-parsing`
+;; and `:or` defaults keep working unchanged.
