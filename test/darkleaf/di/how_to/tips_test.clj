@@ -62,3 +62,31 @@
                                      :beta-enabled  false})]
     (with-open [root (di/start ::alpha registry)]
       (t/is (= :on @root)))))
+
+;; ## A key does not need a `require`
+
+;; A dependency is a key — a symbol, a keyword, a string. A key
+;; is data: the reader reads it without loading any code. So a
+;; component can depend on a var from a namespace that its own
+;; namespace does not require:
+
+;; ```clojure
+;; (ns app.handlers ; app.db is not required
+;;   (:require
+;;    [darkleaf.di.core :as-alias di]))
+
+;; (defn get-user
+;;   {::di/kind :component}
+;;   [{db 'app.db/db}]
+;;   ...)
+;; ```
+
+;; DI loads `app.db` by itself: at start, a symbol key is
+;; resolved with `requiring-resolve`. Most of the time you take
+;; a single key from a namespace, and a `require` for one key is
+;; not worth the ceremony — just write the key in full.
+
+;; There is also a structural gain: namespaces stop depending on
+;; each other at load time. Reloading gets lighter, and two
+;; namespaces whose components use each other do not form a
+;; require cycle.
