@@ -263,28 +263,36 @@
                        (di/update-key `a str (di/ref `b))
                        (di/update-key `a identity)))))
 
-;; `di/add-side-dependency` marks the pulled-in keys with
-;; `::di/side-dependency true`.
+;; `di/add-side-dependency` and `di/prepend-side-dependency` mark
+;; the pulled-in keys with `::di/side-dependency true`. The
+;; entries follow the build order: prepended keys come before the
+;; root, added keys after it.
 
-(t/deftest add-side-dependency-test
-  (t/is (= [{:key         `a
-             :description {::di/kind :trivial
-                           :object   :obj
-                           ::di/root true}}
-            {:key         `side-dep-1
+(t/deftest side-dependency-test
+  (t/is (= [{:key         `prepended-dep
              :description {::di/kind            :trivial
                            :object              :side-dep
                            ::di/side-dependency true}}
-            {:key         `side-dep-2
+            {:key         `a
+             :description {::di/kind :trivial
+                           :object   :obj
+                           ::di/root true}}
+            {:key         `added-dep-1
+             :description {::di/kind            :trivial
+                           :object              :side-dep
+                           ::di/side-dependency true}}
+            {:key         `added-dep-2
              :description {::di/kind            :trivial
                            :object              :side-dep
                            ::di/side-dependency true}}]
            (di/inspect `a
-                       {`a          :obj
-                        `side-dep-1 :side-dep
-                        `side-dep-2 :side-dep}
-                       (di/add-side-dependency `side-dep-1)
-                       (di/add-side-dependency `side-dep-2)))))
+                       {`a             :obj
+                        `prepended-dep :side-dep
+                        `added-dep-1   :side-dep
+                        `added-dep-2   :side-dep}
+                       (di/prepend-side-dependency `prepended-dep)
+                       (di/add-side-dependency `added-dep-1)
+                       (di/add-side-dependency `added-dep-2)))))
 
 ;; `di/ns-publics` and `di/env-parsing` show up as standalone
 ;; `:middleware` factories standing in front of the keys they expose.

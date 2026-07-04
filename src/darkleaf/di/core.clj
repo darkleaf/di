@@ -250,8 +250,9 @@
                                      #{key}])
         factory (reify p/Factory
                   (dependencies [_]
-                    (concat (p/dependencies factory)
-                            {::side-dependency :required}))
+                    (concat {::prepended-side-dependency :required}
+                            (p/dependencies factory)
+                            {::added-side-dependency :required}))
                   (build [_ deps add-stop]
                     (p/build factory deps add-stop))
                   (description [_]
@@ -267,11 +268,12 @@
 (defn- with-internals [registry]
   (fn [key]
     (case key
-      ::side-dependency (reify p/Factory
-                          (dependencies [_])
-                          (build [_ _ _] '_)
-                          (description [_]
-                            {::implementation-detail true}))
+      (::prepended-side-dependency
+       ::added-side-dependency) (reify p/Factory
+                                  (dependencies [_])
+                                  (build [_ _ _] '_)
+                                  (description [_]
+                                    {::implementation-detail true}))
       (registry key))))
 
 (def ^:private initial-registry
@@ -615,10 +617,54 @@
           factory
           (registry key))))))
 
+(defn- side-dependency [side-key dep-key]
+  (fn [registry]
+    (fn [key]
+      (let [factory (registry key)]
+        (condp = key
+          side-key (reify p/Factory
+                     (dependencies [_]
+                       ;; This is an incorrect implementation that does not preserve order.
+                       ;; (assoc (p/dependencies factory)
+                       ;;        dep-key :required)
+                       (concat (p/dependencies factory)
+                               {dep-key :required}))
+                     (build [_ deps add-stop]
+                       (p/build factory deps add-stop))
+                     (description [_]
+                       (p/description factory)))
+          dep-key  (update-description factory assoc ::side-dependency true)
+          factory)))))
+
 (defn add-side-dependency
   "A registry middleware for adding side dependencies.
   Use it for setup steps and other side effects.
 
+  A side dependency is built after the root and its dependencies.
+  Several side dependencies are built in the order they were added.
+  See `prepend-side-dependency` for side dependencies that are
+  built before the root.
+
+  ```clojure
+  (defn warmup
+    {::di/kind :component}
+    [{cache `cache}]
+    (fill-cache cache))
+
+  (di/start ::root (di/add-side-dependency `warmup))
+  ```"
+  [dep-key]
+  (side-dependency ::added-side-dependency dep-key))
+
+(defn prepend-side-dependency
+  "A registry middleware for adding side dependencies
+  that are built before the root and its dependencies.
+  Use it for migrations and other setup steps that must finish
+  before the rest of the system starts.
+
+  Several prepended side dependencies are built in the order
+  they were added. All of them are built before the root.
+  See `add-side-dependency`.
 
   ```clojure
   (defn flyway
@@ -627,26 +673,10 @@
     (.. (Flyway/configure)
         ...))
 
-  (di/start ::root (di/add-side-dependency `flyway))
+  (di/start ::root (di/prepend-side-dependency `flyway))
   ```"
   [dep-key]
-  (fn [registry]
-    (fn [key]
-      (let [factory (registry key)]
-        (condp = key
-          ::side-dependency (reify p/Factory
-                              (dependencies [_]
-                                ;; This is an incorrect implementation that does not preserve order.
-                                ;; (assoc (p/dependencies factory)
-                                ;;        dep-key :required)
-                                (concat (p/dependencies factory)
-                                        {dep-key :required}))
-                              (build [_ deps add-stop]
-                                (p/build factory deps add-stop))
-                              (description [_]
-                                (p/description factory)))
-          dep-key           (update-description factory assoc ::side-dependency true)
-          factory)))))
+  (side-dependency ::prepended-side-dependency dep-key))
 
 
 (defn- arglists [variable]
