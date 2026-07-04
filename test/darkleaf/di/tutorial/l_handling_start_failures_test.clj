@@ -49,14 +49,15 @@
 
 ;; ## When a stop itself fails
 
-;; The exception that triggered the failure is what `di/start`
-;; throws. But during the cleanup that follows, the stop
-;; functions themselves can throw, and DI does not want you to
-;; lose either kind of information. The original error stays as
-;; the main exception (reachable via `ex-cause`). Each stop
-;; failure is attached as a *suppressed* exception (the JVM
-;; mechanism — see `Throwable/.addSuppressed` and
-;; `Throwable/.getSuppressed`).
+;; When a build fails, DI stops the components it already built.
+;; These stop functions can also throw. So there can be several
+;; errors at once: the original one and the stop errors. DI packs
+;; them all into the one exception it throws:
+;;
+;; - the thrown exception is the build failure;
+;; - its cause is the original error, see `ex-cause`;
+;; - the stop errors are attached to it as *suppressed*
+;;   exceptions, see `Throwable/.getSuppressed`.
 
 (defn dep-stop-throws
   {::di/stop (fn [_] (throw (ex-info "stop failed" {})))}

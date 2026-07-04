@@ -5,11 +5,11 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-;; Earlier chapters used `di/start` with a map second argument
-;; without naming it. That map is a *registry*. A registry tells
-;; DI what to use for a given key — overriding what DI would
-;; otherwise resolve from a var, or supplying a value for a key
-;; that has no var at all.
+;; You already saw the registry — the map passed to `di/start`.
+;; This chapter covers it in full. A registry tells DI what to
+;; use for a given key — overriding what DI would otherwise
+;; resolve from a var, or supplying a value for a key that has
+;; no var at all.
 
 ;; The component below declares two dependencies that DI cannot
 ;; resolve on its own — `dep-a` and `dep-b` have no vars. The

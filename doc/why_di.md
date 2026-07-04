@@ -117,10 +117,11 @@ No global registry to reset, no namespace to reload.
 
 ## Live redefinition works
 
-Redefine a function with `defn`, and the running system uses the
-new version immediately. No restart, no lost state. If you change
-a component's dependencies, you do need to restart that component,
-but the rest of the system stays alive. The workflow:
+Redefine a service with `defn`, and the running system uses the
+new version immediately. No restart, no lost state. But the
+service keeps receiving the dependencies that were resolved at
+start — to add a new dependency, restart the system. The
+workflow:
 [Interactive development](/doc/tutorial/d_interactive_development_test.md).
 
 ## Tests share a cached system

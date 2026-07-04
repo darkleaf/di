@@ -938,10 +938,13 @@
 
 (defn log
   "A logging middleware.
-  Calls `:after-build!` and `:after-demolish!` during `di/start`.
-  Must be the last one in the middleware chain.
-  Both callbacks are expected to accept
-  the following arg `{:keys [key object]}`."
+  Calls `:after-build!` when an object is built during `di/start`,
+  and `:after-demolish!` when it is stopped.
+  Both callbacks receive a map `{:keys [key object]}`.
+
+  `di/log` records only what the middlewares before it define:
+  a key resolved by a middleware added after it is not logged.
+  Put it last to log the whole system."
   [& {:keys   [after-build! after-demolish!]
       #_#_:as opts
       :or     {after-build!    (fn no-op [_])
