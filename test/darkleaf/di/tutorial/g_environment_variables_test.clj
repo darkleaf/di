@@ -103,6 +103,5 @@
                             {"ENABLED" "false"})]
     (t/is (= [:enabled false] @sys))))
 
-;; The next chapter shows how to wire components into plain data
-;; structures — reitit routes, scheduler tables — using
-;; `di/template` and `di/ref`.
+;; The next chapter shows how one `di/start` call can bring up
+;; several independent keys at once.

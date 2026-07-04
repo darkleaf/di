@@ -328,6 +328,9 @@
                        {"PORT" "8080"}))))
 
 ;; `di/log` adds `::di/log` to every factory it wraps.
+;; The `#_#_:opts nil` form below is commented-out code: `:opts`
+;; is not part of the description today, but a future version may
+;; report the logger options under that key.
 
 (t/deftest log-test
   (t/is (= [{:key         `foo

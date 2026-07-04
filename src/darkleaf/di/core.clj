@@ -386,9 +386,8 @@
              `some-key replacement
              \"LOG_LEVEL\" \"info\"}
             [dev-middlewares test-middlewares]
-            (if dev-routes?
-              (di/update-key `route-data conj `dev-route-data)
-            (di/instrument `log))
+            (when dev-routes?
+              (di/update-key `route-data conj `dev-route-data)))
   ```
 
   Returns a container containing the started root of the system.
@@ -410,7 +409,10 @@
   (start* ::implicit-root [middlewares (implicit-root key)]))
 
 (defn stop
-  "Stops the root of a system"
+  "Stops the root of a system.
+
+  If several components throw during stop, the first exception is
+  rethrown and the rest are attached to it as suppressed exceptions."
   [^AutoCloseable root]
   (cond
     (nil? root)                  nil
@@ -478,9 +480,14 @@
 
 (defn derive
   "Applies `f` to an object built from `key`.
+  Returns a factory.
+
+  `key` is depended on as `:optional`: if it is not defined,
+  `f` receives `nil`, so make `f` nil-safe.
+  `args` are extra arguments passed to `f` after the object.
 
   ```clojure
-  (def port (-> (di/derive \"PORT\" (fnil parse-long \"8080\"))))
+  (def port (di/derive \"PORT\" (fnil parse-long \"8080\")))
   ```
 
   See `ref`, `template`."
@@ -610,11 +617,13 @@
 
 (defn add-side-dependency
   "A registry middleware for adding side dependencies.
-  Use it for migrations or other side effects.
+  Use it for setup steps and other side effects.
 
 
   ```clojure
-  (defn flyway [{url \"DATABASE_URL\"}]
+  (defn flyway
+    {::di/kind :component}
+    [{url \"DATABASE_URL\"}]
     (.. (Flyway/configure)
         ...))
 
@@ -778,6 +787,9 @@
   and its value will be a number.
   `cmap` is a map of prefixes and parsers.
 
+  The underlying env dependency is optional: if the variable is not set,
+  the value is `nil` and the parser is not called.
+
   ```clojure
   (defn root [{port :env.long/PORT}]
     ...)
@@ -830,7 +842,10 @@
 
 (defn ns-publics
   "A registry middleware that interprets a whole namespace as a component.
-  A component will be a map of var names to corresponding components.
+  The built component is a map of simple keywords to built objects:
+  each public var name becomes a keyword, e.g. the var `handler`
+  becomes the key `:handler`. Unbound vars and vars holding `nil`
+  are skipped.
 
   The key of a component is a keyword with the namespace `:ns-publics`
   and a name containing the name of a target ns.

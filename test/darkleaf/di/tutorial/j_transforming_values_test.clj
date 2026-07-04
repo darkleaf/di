@@ -26,6 +26,11 @@
   (with-open [root (di/start `port {"PORT" "8080"})]
     (t/is (= 8080 @root))))
 
+;; The source key of `di/derive` is optional: if `"PORT"` were not
+;; defined, the function would receive `nil`. When the source may
+;; be missing, make the function nil-safe — for example
+;; `(fnil parse-long "8080")` to fall back to a default.
+
 ;; Same effect as defining a one-line component:
 
 (defn port'

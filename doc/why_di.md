@@ -35,7 +35,8 @@ names and string values, no nested config shape to design or
 maintain. If you prefer a config file, read EDN into a map and pass
 that map to DI when you start the system. Validation is just a
 component that checks its own dependencies — bad configuration
-is caught at start, not in production.
+is caught at start, not in production. The recipe:
+[Startup checks](/doc/how_to/startup_checks_test.md).
 
 For typed values, qualified keys like `:env.long/PORT` or
 `:env.json/SETTINGS` parse the env var on the way in. The keyword
@@ -60,7 +61,8 @@ hooks itself onto the central routes:
 
 The main system composes registries from every subsystem. `app.web`
 never imports `app.users`. A third subsystem is a third file with
-its own `registry`.
+its own `registry`. The pattern is explained in
+[Composition with `update-key`](/doc/tutorial/k_composition_with_update_key_test.md).
 
 ## Feature flags come almost for free
 
@@ -68,7 +70,8 @@ Combine lazy initialization with subsystems that own their wiring,
 and feature flags fall out naturally. Flip a flag, and the
 subsystem contributes nothing to the registry — the components
 behind it stop being built. One binary ships to many environments,
-each with a different set of features active.
+each with a different set of features active. The recipe:
+[Feature flags](/doc/how_to/feature_flags_test.md).
 
 ## Wiring inside data
 
@@ -100,7 +103,9 @@ change the registry and restart.
 
 A stateless service is bound as `(partial #'the-var)`. There is one
 level of var indirection, by design: it is exactly what makes live
-REPL redefinition work (next section).
+REPL redefinition work (next section). The component/service
+distinction is defined in
+[Your first system](/doc/tutorial/a_your_first_system_test.md).
 
 ## The system is a value
 
@@ -115,7 +120,8 @@ No global registry to reset, no namespace to reload.
 Redefine a function with `defn`, and the running system uses the
 new version immediately. No restart, no lost state. If you change
 a component's dependencies, you do need to restart that component,
-but the rest of the system stays alive.
+but the rest of the system stays alive. The workflow:
+[Interactive development](/doc/tutorial/d_interactive_development_test.md).
 
 ## Tests share a cached system
 
@@ -137,4 +143,6 @@ lost.
 ---
 
 The [tutorial](/doc/tutorial/a_your_first_system_test.md) walks through each of
-these, one chapter at a time.
+these, one chapter at a time. For the model behind the library,
+read [Design](/doc/design.md); if you are choosing between DI and
+Integrant, see [Integrant vs DI](/doc/integrant.md).

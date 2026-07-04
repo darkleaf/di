@@ -53,11 +53,12 @@
 
 ;; ## Grouping registries with a sequence
 
-;; To avoid splicing with `apply`, a seqable value (see
-;; `clojure.core/seqable?`) counts as a single registry. DI walks
-;; the sequence as if you had passed each entry separately.
+;; To avoid splicing with `apply`, a sequential collection (see
+;; `clojure.core/sequential?`) — a vector or a list — counts as a
+;; single registry. DI walks the sequence as if you had passed
+;; each entry separately.
 
-(t/deftest seqable-registry-test
+(t/deftest sequential-registry-test
   (with-open [root (di/start `value [{`dep-a :a}
                                      [{`dep-b :b}]])]
     (t/is (= [:value :a :b] @root))))

@@ -79,7 +79,7 @@ a name — the key *is* the name.
 
 DI once had this idea in its general form: `di/instrument`, a
 middleware that decorated every object the system builds. It was
-removed ([Changelog](/doc/changelog)): a wrapper that applies to
+removed ([Changelog](/CHANGELOG.md)): a wrapper that applies to
 everything must avoid instrumenting its own dependencies, must
 respect stop procedures, and must make sense for objects it knows
 nothing about — and no implementation handled all of that well.
