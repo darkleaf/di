@@ -23,6 +23,7 @@
    ["Side dependencies"     {:file "doc/how_to/side_dependencies_test.md"}]
    ["Feature flags"         {:file "doc/how_to/feature_flags_test.md"}]
    ["Startup checks"        {:file "doc/how_to/startup_checks_test.md"}]
+   #_["Graceful shutdown"     {:file "doc/how_to/graceful_shutdown.md"}]
    ["Logging system lifecycle" {:file "doc/how_to/log_test.md"}]
    ["Multimethods"                 {:file "doc/how_to/multimethods_test.md"}]
    ["All public vars as a component" {:file "doc/how_to/ns_publics_test.md"}]
