@@ -34,9 +34,10 @@ covered in the tutorial:
 - **`di/update-key`** — extends the shared `reitit/route-data` from
   `example.core` so each subsystem can append its own routes without
   the routing component knowing about them.
-- **`di/add-side-dependency`** — pulls in `flyway/migrate` so
-  migrations run before the server starts, even though nothing
-  references the migrator directly.
+- **`di/prepend-side-dependency`** — pulls in `flyway/migrate` so
+  migrations run before the rest of the system, even though
+  nothing references the migrator directly — see
+  [Side dependencies](/doc/how_to/side_dependencies_test.md).
 - **Registry composition** — `base-registry` returns a vector of maps
   and middlewares. `dev-registry` layers dev-only env values on top.
 

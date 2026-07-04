@@ -6,56 +6,55 @@
    [darkleaf.di.core :as di]))
 
 ;; Some components must run at system start, but nothing else
-;; references them — database migrations are the classic case.
-;; `di/add-side-dependency` pulls such a component into the
-;; system without forcing the root to declare it as a dependency.
+;; references them. Two middlewares pull such a component into
+;; the system without forcing the root to declare it:
+;; `di/prepend-side-dependency` builds it before the rest of the
+;; system, `di/add-side-dependency` — after.
+
+;; Migrations go in front — they must finish before the
+;; components that use the database start:
+
+(defn migrations
+  {::di/kind :component}
+  [{*migrated? ::*migrated?}]
+  (reset! *migrated? true))
 
 (defn root
   {::di/kind :component}
   []
   'root)
 
-(defn migrations
-  {::di/kind :component}
-  [{::keys [*migrated?]}]
-  (reset! *migrated? true))
-
-(t/deftest add-side-dependency-test
+(t/deftest prepend-side-dependency-test
   (let [*migrated? (atom false)]
     (with-open [root (di/start `root
-                               (di/add-side-dependency `migrations)
+                               (di/prepend-side-dependency `migrations)
                                {::*migrated? *migrated?})]
-      ;; `migrations` ran as part of start...
       (t/is @*migrated?)
-      ;; ...even though `root` does not reference it.
       (t/is (= 'root @root)))))
 
-;; ## Why not just list it as another root?
+;; A cache warmup or a setup step that uses components built by
+;; the rest of the system goes after — `di/add-side-dependency`.
 
-;; You could — `di/start` takes a vector of keys and builds them
-;; in the order you list them. Migrations must come first so
-;; they run before the app:
+;; ## Build order
 
-;; ```clojure
-;; (di/start [`migrations `root] ...)
-;; ```
+;; DI builds prepended side dependencies first, then the root
+;; with its dependencies, and then added side dependencies.
+;; Inside each group, side dependencies are built in the order
+;; they were added. The system stops in the reverse order.
 
-;; But then the start call has to enumerate every cross-cutting
-;; concern in the right order — migrations before the app, and
-;; so on. `add-side-dependency` lets each subsystem declare its
-;; setup inside its own registry, so the top-level start stays
-;; clean.
+;; When the order is a relation between two components, no
+;; middleware is needed: declare the task as a dependency of the
+;; component that needs it.
 
-;; The usual pattern: applications are split into subsystems, and
-;; each subsystem ships its own `registry` function that
-;; contributes components and middleware. A subsystem that owns
-;; migrations declares its side dependency inside its own
-;; registry. The root never mentions it.
+;; ## Composition
+
+;; Each subsystem declares its setup inside its own registry, so
+;; the top-level start never mentions it:
 
 ;; ```clojure
 ;; ;; users subsystem
 ;; (defn registry [_]
-;;   [(di/add-side-dependency `migrations)])
+;;   [(di/prepend-side-dependency `migrations)])
 ;;
 ;; ;; main system composes subsystems
 ;; (di/start `app

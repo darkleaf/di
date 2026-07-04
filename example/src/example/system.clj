@@ -13,7 +13,7 @@
     ::hikari/options (di/template {:adapter "h2"
                                    :url     (di/ref "H2_URL")})}
    (di/update-key `reitit/route-data conj (di/ref `core/route-data))
-   (di/add-side-dependency `flyway/migrate)
+   (di/prepend-side-dependency `flyway/migrate)
    (di/env-parsing :env.long parse-long)
    #_(if some-feature-flag
        [(di/update-key `reitit/route-data conj ...)])])
