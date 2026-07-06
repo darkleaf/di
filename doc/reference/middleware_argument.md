@@ -117,12 +117,13 @@ beneath `mem` has to be passed into it instead, and overrides go
 after it, on the outside:
 
 ```clojure
-;; wrong — a middleware before mem is rejected
-(di/start `root base-middlewares mem)        ; throws
-
-;; right — fold them into mem, keep overrides on the outside
 (def mem (di/->memoize base-middlewares))
-(di/start `root mem {::override :x})          ; ok
+
+;; wrong — a middleware before mem is rejected
+(di/start `root {::extra :x} mem)        ; throws
+
+;; right — overrides go after mem, on the outside
+(di/start `root mem {::override :x})     ; ok
 ```
 
 ## Why a `cond`, not a protocol

@@ -208,7 +208,7 @@
 ;; decision, not a side effect of wiring. List the test file in
 ;; CODEOWNERS: adding a variable then requires an explicit review.
 
-;; ## Where do the flags come from
+;; ## Flag sources
 
 ;; In the tests above the flags were literals. In production they
 ;; are computed: from environment variables, from a license key

@@ -79,7 +79,7 @@
 ;; any factory — `di/ref` or `di/template`, for example. With
 ;; ``(di/update-key `handler (di/ref `wrap-metrics))`` the
 ;; decorator itself is built by the system and receives
-;; dependencies of its own — say, a stateful metrics registry.
+;; dependencies of its own — say, a stateful metrics store.
 ;; And an argument can be assembled too: pass plain `wrap-cache`
 ;; with ``(di/template {:store (di/ref `redis)})``, and the
 ;; wrapper receives an options map with the started store inside.

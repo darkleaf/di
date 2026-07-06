@@ -39,7 +39,7 @@
   `:required` wins over `:optional`.
 
   A reducing function (0/1/2-arity) suitable for `reduce` and `transduce`.
-  Use when implementing `p/dependencies` for a custom `p/Factory`."
+  Use it when implementing `p/dependencies` for a custom `p/Factory`."
   ([] {})
   ([a] a)
   ([a b]
@@ -389,7 +389,7 @@
              \"LOG_LEVEL\" \"info\"}
             [dev-middlewares test-middlewares]
             (when dev-routes?
-              (di/update-key `route-data conj `dev-route-data)))
+              (di/update-key `route-data conj (di/ref `dev-route-data))))
   ```
 
   Returns a container containing the started root of the system.
@@ -915,7 +915,7 @@
         (registry key)))))
 
 (defmacro with-open
-  "A `c/with-open` variant that supports destructuring in bindings.
+  "A `clojure.core/with-open` variant that supports destructuring in bindings.
 
   `bindings` => `[name init ...]`
   Evaluates `body` in a try expression with names bound to the values

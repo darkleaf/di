@@ -75,7 +75,7 @@
       {key tag})))
 
 (defn dependencies
-  "Parses destructuring map into a map of dependency key and its type"
+  "Parses a destructuring map into a map from dependency key to dependency type."
   [m]
   (let [defaults (:or m)
         m        (dissoc m :or :as)]

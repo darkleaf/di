@@ -61,9 +61,10 @@
 
 ;; Dependencies are required unless `:or` declares a default. A
 ;; missing required dependency makes `di/start` throw. The
-;; exception carries enough info to find the gap: the failure
-;; `:type` and a `:stack` of keys DI was resolving — from the
-;; missing key (head) up through its parents to the root.
+;; exception carries enough information to locate the missing
+;; dependency: the failure `:type` and a `:stack` of keys DI was
+;; resolving — from the missing key (head) up through its parents
+;; to the root.
 
 (defn root'
   {::di/kind :component}

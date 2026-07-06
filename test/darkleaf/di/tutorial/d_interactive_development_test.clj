@@ -38,15 +38,10 @@
 ;; ## When a restart is needed
 
 ;; The var indirection only covers the function body. The
-;; dependency graph itself was decided at start. If you:
-;;
-;; - add a new dependency key,
-;; - rename or remove one,
-;; - change `:required` to `:optional`,
-;; - turn a `defn` into `{::di/kind :component}` or back,
-;;
+;; dependency graph itself was decided at start. If you change
+;; the declaration of the first argument — the dependency map —
 ;; the running system keeps the old wiring. Stop and start again
-;; to pick up the change.
+;; to apply the change.
 
 ;; The same applies to components — their built value is what the
 ;; system holds. Redefining the var does not rebuild the component.

@@ -104,7 +104,7 @@
   (with-open [root (di/start `e)]
     (t/is (= [::e 42] (root 42)))))
 
-;; That's the vocabulary: system, root, components, and services.
+;; That's the vocabulary: system, root, component, and service.
 ;; The next chapter wires components together through real
 ;; dependencies.
 

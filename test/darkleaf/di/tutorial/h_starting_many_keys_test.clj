@@ -5,7 +5,7 @@
    [darkleaf.di.core :as di]
    [clojure.test :as t]))
 
-;; A single `di/start` can bring up several components at once —
+;; A single `di/start` can start several components at once —
 ;; a webserver and a worker queue and a scheduler in production,
 ;; or a few independent components a test wants to poke at.
 ;; Rather than writing an explicit root component that pulls all

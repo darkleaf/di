@@ -18,7 +18,7 @@
 ;; the component returns an atom, and the stop function flips it to
 ;; `true` — the test asserts the flip happened.
 
-;; Note that `root` below has no `{::di/kind :component}` mark.
+;; Note that `root` below has no `{::di/kind :component}` metadata.
 ;; A function with `::di/stop` metadata is a component by
 ;; convention — only components have a lifecycle, so there is no
 ;; need to state the kind explicitly.

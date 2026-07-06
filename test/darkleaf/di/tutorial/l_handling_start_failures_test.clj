@@ -11,7 +11,7 @@
 ;; threw. If nothing stops what was already built, you leak
 ;; resources — and some are non-shareable. A Jetty server holds
 ;; a port. If you cannot stop it, you cannot start another one
-;; on the same port. The system reference is usually lost too,
+;; on the same port. The reference to the root is usually lost too,
 ;; so the only escape is to restart the REPL.
 
 ;; DI handles this for you. When a build fails, it stops what
@@ -36,7 +36,7 @@
 ;; `catch-some` captures whatever `di/start` throws. The original
 ;; failure is wrapped as `::di/build-failure`. `ex-cause` gives
 ;; you the original. `:stack` in `ex-data` shows the chain of
-;; keys DI was building when it hit the gap.
+;; keys DI was building when the failure happened.
 
 (t/deftest built-deps-are-stopped-test
   (let [*stopped (atom false)

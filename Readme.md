@@ -40,7 +40,7 @@ to define a graph of functions and stateful objects.
            "PORT"              "9090"})
 ```
 
-It is just a short snippet, please see [example app](https://github.com/darkleaf/di/tree/master/example).
+For a complete application, see the [example app](https://github.com/darkleaf/di/tree/master/example).
 
 ## Install
 
@@ -68,4 +68,4 @@ starting with [user.clj](https://github.com/darkleaf/di/blob/master/example/dev/
 
 Copyright © 2022 Mikhail Kuzmin
 
-Licensed under Eclipse Public License v2.0 (see [LICENSE](LICENSE)).
+Licensed under Eclipse Public License v2.0 (see [LICENSE](https://github.com/darkleaf/di/blob/master/LICENSE)).

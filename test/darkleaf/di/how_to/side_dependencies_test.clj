@@ -9,7 +9,7 @@
 ;; references them. Two middlewares pull such a component into
 ;; the system without forcing the root to declare it:
 ;; `di/prepend-side-dependency` builds it before the rest of the
-;; system, `di/add-side-dependency` — after.
+;; system, and `di/add-side-dependency` builds it after.
 
 ;; Migrations go in front — they must finish before the
 ;; components that use the database start:

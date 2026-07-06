@@ -103,5 +103,5 @@
                             {"ENABLED" "false"})]
     (t/is (= [:enabled false] @sys))))
 
-;; The next chapter shows how one `di/start` call can bring up
+;; The next chapter shows how one `di/start` call can start
 ;; several independent keys at once.

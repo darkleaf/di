@@ -7,7 +7,7 @@
    [clojure.test :as t]
    [darkleaf.di.core :as di]))
 
-;; ## `::di/stop` infers `:component`
+;; ## `::di/stop` implies `:component`
 
 ;; You don't need to attach `{::di/kind :component}` if the
 ;; function already has `::di/stop` metadata. DI treats any

@@ -6,13 +6,14 @@
    [darkleaf.di.core :as di]))
 
 ;; `di/log` fires a callback every time a factory is built and
-;; every time it is demolished. Each callback receives
+;; every time it is stopped — `:after-build!` and
+;; `:after-demolish!`. Each callback receives
 ;; `{:keys [key object]}` — the key and the built value (or the
-;; value about to be demolished).
+;; value about to be stopped).
 
 ;; Reach for it to instrument the system at runtime — time each
-;; build or demolish step, or stream lifecycle events into your
-;; logging system. To analyze build and teardown order without
+;; build or stop step, or stream lifecycle events into your
+;; logging system. To analyze build and stop order without
 ;; actually running the system, use
 ;; [`di/inspect`](/doc/reference/inspect_test.md) instead.
 
@@ -21,8 +22,8 @@
 ;; `log` is not reported.
 
 ;; The components below form a chain `c → b → a`. Builds run in
-;; dependency order. Demolitions run in reverse — last built,
-;; first demolished. The printed forms also differ: a component
+;; dependency order. Stops run in reverse — last built, first
+;; stopped. The printed forms also differ: a component
 ;; shows its built value, a service shows the var it points to.
 
 (defn a

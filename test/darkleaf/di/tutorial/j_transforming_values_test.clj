@@ -7,8 +7,8 @@
 
 ;; Sometimes the value DI builds for a key is not quite what
 ;; downstream code expects: an env var arrives as a string but
-;; you want a number, a templated list contains nils you want
-;; filtered out. `di/derive` builds a value from another key and
+;; you want a number, or a templated list contains nils that you
+;; want to filter out. `di/derive` builds a value from another key and
 ;; runs a function over the result. Shape:
 
 ;; ```clojure
