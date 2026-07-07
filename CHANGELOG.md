@@ -1,10 +1,20 @@
-# Unreleased
+# 3.7.0
 
++ Docs: A huge documentation overhaul 🎉
+  + Restructured everything into Tutorial, How-to guides, and Reference
+  + Rewrote the tutorial as a narrative with a new chapter order
+  + Added many new how-to guides: Graceful shutdown, Feature flags,
+    Startup checks, Instrumenting services, Documenting environment
+    variables, Reusing components between tests, Visualizing your
+    system, and more
+  + Added the Why DI? and Design articles
+  + Rewrote the Integrant comparison
+  + Expanded public API docstrings (`->memoize`, `inspect`,
+    the `Factory` protocol, and others) and backticked code
+    references so cljdoc renders them as inline code
 + Add `di/prepend-side-dependency`: a side dependency that is built
   before the root and its dependencies. `di/add-side-dependency`
   keeps building them after the root, as before.
-+ Docs: Backtick code references in public API docstrings so cljdoc
-  renders them as inline code.
 
 # 3.6.3
 
