@@ -45,10 +45,10 @@ For a complete application, see the [example app](https://github.com/darkleaf/di
 ## Install
 
 ```edn
-{:deps {org.clojars.darkleaf/di {:mvn/version "%TAG%"}}}
+{:deps {org.clojars.darkleaf/di {:mvn/version "3.7.0"}}}
 ;; or
 {:deps {org.clojars.darkleaf/di {:git/url "https://github.com/darkleaf/di.git"
-                                 :sha     "%SHA%"}}}
+                                 :sha     "a78e011f48030d22e20d338540a8ee6dd9250147"}}}
 ```
 
 ## Documentation
