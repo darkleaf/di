@@ -118,6 +118,19 @@
                @log))
       (t/is (= :ok @root)))))
 
+
+(t/deftest prepend-side-dependency-test
+  (let [log          (atom [])
+        after-build! (fn [{:keys [key]}]
+                       (swap! log conj key))]
+    (with-open [root (di/start ::root
+                               {::root :ok}
+                               (di/prepend-side-dependency `d1)
+                               (di/prepend-side-dependency `d2)
+                               (di/log :after-build! after-build!))]
+      (t/is (= [`d1 `d2 ::root] @log))
+      (t/is (= :ok @root)))))
+
 (t/deftest bug-with-update-key
   (let [info (di/inspect ::root
                          {::root     42

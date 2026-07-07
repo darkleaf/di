@@ -1,5 +1,8 @@
 # Unreleased
 
++ Add `di/prepend-side-dependency`: a side dependency that is built
+  before the root and its dependencies. `di/add-side-dependency`
+  keeps building them after the root, as before.
 + Docs: Backtick code references in public API docstrings so cljdoc
   renders them as inline code.
 

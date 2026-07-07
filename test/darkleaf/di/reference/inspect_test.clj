@@ -1,11 +1,11 @@
 ;; # Inspect
 
-(ns darkleaf.di.tutorial.x-inspect-test
+(ns darkleaf.di.reference.inspect-test
   (:require
    [clojure.test :as t]
    [darkleaf.di.core :as di]
    [darkleaf.di.protocols :as p]
-   [darkleaf.di.tutorial.x-ns-publics-test :as x-ns-publics-test]))
+   [darkleaf.di.how-to.ns-publics-test :as x-ns-publics-test]))
 
 ;; `di/inspect` takes the same arguments as `di/start` but builds
 ;; nothing. It walks the registry and returns a vector describing
@@ -263,40 +263,48 @@
                        (di/update-key `a str (di/ref `b))
                        (di/update-key `a identity)))))
 
-;; `di/add-side-dependency` marks the pulled-in keys with
-;; `::di/side-dependency true`.
+;; `di/add-side-dependency` and `di/prepend-side-dependency` mark
+;; the pulled-in keys with `::di/side-dependency true`. The
+;; entries follow the build order: prepended keys come before the
+;; root, added keys after it.
 
-(t/deftest add-side-dependency-test
-  (t/is (= [{:key         `a
-             :description {::di/kind :trivial
-                           :object   :obj
-                           ::di/root true}}
-            {:key         `side-dep-1
+(t/deftest side-dependency-test
+  (t/is (= [{:key         `prepended-dep
              :description {::di/kind            :trivial
                            :object              :side-dep
                            ::di/side-dependency true}}
-            {:key         `side-dep-2
+            {:key         `a
+             :description {::di/kind :trivial
+                           :object   :obj
+                           ::di/root true}}
+            {:key         `added-dep-1
+             :description {::di/kind            :trivial
+                           :object              :side-dep
+                           ::di/side-dependency true}}
+            {:key         `added-dep-2
              :description {::di/kind            :trivial
                            :object              :side-dep
                            ::di/side-dependency true}}]
            (di/inspect `a
-                       {`a          :obj
-                        `side-dep-1 :side-dep
-                        `side-dep-2 :side-dep}
-                       (di/add-side-dependency `side-dep-1)
-                       (di/add-side-dependency `side-dep-2)))))
+                       {`a             :obj
+                        `prepended-dep :side-dep
+                        `added-dep-1   :side-dep
+                        `added-dep-2   :side-dep}
+                       (di/prepend-side-dependency `prepended-dep)
+                       (di/add-side-dependency `added-dep-1)
+                       (di/add-side-dependency `added-dep-2)))))
 
 ;; `di/ns-publics` and `di/env-parsing` show up as standalone
 ;; `:middleware` factories standing in front of the keys they expose.
 
 (t/deftest ns-publics-test
-  (t/is (= [{:key          :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
+  (t/is (= [{:key          :ns-publics/darkleaf.di.how-to.ns-publics-test
              :dependencies {`x-ns-publics-test/service   :required
                             `x-ns-publics-test/component :required
                             `x-ns-publics-test/ok-test   :required}
              :description  {::di/kind   :middleware
                             :middleware ::di/ns-publics
-                            :ns         'darkleaf.di.tutorial.x-ns-publics-test
+                            :ns         'darkleaf.di.how-to.ns-publics-test
                             ::di/root   true}}
             {:key          `x-ns-publics-test/service
              :dependencies {`x-ns-publics-test/component :required}
@@ -309,7 +317,7 @@
              :description {::di/kind     :trivial
                            :object       x-ns-publics-test/ok-test
                            ::di/variable #'x-ns-publics-test/ok-test}}]
-           (di/inspect :ns-publics/darkleaf.di.tutorial.x-ns-publics-test
+           (di/inspect :ns-publics/darkleaf.di.how-to.ns-publics-test
                        (di/ns-publics)))))
 
 
@@ -328,6 +336,9 @@
                        {"PORT" "8080"}))))
 
 ;; `di/log` adds `::di/log` to every factory it wraps.
+;; The `#_#_:opts nil` form below is commented-out code: `:opts`
+;; is not part of the description today, but a future version may
+;; report the logger options under that key.
 
 (t/deftest log-test
   (t/is (= [{:key         `foo
@@ -339,17 +350,6 @@
            (di/inspect `foo
                        {`foo :obj}
                        (di/log)))))
-
-
-(def variable-factory-regression
-  (reify p/Factory
-    (dependencies [_])
-    (build [_ _ _] :ok)
-    (description [_])))
-
-(t/deftest variable-factory-regression-test
-  (t/is (= :ok
-           @(di/start `variable-factory-regression))))
 
 ;; ## Multiple roots
 

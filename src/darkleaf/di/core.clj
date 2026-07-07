@@ -39,7 +39,7 @@
   `:required` wins over `:optional`.
 
   A reducing function (0/1/2-arity) suitable for `reduce` and `transduce`.
-  Use when implementing `p/dependencies` for a custom `p/Factory`."
+  Use it when implementing `p/dependencies` for a custom `p/Factory`."
   ([] {})
   ([a] a)
   ([a b]
@@ -250,8 +250,9 @@
                                      #{key}])
         factory (reify p/Factory
                   (dependencies [_]
-                    (concat (p/dependencies factory)
-                            {::side-dependency :required}))
+                    (concat {::prepended-side-dependency :required}
+                            (p/dependencies factory)
+                            {::added-side-dependency :required}))
                   (build [_ deps add-stop]
                     (p/build factory deps add-stop))
                   (description [_]
@@ -267,11 +268,12 @@
 (defn- with-internals [registry]
   (fn [key]
     (case key
-      ::side-dependency (reify p/Factory
-                          (dependencies [_])
-                          (build [_ _ _] '_)
-                          (description [_]
-                            {::implementation-detail true}))
+      (::prepended-side-dependency
+       ::added-side-dependency) (reify p/Factory
+                                  (dependencies [_])
+                                  (build [_ _ _] '_)
+                                  (description [_]
+                                    {::implementation-detail true}))
       (registry key))))
 
 (def ^:private initial-registry
@@ -386,9 +388,8 @@
              `some-key replacement
              \"LOG_LEVEL\" \"info\"}
             [dev-middlewares test-middlewares]
-            (if dev-routes?
-              (di/update-key `route-data conj `dev-route-data)
-            (di/instrument `log))
+            (when dev-routes?
+              (di/update-key `route-data conj (di/ref `dev-route-data))))
   ```
 
   Returns a container containing the started root of the system.
@@ -410,7 +411,10 @@
   (start* ::implicit-root [middlewares (implicit-root key)]))
 
 (defn stop
-  "Stops the root of a system"
+  "Stops the root of a system.
+
+  If several components throw during stop, the first exception is
+  rethrown and the rest are attached to it as suppressed exceptions."
   [^AutoCloseable root]
   (cond
     (nil? root)                  nil
@@ -478,9 +482,14 @@
 
 (defn derive
   "Applies `f` to an object built from `key`.
+  Returns a factory.
+
+  `key` is depended on as `:optional`: if it is not defined,
+  `f` receives `nil`, so make `f` nil-safe.
+  `args` are extra arguments passed to `f` after the object.
 
   ```clojure
-  (def port (-> (di/derive \"PORT\" (fnil parse-long \"8080\"))))
+  (def port (di/derive \"PORT\" (fnil parse-long \"8080\")))
   ```
 
   See `ref`, `template`."
@@ -608,36 +617,66 @@
           factory
           (registry key))))))
 
-(defn add-side-dependency
-  "A registry middleware for adding side dependencies.
-  Use it for migrations or other side effects.
-
-
-  ```clojure
-  (defn flyway [{url \"DATABASE_URL\"}]
-    (.. (Flyway/configure)
-        ...))
-
-  (di/start ::root (di/add-side-dependency `flyway))
-  ```"
-  [dep-key]
+(defn- side-dependency [side-key dep-key]
   (fn [registry]
     (fn [key]
       (let [factory (registry key)]
         (condp = key
-          ::side-dependency (reify p/Factory
-                              (dependencies [_]
-                                ;; This is an incorrect implementation that does not preserve order.
-                                ;; (assoc (p/dependencies factory)
-                                ;;        dep-key :required)
-                                (concat (p/dependencies factory)
-                                        {dep-key :required}))
-                              (build [_ deps add-stop]
-                                (p/build factory deps add-stop))
-                              (description [_]
-                                (p/description factory)))
-          dep-key           (update-description factory assoc ::side-dependency true)
+          side-key (reify p/Factory
+                     (dependencies [_]
+                       ;; This is an incorrect implementation that does not preserve order.
+                       ;; (assoc (p/dependencies factory)
+                       ;;        dep-key :required)
+                       (concat (p/dependencies factory)
+                               {dep-key :required}))
+                     (build [_ deps add-stop]
+                       (p/build factory deps add-stop))
+                     (description [_]
+                       (p/description factory)))
+          dep-key  (update-description factory assoc ::side-dependency true)
           factory)))))
+
+(defn add-side-dependency
+  "A registry middleware for adding side dependencies.
+  Use it for setup steps and other side effects.
+
+  A side dependency is built after the root and its dependencies.
+  Several side dependencies are built in the order they were added.
+  See `prepend-side-dependency` for side dependencies that are
+  built before the root.
+
+  ```clojure
+  (defn warmup
+    {::di/kind :component}
+    [{cache `cache}]
+    (fill-cache cache))
+
+  (di/start ::root (di/add-side-dependency `warmup))
+  ```"
+  [dep-key]
+  (side-dependency ::added-side-dependency dep-key))
+
+(defn prepend-side-dependency
+  "A registry middleware for adding side dependencies
+  that are built before the root and its dependencies.
+  Use it for migrations and other setup steps that must finish
+  before the rest of the system starts.
+
+  Several prepended side dependencies are built in the order
+  they were added. All of them are built before the root.
+  See `add-side-dependency`.
+
+  ```clojure
+  (defn flyway
+    {::di/kind :component}
+    [{url \"DATABASE_URL\"}]
+    (.. (Flyway/configure)
+        ...))
+
+  (di/start ::root (di/prepend-side-dependency `flyway))
+  ```"
+  [dep-key]
+  (side-dependency ::prepended-side-dependency dep-key))
 
 
 (defn- arglists [variable]
@@ -778,6 +817,9 @@
   and its value will be a number.
   `cmap` is a map of prefixes and parsers.
 
+  The underlying env dependency is optional: if the variable is not set,
+  the value is `nil` and the parser is not called.
+
   ```clojure
   (defn root [{port :env.long/PORT}]
     ...)
@@ -830,7 +872,10 @@
 
 (defn ns-publics
   "A registry middleware that interprets a whole namespace as a component.
-  A component will be a map of var names to corresponding components.
+  The built component is a map of simple keywords to built objects:
+  each public var name becomes a keyword, e.g. the var `handler`
+  becomes the key `:handler`. Unbound vars and vars holding `nil`
+  are skipped.
 
   The key of a component is a keyword with the namespace `:ns-publics`
   and a name containing the name of a target ns.
@@ -838,7 +883,7 @@
 
   This enables access to all public components, which is useful for testing.
 
-  See the test `darkleaf.di.tutorial.x-ns-publics-test`.
+  See the test `darkleaf.di.how-to.ns-publics-test`.
 
   ```clojure
   (di/start :ns-publics/io.github.my.ns (di/ns-publics))
@@ -870,7 +915,7 @@
         (registry key)))))
 
 (defmacro with-open
-  "A `c/with-open` variant that supports destructuring in bindings.
+  "A `clojure.core/with-open` variant that supports destructuring in bindings.
 
   `bindings` => `[name init ...]`
   Evaluates `body` in a try expression with names bound to the values
@@ -893,10 +938,13 @@
 
 (defn log
   "A logging middleware.
-  Calls `:after-build!` and `:after-demolish!` during `di/start`.
-  Must be the last one in the middleware chain.
-  Both callbacks are expected to accept
-  the following arg `{:keys [key object]}`."
+  Calls `:after-build!` when an object is built during `di/start`,
+  and `:after-demolish!` when it is stopped.
+  Both callbacks receive a map `{:keys [key object]}`.
+
+  `di/log` records only what the middlewares before it define:
+  a key resolved by a middleware added after it is not logged.
+  Put it last to log the whole system."
   [& {:keys   [after-build! after-demolish!]
       #_#_:as opts
       :or     {after-build!    (fn no-op [_])
@@ -943,17 +991,40 @@
                 deps))))))
 
 (defn inspect
-  "Collects and returns a vector of keys along with their dependencies.
-  Useful for inspecting enabled components and services.
-  Evaluates all registries with middlewares applied.
+  "Walks the registry like `start`, but builds nothing.
 
-  Expects the same arguments as `start` and returns a vector of keys with dependencies e.g.:
+  Expects the same arguments as `start` — a `key` and registry
+  middlewares — and returns the dependency graph as a vector of maps,
+  one per factory the walk visits. The graph is walked exactly as
+  `start` would walk it — middlewares applied, overrides in place — so
+  the report matches the system you would get.
+
+  Each map holds up to three entries:
+
+  - `:key` — the key naming the factory.
+  - `:dependencies` — a map of each dependency key to `:required` or
+    `:optional`. Absent when the factory depends on nothing.
+  - `:description` — a diagnostic map from the factory's own
+    `description` method. See [[darkleaf.di.protocols/Factory]].
+
+  Two markers come from the walk itself. `::di/root true` marks each
+  key you asked for. A key that no registry resolves is reported as
+  `{::di/kind :undefined}`.
 
   ```clojure
-  [{:key `root :dependencies {`foo :required `bar :optional}}
-   {:key `foo}
-   {:key `bar}]
-  ```"
+  (di/inspect `root)
+  ;; => [{:key `root
+  ;;      :dependencies {`foo :required, `bar :optional}
+  ;;      :description  {::di/kind :service, ::di/root true}}
+  ;;     {:key `foo :description {::di/kind :trivial, :object 42}}
+  ;;     {:key `bar :description {::di/kind :undefined}}]
+  ```
+
+  Pass a vector or a map as the first argument to inspect many roots
+  at once.
+
+  Reach for it to verify how middlewares reshape a system, debug a
+  wiring mismatch, or feed a dependency-graph visualizer."
   [key & middlewares]
   (with-open [components (start* ::implicit-root
                                  [middlewares

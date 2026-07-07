@@ -1,14 +1,22 @@
-;; # Two databases
+;; # One factory, many keys
 
-(ns darkleaf.di.tutorial.z-two-databases-test
+(ns darkleaf.di.how-to.one-factory-many-keys-test
   (:require
    [clojure.string :as str]
    [clojure.test :as t]
    [darkleaf.di.core :as di]
    [darkleaf.di.protocols :as p]))
 
-;; In DI, each key corresponds to one object. So if you want to use two databases
-;; you have to define two keys.
+;; Each key names one component. When several components share the same
+;; build logic and differ only by their parameters, write the factory once
+;; as a function that returns a
+;; [`Factory`](https://cljdoc.org/d/org.clojars.darkleaf/di/CURRENT/api/darkleaf.di.protocols#Factory),
+;; then bind its result to a separate key for each component.
+
+;; The example connects to two databases. `db-factory` takes a database
+;; name and returns a factory whose dependencies are the environment
+;; variables for that database. `db-a` and `db-b` are two keys backed by
+;; the same factory.
 
 (defn db-factory [db-name]
   (let [db-name      (-> db-name name str/upper-case)

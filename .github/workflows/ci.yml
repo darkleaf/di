@@ -53,8 +53,10 @@ jobs:
       - name: Generate tutorial markdown
         run: ./script/tutorial-to-md.sh
 
-      - name: Substitute %TAG% in Readme.md
-        run: sed -i "s/%TAG%/${GITHUB_REF_NAME}/g" Readme.md
+      - name: Substitute %TAG% and %SHA% in Readme.md
+        run: |
+          sed -i "s/%TAG%/${GITHUB_REF_NAME}/g" Readme.md
+          sed -i "s/%SHA%/${GITHUB_SHA}/g" Readme.md
 
       - name: Commit generated docs (detached HEAD)
         env:
@@ -63,7 +65,7 @@ jobs:
           GIT_COMMITTER_NAME: ${{ github.actor }}
           GIT_COMMITTER_EMAIL: ${{ github.actor }}@users.noreply.github.com
         run: |
-          git add -f doc/tutorial
+          git add -f doc/tutorial doc/how_to doc/reference
           git add Readme.md
           git commit -m "Generate cljdoc docs for ${GITHUB_REF_NAME}"
 

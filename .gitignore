@@ -4,5 +4,8 @@
 /target
 /pom.xml
 /doc/tutorial/
+/doc/how_to/*_test.md
+/doc/reference/*_test.md
+#/doc/_*.md
 .clj-kondo/
 .lsp/
